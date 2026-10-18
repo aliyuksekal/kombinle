@@ -14,6 +14,8 @@ android {
         targetSdk 35
         versionCode surumKodu
         versionName '1.0.' + surumKodu
+        // Gerçek telefon işlemcileri; emülatör kütüphaneleri APK'yı gereksiz büyütüyor
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
     }
 
     signingConfigs {
