@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kombinle</string>
+    <string name="cikis">Çıkmak için tekrar geri tuşuna bas</string>
+    <string name="ses_yok">Bu telefonda ses tanıma bulunamadı</string>
+    <string name="ses_soyle">Nereye gidiyorsun?</string>
+    <string name="tarayici_yok">Bağlantıyı açacak uygulama bulunamadı</string>
+</resources>

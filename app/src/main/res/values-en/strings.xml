@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cikis">Press back again to exit</string>
+    <string name="ses_yok">Speech recognition is not available on this phone</string>
+    <string name="ses_soyle">Where are you going?</string>
+    <string name="tarayici_yok">No app found to open the link</string>
+</resources>

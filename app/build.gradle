@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+}
+
+def surumKodu = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'com.benim.kombinle'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.benim.kombinle'
+        minSdk 24
+        targetSdk 35
+        versionCode surumKodu
+        versionName '1.0.' + surumKodu
+    }
+
+    signingConfigs {
+        // Test sürümleri için sabit anahtar: yeni APK eskisinin üstüne kurulur.
+        // Play Store'a yüklenecek sürüm ayrı bir yükleme anahtarıyla imzalanmalı.
+        deneme {
+            storeFile rootProject.file('imza/deneme.p12')
+            storeType 'PKCS12'
+            storePassword 'kombinle-deneme'
+            keyAlias 'kombinle'
+            keyPassword 'kombinle-deneme'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.deneme
+        }
+        debug {
+            signingConfig signingConfigs.deneme
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    packaging {
+        resources {
+            excludes += ['META-INF/*.kotlin_module', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'com.android.billingclient:billing:8.3.0'
+    // Cihaz içinde çalışan görüntü etiketleme (model APK'nın içinde, internet gerekmez)
+    implementation 'com.google.mlkit:image-labeling:17.0.9'
+}

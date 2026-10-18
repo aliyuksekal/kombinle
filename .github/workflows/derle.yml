@@ -1,0 +1,83 @@
+name: APK derle
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['README.md', 'magaza/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: derle
+  cancel-in-progress: true
+
+jobs:
+  derle:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      - name: APK derle (küçültülmüş, imzalı)
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee derleme.log
+
+      - name: APK'yı hazırla
+        run: |
+          mkdir -p cikti
+          cp app/build/outputs/apk/release/app-release.apk "cikti/Kombinle-1.0.${{ github.run_number }}.apk"
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs cikti/*.apk | head -n 3
+          ls -la cikti
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kombinle-APK
+          path: cikti/*.apk
+
+      - name: Sürüm sayfasına ekle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "deneme-${{ github.run_number }}" cikti/*.apk \
+            --title "Kombinle deneme 1.0.${{ github.run_number }}" \
+            --notes "Deneme sürümü. Telefonda açıp kurun." --prerelease
+
+      - name: APK'yı 'apk' dalına koy
+        run: |
+          git config user.name "Kombinle Derleme"
+          git config user.email "kombinle@users.noreply.github.com"
+          cp cikti/*.apk /tmp/
+          git checkout --orphan apk
+          git rm -rf . -q
+          rm -rf ./* .github 2>/dev/null || true
+          cp /tmp/Kombinle-*.apk ./Kombinle.apk
+          echo "1.0.${{ github.run_number }} $(git rev-parse --short ${{ github.sha }})" > SURUM.txt
+          git add Kombinle.apk SURUM.txt
+          git commit -q -m "APK 1.0.${{ github.run_number }}"
+          git push -f origin apk
+
+      - name: Hata günlüğünü kaydet
+        if: failure()
+        run: |
+          git config user.name "Kombinle Derleme"
+          git config user.email "kombinle@users.noreply.github.com"
+          cp derleme.log /tmp/derleme.log 2>/dev/null || echo "günlük yok" > /tmp/derleme.log
+          git checkout --orphan gunluk
+          git rm -rf . -q || true
+          rm -rf ./* .github 2>/dev/null || true
+          tail -n 400 /tmp/derleme.log > derleme.log
+          git add derleme.log
+          git commit -q -m "Derleme hatası ${{ github.run_number }}"
+          git push -f origin gunluk
