@@ -44,7 +44,7 @@ function havaYukle(zorla) {
   if (S.hava.durum !== 'tamam' || zorla) { S.hava = { durum: 'yukleniyor' }; if (A.karsilandi) ciz(); }
   return konumBul().then(function (yer) {
     if (no !== havaSayac) return;
-    if (!yer) { S.hava = { durum: 'konumYok' }; ciz(); return; }
+    if (!yer || yer.kapali) { S.hava = { durum: 'konumYok', kapali: !!(yer && yer.kapali) }; ciz(); return; }
     return havaGetir(yer.lat, yer.lon, !!zorla).then(function (kayit) {
       if (no !== havaSayac) return;
       S.hava = { durum: 'tamam', kayit: kayit, yer: yer };
@@ -82,7 +82,9 @@ function baslat() {
   $('#dosyaSec').addEventListener('change', function (e) { var f = e.target.files; dosyalarSecildi(f); e.target.value = ''; });
   $('#yedekSec').addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; yedekSecildi(f); e.target.value = ''; });
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && A.karsilandi && S.hava.kayit && Date.now() - S.hava.kayit.alindi > 60 * 60000) havaYukle(false);
+    if (document.visibilityState !== 'visible' || !A.karsilandi) return;
+    if (S.hava.durum === 'konumYok' && S.hava.kapali) havaYukle(true);
+    else if (S.hava.kayit && Date.now() - S.hava.kayit.alindi > 60 * 60000) havaYukle(false);
   });
   ciz();
   dbAc().then(function () {

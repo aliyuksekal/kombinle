@@ -112,10 +112,11 @@ function havaKarti() {
     return k;
   }
   if (hv.durum === 'konumYok') {
-    k.appendChild(h('h2', { class: 'baslik', text: t('konumBaslik') }));
-    k.appendChild(h('p', { class: 'alt-yazi', text: t('konumMetin') }));
+    k.appendChild(h('h2', { class: 'baslik', text: hv.kapali ? t('konumKapaliBaslik') : t('konumBaslik') }));
+    k.appendChild(h('p', { class: 'alt-yazi', text: hv.kapali ? t('konumKapaliMetin') : t('konumMetin') }));
     k.appendChild(h('div', { class: 'sarili', style: { 'margin-top': '14px' } },
-      h('button', { class: 'btn ana kucuk', on: { click: function () { A.konum = null; ayarKaydet(); havaYukle(true); } } }, ikon('konum', 'k'), t('konumKullan')),
+      hv.kapali && YEREL && YEREL.konumAyarlari ? h('button', { class: 'btn ana kucuk', on: { click: function () { YEREL.konumAyarlari(); } } }, ikon('konum', 'k'), t('konumAc'))
+        : h('button', { class: 'btn ana kucuk', on: { click: function () { A.konum = null; ayarKaydet(); havaYukle(true); } } }, ikon('konum', 'k'), t('konumKullan')),
       h('button', { class: 'btn ikincil kucuk', on: { click: sehirSec }, text: t('sehirSec') })));
     k.appendChild(elleHavaSecici());
     return k;

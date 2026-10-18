@@ -1,6 +1,17 @@
 /* ---------- Konum ---------- */
 function konumBul() {
   if (A.konum) return Promise.resolve({ lat: A.konum.lat, lon: A.konum.lon, ad: A.konum.ad, elle: true });
+  if (YEREL && typeof YEREL.konum === 'function') {
+    return yerelCagir('konum', [], 25000).then(function (d) {
+      if (d.ok && sayiMi(d.lat) && sayiMi(d.lon) && Math.abs(d.lat) <= 90 && Math.abs(d.lon) <= 180) {
+        var k = { lat: Math.round(d.lat * 100) / 100, lon: Math.round(d.lon * 100) / 100, ad: kirp(d.ad, 60) || enYakinSehir(d.lat, d.lon) };
+        LS.yaz('sonKonum', k); return k;
+      }
+      var e = LS.al('sonKonum', null);
+      if (d.hata !== 'izin' && d.hata !== 'kapali' && konumGecerli(e)) return { lat: e.lat, lon: e.lon, ad: e.ad, eski: true };
+      return d.hata === 'kapali' ? { kapali: true } : null;
+    });
+  }
   return new Promise(function (coz) {
     var bitti = false, son = function (v) { if (!bitti) { bitti = true; coz(v); } };
     var yedek = function () { var k = LS.al('sonKonum', null); son(konumGecerli(k) ? { lat: k.lat, lon: k.lon, ad: k.ad, eski: true } : null); };

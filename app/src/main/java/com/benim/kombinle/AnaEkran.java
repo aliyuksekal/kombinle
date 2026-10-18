@@ -10,6 +10,11 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
+import android.provider.Settings;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,6 +46,10 @@ import org.json.JSONObject;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Kombinle ana ekranı: sayfa uygulamanın içinden (assets/www) güvenli bir https
@@ -52,7 +61,8 @@ public class AnaEkran extends Activity {
     static final String SAYFA = KOK + "/assets/www/index.html";
 
     private static final int ISTEK_DOSYA = 11, ISTEK_SES = 12, ISTEK_KAYDET = 13;
-    private static final int IZIN_KONUM = 21, IZIN_KAMERA = 22;
+    private static final int IZIN_KONUM = 21, IZIN_KAMERA = 22, IZIN_KONUM_YEREL = 23;
+    private String konumIstek;
 
     WebView web;
     private FrameLayout kok;
@@ -232,11 +242,127 @@ public class AnaEkran extends Activity {
         if (kod == IZIN_KONUM && konumGeriDonus != null) {
             konumGeriDonus.invoke(konumKaynak, verildi, false);
             konumGeriDonus = null;
+        } else if (kod == IZIN_KONUM_YEREL && konumIstek != null) {
+            String r = konumIstek;
+            konumIstek = null;
+            if (verildi) konumAl(r);
+            else kopru.gonder(r, false, "hata", "izin");
         } else if (kod == IZIN_KAMERA && bekleyenIzin != null) {
             if (verildi) bekleyenIzin.grant(new String[]{PermissionRequest.RESOURCE_VIDEO_CAPTURE});
             else bekleyenIzin.deny();
             bekleyenIzin = null;
         }
+    }
+
+    /* ---------------- konum (telefonun kendi konum servisi + ilçe adı) ---------------- */
+
+    void konumBaslat(String istek) {
+        if (izinVar(Manifest.permission.ACCESS_COARSE_LOCATION) || izinVar(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            konumAl(istek);
+            return;
+        }
+        if (konumIstek != null) kopru.gonder(konumIstek, false, "hata", "iptal");
+        konumIstek = istek;
+        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, IZIN_KONUM_YEREL);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void konumAl(final String istek) {
+        final LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (lm == null) {
+            kopru.gonder(istek, false, "hata", "yok");
+            return;
+        }
+        boolean ag = false, gps = false;
+        try { ag = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) { }
+        try { gps = lm.isProviderEnabled(LocationManager.GPS_PROVIDER); } catch (Exception ignored) { }
+        if (!ag && !gps) {
+            kopru.gonder(istek, false, "hata", "kapali");
+            return;
+        }
+        // Son bilinen konum yeterince yeniyse hemen kullan
+        Location en = null;
+        for (String p : new String[]{"fused", LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER}) {
+            try {
+                Location l = lm.getLastKnownLocation(p);
+                if (l != null && (en == null || l.getTime() > en.getTime())) en = l;
+            } catch (Exception ignored) { }
+        }
+        final Location eski = en;
+        if (en != null && System.currentTimeMillis() - en.getTime() < 20 * 60 * 1000L) {
+            konumBitir(istek, en);
+            return;
+        }
+        final AtomicBoolean bitti = new AtomicBoolean(false);
+        final String saglayici = ag ? LocationManager.NETWORK_PROVIDER : LocationManager.GPS_PROVIDER;
+        ui.postDelayed(() -> {
+            if (bitti.compareAndSet(false, true)) {
+                if (eski != null) konumBitir(istek, eski);
+                else kopru.gonder(istek, false, "hata", "zaman");
+            }
+        }, 15000);
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                lm.getCurrentLocation(saglayici, null, getMainExecutor(), l -> {
+                    if (!bitti.compareAndSet(false, true)) return;
+                    if (l != null) konumBitir(istek, l);
+                    else if (eski != null) konumBitir(istek, eski);
+                    else kopru.gonder(istek, false, "hata", "zaman");
+                });
+            } else {
+                lm.requestSingleUpdate(saglayici, new android.location.LocationListener() {
+                    @Override public void onLocationChanged(Location l) {
+                        if (bitti.compareAndSet(false, true)) konumBitir(istek, l);
+                    }
+                    @Override public void onStatusChanged(String p, int s, Bundle b) { }
+                    @Override public void onProviderEnabled(String p) { }
+                    @Override public void onProviderDisabled(String p) { }
+                }, Looper.getMainLooper());
+            }
+        } catch (Exception e) {
+            if (bitti.compareAndSet(false, true)) {
+                if (eski != null) konumBitir(istek, eski);
+                else kopru.gonder(istek, false, "hata", "yok");
+            }
+        }
+    }
+
+    private void konumBitir(final String istek, final Location l) {
+        final double lat = l.getLatitude(), lon = l.getLongitude();
+        Executors.newSingleThreadExecutor().execute(() -> {
+            String ad = "";
+            try {
+                if (Geocoder.isPresent()) {
+                    @SuppressWarnings("deprecation")
+                    List<Address> a = new Geocoder(this, Locale.getDefault()).getFromLocation(lat, lon, 1);
+                    if (a != null && !a.isEmpty()) {
+                        Address x = a.get(0);
+                        String ilce = x.getSubAdminArea() != null ? x.getSubAdminArea() : x.getLocality();
+                        if (ilce == null) ilce = x.getSubLocality();
+                        String il = x.getAdminArea();
+                        if (ilce != null && il != null && !ilce.equals(il)) ad = ilce + ", " + il;
+                        else if (il != null) ad = il;
+                        else if (ilce != null) ad = ilce;
+                    }
+                }
+            } catch (Exception ignored) { }
+            JSONObject o = new JSONObject();
+            try {
+                o.put("req", istek);
+                o.put("ok", true);
+                o.put("lat", lat);
+                o.put("lon", lon);
+                o.put("dogruluk", l.hasAccuracy() ? Math.round(l.getAccuracy()) : -1);
+                o.put("ad", ad.length() > 60 ? ad.substring(0, 60) : ad);
+            } catch (Exception ignored) { }
+            kopru.gonder(o);
+        });
+    }
+
+    void konumAyarlariAc() {
+        try {
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        } catch (Exception ignored) { }
     }
 
     /* ---------------- ses tanıma ---------------- */

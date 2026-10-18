@@ -4,6 +4,7 @@ SAHTE = """window.__cagri = [];
 const yanit = (req, d) => setTimeout(() => window.dispatchEvent(new CustomEvent('kbyerel', {detail: Object.assign({req}, d)})), 50);
 window.__sahip = [];
 window.KombinleNative = {
+  konum: req => yanit(req, {ok: true, lat: 40.9903, lon: 29.0291, ad: 'Kadıköy, İstanbul'}), konumAyarlari: () => {},
   surum: () => '1.0.7', cubuk: k => window.__cagri.push('cubuk:' + k),
   dinle: (req, dil) => { window.__cagri.push('dinle:' + dil); yanit(req, {ok: true, metin: 'akşam düğüne gideceğim'}); },
   etiketle: (req, b64) => { window.__cagri.push('etiketle:' + b64.length); yanit(req, {ok: true, etiketler: [{t: 'Jeans', c: 0.91}, {t: 'Pattern', c: 0.3}]}); },
@@ -16,6 +17,8 @@ window.KombinleNative = {
 with sync_playwright() as pw:
     o = Oturum(pw); o.ctx.add_init_script(SAHTE); p = o.ac()
     p.click('text=Başla'); p.wait_for_timeout(600)
+    p.wait_for_timeout(800); ok('Kadıköy, İstanbul' in p.inner_text('#havaKarti'), 'telefon konumu: ilçe adıyla gösterildi')
+    ok(any('lat=40.99&lon=29.03' in u for u in o.istekler), 'hava isteği 2 haneye yuvarlanmış konumla')
     ok('cubuk:false' in p.evaluate('window.__cagri'), 'tema sistem çubuklarına iletildi')
     p.set_input_files('#dosyaSec', ['foto/etek_bordo.jpg']); p.wait_for_selector('.sayfa.acik .buyuk-resim', timeout=15000); p.wait_for_timeout(300)
     tah = p.inner_text('.sayfa.acik .tahmin')

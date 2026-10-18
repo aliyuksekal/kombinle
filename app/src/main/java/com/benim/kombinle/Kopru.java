@@ -52,6 +52,20 @@ public final class Kopru {
         ekran.ui.post(() -> ekran.cubuklariAyarla(koyu));
     }
 
+    /* ---------------- konum ---------------- */
+
+    @JavascriptInterface
+    public void konum(final String req) {
+        if (!guvenli || !istekGecerli(req)) return;
+        ekran.ui.post(() -> ekran.konumBaslat(req));
+    }
+
+    @JavascriptInterface
+    public void konumAyarlari() {
+        if (!guvenli) return;
+        ekran.ui.post(ekran::konumAyarlariAc);
+    }
+
     /* ---------------- ses ---------------- */
 
     @JavascriptInterface
