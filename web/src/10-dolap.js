@@ -17,6 +17,11 @@ function dolapEkrani() {
     }, g.id === 'hepsi' ? t('hepsi') : grupAd(g.id), h('span', { class: 'say', text: g.id === 'hepsi' ? S.parcalar.length : say[g.id] })));
   });
   bol.appendChild(cipler);
+  var sira = h('div', { class: 'cipler sira', role: 'group', 'aria-label': t('sirala') });
+  [['yeni', 'siraYeni'], ['cok', 'siraCok'], ['az', 'siraAz'], ['renk', 'siraRenk']].forEach(function (x) {
+    sira.appendChild(h('button', { class: 'cip kucuk', 'aria-pressed': (S.sira || 'yeni') === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { S.sira = x[0]; ciz(); } } }));
+  });
+  bol.appendChild(sira);
   if (S.parcalar.some(function (p) { return p.ornek; })) {
     bol.appendChild(h('div', { class: 'tahmin' }, ikon('bilgi', 'k'), h('span', { style: { flex: '1' }, text: t('ornekVar') }),
       h('button', { class: 'btn kucuk ikincil', on: { click: ornekleriSil }, text: t('ornekleriKaldir') })));
@@ -35,10 +40,15 @@ function izgaraDoldur(izgara) {
     if (S.filtre !== 'hepsi' && TUR[p.tur].g !== S.filtre) return false;
     if (!q) return true;
     return katla((parcaAd(p) + ' ' + turAd(p.tur) + ' ' + renkAd(p.renk)).toLocaleLowerCase('tr')).indexOf(q) >= 0;
-  }).sort(function (a, b) { return (b.eklendi || 0) - (a.eklendi || 0); });
+  }).sort(function (a, b) {
+    if (S.sira === 'cok') return (b.giy || 0) - (a.giy || 0);
+    if (S.sira === 'az') return (a.giy || 0) - (b.giy || 0) || (a.son || 0) - (b.son || 0);
+    if (S.sira === 'renk') return RENKLER.findIndex(function (r) { return r[0] === a.renk; }) - RENKLER.findIndex(function (r) { return r[0] === b.renk; });
+    return (b.eklendi || 0) - (a.eklendi || 0);
+  });
   if (!liste.length) { izgara.appendChild(h('p', { class: 'alt-yazi', style: { 'grid-column': '1/-1' }, text: t('bulunamadi') })); return; }
   liste.forEach(function (p) {
-    izgara.appendChild(h('button', { class: 'oge', 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
+    izgara.appendChild(h('button', { class: 'oge' + (p.kesik ? ' kesik' : '') + (p.dinlen ? ' dinlen' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
       resimEl(p.id, false, null, ''),
       p.ornek ? h('span', { class: 'ornek', text: t('ornek') }) : null,
       h('span', { class: 'alt' }, h('i', { style: { background: (RENK[p.renk] || RENK.siyah).hex } }), h('span', { text: p.ad || turAd(p.tur) }))));
@@ -90,8 +100,11 @@ function sirayaIsle(liste, i) {
 /* Yeni kıyafet (yeni.sonuc) ya da mevcut kıyafet (p) düzenleme */
 function parcaDuzenle(p, yeni) {
   var an = yeni ? yeni.sonuc.analiz : null;
-  var tas = p ? { tur: p.tur, renk: p.renk, renk2: p.renk2 || '', desen: p.desen ? 1 : 0, tarz: p.tarz || '', su: p.su ? 1 : 0, ad: p.ad || '' }
-    : { tur: an && an.guven >= 0.5 && an.turlar[0] ? an.turlar[0] : '', renk: an ? an.renk : 'siyah', renk2: an ? an.renk2 : '', desen: an ? an.desen : 0, tarz: '', su: 0, ad: '' };
+  var tas = p ? { tur: p.tur, renk: p.renk, renk2: p.renk2 || '', desen: p.desen ? 1 : 0, tarz: p.tarz || '', su: p.su ? 1 : 0, ad: p.ad || '',
+      marka: p.marka || '', fiyat: p.fiyat ? String(p.fiyat) : '', kumas: p.kumas || '', mevsim: p.mevsim || '', dinlen: p.dinlen ? 1 : 0 }
+    : { tur: an && an.guven >= 0.5 && an.turlar[0] ? an.turlar[0] : '', renk: an ? an.renk : 'siyah', renk2: an ? an.renk2 : '', desen: an ? an.desen : 0, tarz: '', su: 0, ad: '',
+      marka: '', fiyat: '', kumas: '', mevsim: '', dinlen: 0 };
+  var yeniResim = yeni ? { buyuk: yeni.sonuc.buyuk, kucuk: yeni.sonuc.kucuk, kesik: 0 } : null;
   if (!p && tas.tur) { tas.tarz = TUR[tas.tur].s || ''; tas.su = TUR[tas.tur].su ? 1 : 0; }
   var tarzElle = false;
   if (an && LS.al('ayikla', false)) try { console.info('analiz ' + JSON.stringify({ g: an.guven, t: an.turlar, o: an.ozellik, p: an.olasilik })); } catch (e) { }
@@ -103,6 +116,10 @@ function parcaDuzenle(p, yeni) {
     temizle(gov);
     var img = yeni ? h('img', { class: 'buyuk-resim', src: geciciUrl, alt: '' }) : resimEl(p.id, true, 'buyuk-resim', parcaAd(p));
     gov.appendChild(img);
+    var arkaBtn = h('button', { class: 'btn ikincil kucuk', on: { click: arkaPlaniSil } }, ikon('isilti', 'k'), t('arkaSil'));
+    var araclar = h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, (yeni ? yeniResim.kesik : p.kesik) ? null : arkaBtn,
+      p ? h('button', { class: 'btn ikincil kucuk', on: { click: function () { s.kapat(); setTimeout(function () { nelerGiyilir(p); }, 300); } } }, ikon('kalp', 'k'), t('nelerGiyilir')) : null);
+    if (araclar.childNodes.length) gov.appendChild(araclar);
     if (yeni) {
       var msg;
       if (an.guven >= 0.5 && an.turlar[0]) msg = t(an.yz ? 'tanidimYz' : 'tanidim', turAd(an.turlar[0]));
@@ -126,6 +143,7 @@ function parcaDuzenle(p, yeni) {
     turB.appendChild(grp);
     var turl = h('div', { class: 'sarili' });
     TURLER.filter(function (x) { return x.g === acikGrup; }).forEach(function (x) { turl.appendChild(turCip(x.id)); });
+    turl.appendChild(h('button', { class: 'cip', on: { click: function () { ozelTurEkle(acikGrup, function (id) { tas.tur = id; ciz2(); }); } } }, ikon('arti', 'k'), t('yeniTur')));
     turB.appendChild(turl);
     gov.appendChild(turB);
     /* renk */
@@ -148,11 +166,27 @@ function parcaDuzenle(p, yeni) {
     gov.appendChild(tarzB);
     var ayarlar = h('div', { class: 'ayar-grup', style: { 'margin-top': '18px' } });
     ayarlar.appendChild(anahtarSatir(t('desenli'), t('desenliAlt'), !!tas.desen, function (v) { tas.desen = v ? 1 : 0; }));
+    ayarlar.appendChild(anahtarSatir(t('dinlen'), t('dinlenAlt'), !!tas.dinlen, function (v) { tas.dinlen = v ? 1 : 0; }));
     if (tas.tur && (TUR[tas.tur].g === 'dis' || TUR[tas.tur].g === 'ayk')) ayarlar.appendChild(anahtarSatir(t('suyaDayanikli'), t('suyaDayanikliAlt'), !!tas.su, function (v) { tas.su = v ? 1 : 0; }));
     gov.appendChild(ayarlar);
     var ad = h('input', { class: 'metin', maxlength: '40', placeholder: t('adYer'), 'aria-label': t('adEtiket'), on: { input: function (e) { tas.ad = kirp(e.target.value, 40); } } });
     ad.value = tas.ad;
     gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('adEtiket') }), ad));
+    /* mevsim */
+    var mv = h('div', { class: 'sarili' });
+    MEVSIMLER.forEach(function (m) {
+      mv.appendChild(h('button', { class: 'cip', 'aria-pressed': tas.mevsim.indexOf(m[0]) >= 0 ? 'true' : 'false', text: A.dil === 'en' ? m[2] : m[1],
+        on: { click: function () { tas.mevsim = tas.mevsim.indexOf(m[0]) >= 0 ? tas.mevsim.replace(m[0], '') : tas.mevsim + m[0]; ciz2(); } } }));
+    });
+    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('mevsimEtk') }), mv));
+    var marka = h('input', { class: 'metin', maxlength: '30', placeholder: t('markaYer'), 'aria-label': t('marka'), on: { input: function (e) { tas.marka = kirp(e.target.value, 30); } } });
+    marka.value = tas.marka;
+    var fiyat = h('input', { class: 'metin', type: 'number', inputmode: 'decimal', min: '0', max: '1000000', step: '0.01', placeholder: '0', 'aria-label': t('fiyat'), on: { input: function (e) { tas.fiyat = String(e.target.value).slice(0, 10); } } });
+    fiyat.value = tas.fiyat;
+    var kumas = h('input', { class: 'metin', maxlength: '30', placeholder: t('kumasYer'), 'aria-label': t('kumas'), on: { input: function (e) { tas.kumas = kirp(e.target.value, 30); } } });
+    kumas.value = tas.kumas;
+    gov.appendChild(h('div', { class: 'bolum ikili' }, h('label', null, h('span', { class: 'etk', text: t('marka') }), marka), h('label', null, h('span', { class: 'etk', text: t('fiyat') + ' (₺)' }), fiyat)));
+    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('kumas') }), kumas));
     if (p) gov.appendChild(h('button', { class: 'btn ikincil tehlike tam', style: { 'margin-top': '20px' }, on: { click: sil } }, ikon('cop', 'k'), t('parcaSil')));
     kaydetBtn.disabled = !tas.tur;
     temizle(kaydetBtn);
@@ -164,6 +198,27 @@ function parcaDuzenle(p, yeni) {
       on: { click: function () { tas.tur = id; acikGrup = TUR[id].g; if (!tarzElle) tas.tarz = TUR[id].s || ''; tas.su = TUR[id].su ? 1 : (p ? tas.su : 0); ciz2(); } }
     });
   }
+  var silmede = false;
+  function arkaPlaniSil() {
+    if (silmede || !ozIzin('arka')) return;
+    silmede = true;
+    tost(t('arkaSiliniyor'));
+    var kaynak = yeni ? Promise.resolve(yeniResim.buyuk) : Depo.resimAl(p.id).then(function (r) { return r && r.buyuk; });
+    kaynak.then(function (b) { if (!b) throw new Error('resim'); return arkaPlanSil(b); }).then(function (r) {
+      ozKullan('arka');
+      if (yeni) {
+        yeniResim = { buyuk: r.buyuk, kucuk: r.kucuk, kesik: 1 };
+        if (geciciUrl) URL.revokeObjectURL(geciciUrl);
+        geciciUrl = URL.createObjectURL(r.buyuk);
+        if (r.analiz && !r.analiz.sekilYok && r.analiz.guven > (an.yz ? 2 : an.guven)) { r.analiz.yz = false; an.turlar = r.analiz.turlar; an.guven = r.analiz.guven; an.grup = r.analiz.grup; }
+        silmede = false; ciz2(); tost(t('arkaSilindi'));
+        return;
+      }
+      return Depo.resimYaz(p.id, { buyuk: r.buyuk, kucuk: r.kucuk }).then(function () {
+        p.kesik = 1; return Depo.parcaYaz(p);
+      }).then(function () { urlBirak(p.id); silmede = false; ciz2(); ciz(); tost(t('arkaSilindi')); });
+    }).catch(function (e) { silmede = false; hataYakala(e); tost(e && e.message === 'model' ? t('arkaModel') : t('arkaOlmadi')); });
+  }
   var kaydediliyor = false;
   function kaydet() {
     if (!tas.tur || !TUR[tas.tur] || kaydediliyor) return;
@@ -171,7 +226,10 @@ function parcaDuzenle(p, yeni) {
     var kayit = p || { id: yeniId(), eklendi: Date.now(), giy: 0, son: 0 };
     kayit.tur = tas.tur; kayit.renk = RENK[tas.renk] ? tas.renk : 'siyah'; kayit.renk2 = RENK[tas.renk2] ? tas.renk2 : '';
     kayit.desen = tas.desen ? 1 : 0; kayit.tarz = tarzTemizle(tas.tarz); kayit.su = tas.su ? 1 : 0; kayit.ad = kirp(tas.ad, 40);
-    var is = yeni ? Depo.resimYaz(kayit.id, { buyuk: yeni.sonuc.buyuk, kucuk: yeni.sonuc.kucuk }).then(function () { return Depo.parcaYaz(kayit); }) : Depo.parcaYaz(kayit);
+    kayit.marka = kirp(tas.marka, 30); kayit.kumas = kirp(tas.kumas, 30); kayit.mevsim = mevsimTemizle(tas.mevsim); kayit.dinlen = tas.dinlen ? 1 : 0;
+    var f = parseFloat(String(tas.fiyat).replace(',', '.')); kayit.fiyat = isFinite(f) && f > 0 ? Math.round(sinirla(f, 0, 1e6) * 100) / 100 : 0;
+    if (yeni && yeniResim.kesik) kayit.kesik = 1;
+    var is = yeni ? Depo.resimYaz(kayit.id, { buyuk: yeniResim.buyuk, kucuk: yeniResim.kucuk }).then(function () { return Depo.parcaYaz(kayit); }) : Depo.parcaYaz(kayit);
     is.then(function () {
       if (!p) S.parcalar.push(kayit);
       S.sonuc = null;
@@ -197,6 +255,7 @@ function parcaDuzenle(p, yeni) {
   });
   ciz2();
 }
+function mevsimTemizle(s) { return MEVSIMLER.map(function (m) { return m[0]; }).filter(function (x) { return String(s || '').indexOf(x) >= 0; }).join(''); }
 function tarzTemizle(s) { return TARZLAR.filter(function (x) { return String(s || '').indexOf(x) >= 0; }).join(''); }
 function renkSecici(secili, sec, ikinci) {
   var kutu = h('div', { class: 'sarili' });
@@ -284,4 +343,39 @@ function ornekleriSil() {
   Promise.all(ornekler.map(function (p) { urlBirak(p.id); return Depo.parcaSil(p.id); })).then(function () {
     S.parcalar = S.parcalar.filter(function (p) { return !p.ornek; }); S.sonuc = null; tost(t('ornekSilindi')); ciz();
   }).catch(hataYakala);
+}
+
+/* ---------- Kendi türünü ekle ---------- */
+function ozelTurEkle(grup, bitti) {
+  var ad = h('input', { class: 'metin', maxlength: '24', placeholder: t('yeniTurYer'), 'data-odak': '1' });
+  var ekle = h('button', { class: 'btn ana', text: t('ekle'), on: { click: kaydet } });
+  var s = sayfaAc({ baslik: t('yeniTurBaslik', grupAd(grup)), icerik: h('div', null, h('p', { class: 'alt-yazi', text: t('yeniTurMetin') }), h('div', { class: 'bolum' }, ad)),
+    altBar: [h('button', { class: 'btn ikincil', text: t('vazgec'), on: { click: function () { s.kapat(); } } }), ekle] });
+  function kaydet() {
+    var a = kirp(ad.value, 24); if (!a) { ad.focus(); return; }
+    if (A.ozelTur.length >= 40) { tost(t('turSiniri')); return; }
+    var id = 'oz' + yeniId().slice(0, 10);
+    A.ozelTur.push({ id: id, g: grup, ad: a }); ayarKaydet(); ozelTurKaydet(A.ozelTur);
+    s.kapat(); tost(t('turEklendi')); if (bitti) bitti(id);
+  }
+}
+function kategoriSayfasi() {
+  var gov = h('div');
+  function ciz4() {
+    temizle(gov);
+    gov.appendChild(h('p', { class: 'alt-yazi', text: t('kategoriMetin') }));
+    if (!A.ozelTur.length) { gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '14px' }, text: t('kategoriBos') })); return; }
+    var g = h('div', { class: 'ayar-grup', style: { 'margin-top': '14px' } });
+    A.ozelTur.forEach(function (o) {
+      var kullanan = S.parcalar.filter(function (p) { return p.tur === o.id; }).length;
+      g.appendChild(h('div', { class: 'satir' }, h('span', { class: 'sol' }, h('div', null, o.ad, h('small', { text: grupAd(o.g) + ', ' + t('parcaSayisi', kullanan) }))),
+        h('button', { class: 'ikon-btn', 'aria-label': t('sil'), on: { click: function () {
+          if (kullanan) { tost(t('turKullaniliyor')); return; }
+          A.ozelTur = A.ozelTur.filter(function (x) { return x.id !== o.id; }); ayarKaydet(); ozelTurKaydet(A.ozelTur); ciz4();
+        } } }, ikon('cop', 'k'))));
+    });
+    gov.appendChild(g);
+  }
+  sayfaAc({ baslik: t('kategorilerim'), icerik: gov });
+  ciz4();
 }

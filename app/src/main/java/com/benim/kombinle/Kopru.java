@@ -10,6 +10,11 @@ import com.google.mlkit.vision.label.ImageLabel;
 import com.google.mlkit.vision.label.ImageLabeler;
 import com.google.mlkit.vision.label.ImageLabeling;
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation;
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter;
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions;
+
+import java.io.ByteArrayOutputStream;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,6 +32,7 @@ public final class Kopru {
     private final AnaEkran ekran;
     private final Odeme odeme;
     private ImageLabeler etiketleyici;
+    private SubjectSegmenter ayirici;
     volatile boolean guvenli = false;
 
     Kopru(AnaEkran ekran) {
@@ -126,6 +132,58 @@ public final class Kopru {
         }).start();
     }
 
+    /* ---------------- arka plan silme (ML Kit konu ayırma) ---------------- */
+
+    @JavascriptInterface
+    public void arkaSil(final String req, final String b64) {
+        if (!guvenli || !istekGecerli(req)) return;
+        if (b64 == null || b64.isEmpty() || b64.length() > 8 * 1024 * 1024) {
+            gonder(req, false, "hata", "boyut");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                byte[] veri = Base64.decode(b64, Base64.DEFAULT);
+                BitmapFactory.Options o = new BitmapFactory.Options();
+                o.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (o.outWidth <= 0 || o.outHeight <= 0 || o.outWidth > 4096 || o.outHeight > 4096) {
+                    gonder(req, false, "hata", "olcu");
+                    return;
+                }
+                o.inJustDecodeBounds = false;
+                Bitmap bmp = BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (bmp == null) {
+                    gonder(req, false, "hata", "coz");
+                    return;
+                }
+                synchronized (this) {
+                    if (ayirici == null) {
+                        ayirici = SubjectSegmentation.getClient(new SubjectSegmenterOptions.Builder().enableForegroundBitmap().build());
+                    }
+                }
+                ayirici.process(InputImage.fromBitmap(bmp, 0))
+                        .addOnSuccessListener(sonuc -> new Thread(() -> {
+                            try {
+                                Bitmap on = sonuc.getForegroundBitmap();
+                                if (on == null) {
+                                    gonder(req, false, "hata", "bos");
+                                    return;
+                                }
+                                ByteArrayOutputStream cikti = new ByteArrayOutputStream();
+                                on.compress(Bitmap.CompressFormat.PNG, 100, cikti);
+                                gonder(req, true, "png", Base64.encodeToString(cikti.toByteArray(), Base64.NO_WRAP));
+                            } catch (Throwable t) {
+                                gonder(req, false, "hata", "png");
+                            }
+                        }).start())
+                        .addOnFailureListener(e -> gonder(req, false, "hata", "model"));
+            } catch (Throwable t) {
+                gonder(req, false, "hata", "coz");
+            }
+        }).start();
+    }
+
     /* ---------------- dosya kaydetme ---------------- */
 
     @JavascriptInterface
@@ -200,6 +258,7 @@ public final class Kopru {
         odeme.kapat();
         try {
             if (etiketleyici != null) etiketleyici.close();
+            if (ayirici != null) ayirici.close();
         } catch (Throwable ignored) {
         }
     }

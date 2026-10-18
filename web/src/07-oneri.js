@@ -45,7 +45,7 @@ var TUR_SOZ = [
   [['blazer'], ['blazer']], [['ceket', 'jacket'], ['ceket', 'blazer']], [['gömlek', 'gomlek', 'shirt'], ['gomlek']], [['kazak', 'sweater', 'jumper'], ['kazak']],
   [['tunik', 'tunic'], ['tunik']], [['tayt', 'leggings'], ['tayt']], [['eşofman', 'esofman', 'joggers', 'sweatpants'], ['esofman']], [['tulum', 'jumpsuit'], ['tulum']],
   [['ferace', 'abaya'], ['ferace']], [['trençkot', 'trenckot', 'pardösü', 'pardosu', 'trench'], ['tren']], [['mont', 'parka', 'puffer'], ['mont']],
-  [['kaban', 'coat'], ['kaban']], [['hırka', 'hirka', 'cardigan'], ['hirka']], [['babet', 'loafer', 'flats'], ['babet']], [['eşarp', 'esarp', 'şal', 'headscarf', 'shawl'], ['esarp']],
+  [['kaban', 'coat'], ['kaban']], [['hırka', 'hirka', 'cardigan'], ['hirka']], [['babet', 'flats'], ['babet']], [['loafer', 'makosen', 'loafers'], ['loafer']], [['küpe', 'kupe', 'earrings'], ['kupe']], [['kolye', 'necklace'], ['kolye']], [['eşarp', 'esarp', 'şal', 'headscarf', 'shawl'], ['esarp']],
   [['atkı', 'atki', 'scarf'], ['atki']], [['bere', 'şapka', 'sapka', 'hat', 'beanie'], ['bere']], [['çanta', 'canta', 'bag', 'handbag'], ['canta']],
   [['bluz', 'blouse'], ['bluz']], [['tişört', 'tisort', 'tshirt'], ['tisort']], [['sweatshirt', 'sweat', 'hoodie'], ['sweat']], [['yelek', 'vest'], ['yelek']],
   [['yağmurluk', 'yagmurluk', 'raincoat'], ['yagmurluk']]
@@ -132,7 +132,7 @@ function parcaPuan(p, c) {
   else tz = -3;
   s += tur.g === 'aks' ? tz / 2 : tz;
   s += (o.tercih[p.tur] || 0) + (o.kac[p.tur] || 0);
-  if (c.rahat) { if (p.tur === 'topuklu') s -= 5; if (p.tur === 'spor' || p.tur === 'babet') s += 1.5; }
+  if (c.rahat) { if (p.tur === 'topuklu') s -= 5; if (p.tur === 'spor' || p.tur === 'babet' || p.tur === 'loafer') s += 1.5; }
   var rk = RENK[p.renk] || RENK.siyah;
   if (o.kirli && ACIK_RENKLER[p.renk]) s -= (tur.g === 'ayk' || tur.g === 'alt') ? 4 : 2.5;
   if (o.koyu) { if (KOYU_SADE[p.renk]) s += 2; else if (!rk.notr) s -= 3.5; if (p.desen) s -= 2; }
@@ -160,6 +160,8 @@ function parcaPuan(p, c) {
     if (tur.k === 2 && (tur.g === 'ust' || tur.g === 'alt' || tur.g === 'tek')) s += 1.5;
     if (p.tur === 'tunik' || p.tur === 'ferace') s += 1.5;
   }
+  if (p.mevsim && p.mevsim.indexOf(c.mevsim || buMevsim()) < 0) s -= 4;
+  if (c.bonus && c.bonus[p.id]) s += c.bonus[p.id];
   var gf = gunFarki(p.son);
   if (gf < 1.5) s -= 4; else if (gf < 3.5) s -= 2; else if (gf < 7) s -= 0.7;
   return s;
@@ -192,6 +194,16 @@ function kombinOner(parcalar, c) {
   var katlar = sirala(grup('dis', function (p, tr) { return tr.kat; }), 4);
   var disler = sirala(grup('dis', function (p, tr) { return !tr.kat; }), 4);
   var ayklar = sirala(grup('ayk'), 5);
+  var z = c.zorunlu, zKat = false, zDis = false;
+  if (z && TUR[z.tur]) {
+    var zg = TUR[z.tur].g;
+    if (zg === 'ust') { usttler = [z]; tekler = []; }
+    else if (zg === 'alt') { altlar = [z]; tekler = []; }
+    else if (zg === 'tek') { tekler = [z]; usttler = []; }
+    else if (zg === 'dis' && TUR[z.tur].kat) { katlar = [z]; zKat = true; }
+    else if (zg === 'dis') { disler = [z]; zDis = true; }
+    else if (zg === 'ayk') ayklar = [z];
+  }
   var his = c.h.kisisel, T = hedefIsi(his);
   var disVar = grup('dis', function (p, tr) { return !tr.kat; }).length > 0;
   var suGecirmezVar = grup('dis', function (p) { return p.su; }).length > 0;
@@ -211,7 +223,7 @@ function kombinOner(parcalar, c) {
   bazlar.sort(function (a, b) { return b.puan - a.puan; });
   bazlar = bazlar.slice(0, 40);
   var adaylar = [];
-  var katSec = [null].concat(katlar), disSec = [null].concat(disler), aykSec = ayklar.length ? ayklar : [null];
+  var katSec = zKat ? katlar : [null].concat(katlar), disSec = zDis ? disler : [null].concat(disler), aykSec = ayklar.length ? ayklar : [null];
   bazlar.forEach(function (b) {
     katSec.forEach(function (kt) {
       disSec.forEach(function (ds) {
@@ -277,10 +289,13 @@ function kombinTamamla(k, parcalar, c, puanli) {
   if (his <= 5 || c.h.kar || c.turTercih.indexOf('bere') >= 0) ekleA(aksSec('bere'));
   if (his <= 4) ekleA(aksSec('eldiven'));
   if (c.h.gunes > 0.5 && his >= 18 && !c.h.elle) ekleA(aksSec('gozluk'));
-  if (c.oid === 'davet' || c.oid === 'randevu' || c.turTercih.indexOf('taki') >= 0) ekleA(aksSec('taki'));
+  if (c.oid === 'davet' || c.oid === 'randevu' || c.turTercih.indexOf('taki') >= 0) { ekleA(aksSec('kupe')); ekleA(aksSec('kolye')); ekleA(aksSec('taki')); }
+  if (c.turTercih.indexOf('kupe') >= 0) ekleA(aksSec('kupe'));
+  if (c.turTercih.indexOf('kolye') >= 0) ekleA(aksSec('kolye'));
   if (c.turTercih.indexOf('kemer') >= 0) ekleA(aksSec('kemer'));
   var kisa = k.baz.some(function (p) { return p.tur === 'etek' || p.tur === 'elbise'; });
   if (kisa && his < 16) ekleA(aksSec('kulotlu'));
+  if (c.zorunlu && TUR[c.zorunlu.tur] && TUR[c.zorunlu.tur].g === 'aks' && aks.indexOf(c.zorunlu) < 0) aks.unshift(c.zorunlu);
   var tek = k.baz.length === 1 ? k.baz[0] : null;
   return {
     ust: tek ? null : k.baz[0], alt: tek ? null : k.baz[1], tek: tek, kat: k.kat, dis: k.dis, ayk: k.ayk, aks: aks,
@@ -317,4 +332,47 @@ function nedenYaz(k, aks, parcalar, c) {
   });
   if (c.tesettur && !aks.some(function (p) { return p.tur === 'esarp'; }) && !parcalar.some(function (p) { return p.tur === 'esarp'; })) n.push({ i: 'bilgi', m: t('nEsarpYok') });
   return n.slice(0, 7);
+}
+
+/* Önerilerde kullanılabilecek parçalar: iç giyim (külotlu çorap hariç) ve dinlenmedekiler çıkar */
+function oneriParcalari() {
+  return S.parcalar.filter(function (p) { var tr = TUR[p.tur]; return tr && !p.dinlen && (tr.g !== 'ic' || p.tur === 'kulotlu'); });
+}
+function bagSkoru(k, c) {
+  var giysi = [k.ust, k.alt, k.tek, k.kat, k.dis].filter(Boolean);
+  if (!giysi.length) return -1e9;
+  var s = giysi.concat(k.ayk ? [k.ayk] : []).reduce(function (t2, p) { return t2 + parcaPuan(p, c); }, 0);
+  var W = giysi.reduce(function (t2, p) { return t2 + (TUR[p.tur].w || 0); }, 0), T = hedefIsi(c.h.kisisel), fark = W - T;
+  if (Math.abs(fark) > 0.4) s += fark < 0 ? (fark + 0.4) * 3.2 : -(fark - 0.4) * 2;
+  return s + renkUyum(giysi, c);
+}
+/* Kayıtlı kombinden motorun anlayacağı yapı */
+function kayittanKombin(k) {
+  var harita = {}; S.parcalar.forEach(function (p) { harita[p.id] = p; });
+  var y = { aks: [] };
+  (k.p || []).map(function (id) { return harita[id]; }).filter(Boolean).forEach(function (p) {
+    var tr = TUR[p.tur]; if (!tr) return; var g = tr.g;
+    if (g === 'ust' && !y.ust) y.ust = p; else if (g === 'alt' && !y.alt) y.alt = p; else if (g === 'tek' && !y.tek) y.tek = p;
+    else if (g === 'dis' && tr.kat && !y.kat) y.kat = p; else if (g === 'dis' && !y.dis) y.dis = p; else if (g === 'ayk' && !y.ayk) y.ayk = p;
+    else y.aks.push(p);
+  });
+  return y;
+}
+/* "Sadece kendi kombinlerimden öner": kayıtlı kombinler havaya ve ortama göre sıralanır */
+function kendiKombinlerdenOner(c) {
+  var aday = gecmisAl().filter(function (k) { return k.kendi || k.fav; });
+  var gorulen = {};
+  var l = [];
+  aday.forEach(function (k) {
+    var anahtar = k.p.slice().sort().join('+'); if (gorulen[anahtar]) return; gorulen[anahtar] = 1;
+    var y = kayittanKombin(k);
+    if (!(y.tek || (y.ust && y.alt))) return;
+    if ([y.ust, y.alt, y.tek, y.kat, y.dis, y.ayk].some(function (p) { return p && p.dinlen; })) return;
+    y.puan = bagSkoru(y, c);
+    y.nedenler = nedenYaz({ baz: y.tek ? [y.tek] : [y.ust, y.alt], kat: y.kat, dis: y.dis, ayk: y.ayk }, y.aks, S.parcalar, c);
+    y.nedenler.unshift({ i: 'kalp', m: t('nKendi', k.ad || k.m || ortamAd(k.o)) });
+    l.push(y);
+  });
+  l.sort(function (a, b) { return b.puan - a.puan; });
+  return l.slice(0, 3);
 }

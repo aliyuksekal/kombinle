@@ -39,7 +39,8 @@ var TURLER = [
   { id: 'mont', g: 'dis', tr: 'Mont', en: 'Puffer / parka', s: 'gp', w: 4, k: 2, su: 1 },
   { id: 'kaban', g: 'dis', tr: 'Kaban', en: 'Wool coat', s: 'gsr', w: 4.5, k: 2 },
   { id: 'spor', g: 'ayk', tr: 'Spor ayakkabı', en: 'Sneakers', s: 'pg' },
-  { id: 'babet', g: 'ayk', tr: 'Babet / loafer', en: 'Flats / loafers', s: 'gsr' },
+  { id: 'babet', g: 'ayk', tr: 'Babet', en: 'Ballet flats', s: 'gs' },
+  { id: 'loafer', g: 'ayk', tr: 'Loafer / makosen', en: 'Loafers', s: 'gsr' },
   { id: 'topuklu', g: 'ayk', tr: 'Topuklu', en: 'Heels', s: 'sr' },
   { id: 'bot', g: 'ayk', tr: 'Bot / çizme', en: 'Boots', s: 'gs', su: 1 },
   { id: 'sandalet', g: 'ayk', tr: 'Sandalet', en: 'Sandals', s: 'gs', ac: 1 },
@@ -51,7 +52,11 @@ var TURLER = [
   { id: 'eldiven', g: 'aks', tr: 'Eldiven', en: 'Gloves', s: 'gs' },
   { id: 'gozluk', g: 'aks', tr: 'Güneş gözlüğü', en: 'Sunglasses', s: 'gs' },
   { id: 'kemer', g: 'aks', tr: 'Kemer', en: 'Belt', s: 'gsr' },
-  { id: 'taki', g: 'aks', tr: 'Takı', en: 'Jewelry', s: 'gsr' },
+  { id: 'kupe', g: 'aks', tr: 'Küpe', en: 'Earrings', s: 'gsr' },
+  { id: 'kolye', g: 'aks', tr: 'Kolye', en: 'Necklace', s: 'gsr' },
+  { id: 'bileklik', g: 'aks', tr: 'Bileklik / yüzük', en: 'Bracelet / ring', s: 'gsr' },
+  { id: 'saat', g: 'aks', tr: 'Saat', en: 'Watch', s: 'gsrp' },
+  { id: 'taki', g: 'aks', tr: 'Diğer takı', en: 'Other jewelry', s: 'gsr' },
   { id: 'kulot', g: 'ic', tr: 'Külot', en: 'Briefs' },
   { id: 'sutyen', g: 'ic', tr: 'Sütyen', en: 'Bra' },
   { id: 'corap', g: 'ic', tr: 'Çorap', en: 'Socks' },
@@ -150,5 +155,25 @@ var ORTAMLAR = {
     tercih: { kot: 1, tisort: 0.5, spor: 1, babet: 0.5, hirka: 0.5 },
     kac: { terlik: -6 } }
 };
+Object.keys(ORTAMLAR).forEach(function (k) {
+  var o = ORTAMLAR[k];
+  if (o.tercih.babet !== undefined) o.tercih.loafer = o.tercih.babet;
+  if (o.kac.babet !== undefined) o.kac.loafer = o.kac.babet;
+});
 Object.setPrototypeOf(ORTAMLAR, null);
+/* Mevsimler: i ilkbahar, y yaz, s sonbahar, k kış */
+var MEVSIMLER = [['i', 'İlkbahar', 'Spring'], ['y', 'Yaz', 'Summer'], ['s', 'Sonbahar', 'Autumn'], ['k', 'Kış', 'Winter']];
+function buMevsim(d) { var a = (d || new Date()).getMonth(); return a >= 2 && a <= 4 ? 'i' : a >= 5 && a <= 7 ? 'y' : a >= 8 && a <= 10 ? 's' : 'k'; }
+/* Kullanıcının kendi eklediği türler (gruplarının varsayılanlarını alır) */
+var GRUP_VARSAYILAN = { ust: { s: 'gs', w: 1.5, k: 1 }, alt: { s: 'gs', w: 1, k: 1 }, tek: { s: 'gs', w: 1.5, k: 1 }, dis: { s: 'gs', w: 2.5, k: 2 }, ayk: { s: 'gs' }, aks: { s: 'gsr' }, ic: {} };
+function ozelTurKaydet(liste) {
+  TURLER = TURLER.filter(function (x) { return !x.ozel; });
+  Object.keys(TUR).forEach(function (k) { if (TUR[k].ozel) delete TUR[k]; });
+  (liste || []).forEach(function (o) {
+    if (!o || !/^oz[a-z0-9]{4,20}$/.test(o.id) || !GRUP_VARSAYILAN[o.g] || typeof o.ad !== 'string') return;
+    var v = GRUP_VARSAYILAN[o.g], ad = kirp(o.ad, 24); if (!ad) return;
+    var x = { id: o.id, g: o.g, tr: ad, en: ad, s: v.s, w: v.w, k: v.k, ozel: 1 };
+    TURLER.push(x); TUR[x.id] = x;
+  });
+}
 var ORTAM_SIRA = ['is', 'gunluk', 'davet', 'randevu', 'spor', 'pratik', 'doga', 'seyahat', 'okul', 'plaj', 'ev', 'taziye'];

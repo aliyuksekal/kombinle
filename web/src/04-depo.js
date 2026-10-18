@@ -18,8 +18,11 @@ function ayarYukle() {
     tesettur: x.tesettur === true,
     isi: x.isi === -1 || x.isi === 1 ? x.isi : 0,
     karsilandi: x.karsilandi === true,
-    pro: x.pro === true
+    pro: x.pro === true,
+    kendiMod: x.kendiMod === true,
+    ozelTur: Array.isArray(x.ozelTur) ? x.ozelTur.filter(function (o) { return o && /^oz[a-z0-9]{4,20}$/.test(o.id) && typeof o.ad === 'string' && typeof o.g === 'string'; }).slice(0, 40).map(function (o) { return { id: o.id, g: o.g, ad: kirp(o.ad, 24) }; }) : []
   };
+  ozelTurKaydet(A.ozelTur);
   if (!A.dil) A.dil = /^tr/i.test(navigator.language || 'tr') ? 'tr' : 'en';
 }
 function ayarKaydet() { LS.yaz('ayar', A); }
@@ -41,11 +44,12 @@ function dbAc() {
   return new Promise(function (coz) {
     var bitti = false, son = function (d) { if (!bitti) { bitti = true; coz(d); } };
     try {
-      var r = indexedDB.open('kombinle', 1);
+      var r = indexedDB.open('kombinle', 2);
       r.onupgradeneeded = function () {
         var d = r.result;
         if (!d.objectStoreNames.contains('parca')) d.createObjectStore('parca', { keyPath: 'id' });
         if (!d.objectStoreNames.contains('resim')) d.createObjectStore('resim');
+        if (!d.objectStoreNames.contains('ilham')) d.createObjectStore('ilham', { keyPath: 'id' });
       };
       r.onsuccess = function () { DB = r.result; DB.onversionchange = function () { try { DB.close(); } catch (e) { } }; son(true); };
       r.onerror = function () { son(false); };
@@ -94,12 +98,25 @@ var Depo = {
     if (!DB) return Promise.resolve(BELLEK.resim[id] || null);
     return dbIs('resim', 'readonly', function (st) { return { __istek: st.get(id) }; });
   },
+  ilhamlar: function () {
+    if (!DB) return Promise.resolve(Object.keys(BELLEK.ilham || {}).map(function (k) { return BELLEK.ilham[k]; }));
+    return dbIs('ilham', 'readonly', function (st) { return { __istek: st.getAll() }; });
+  },
+  ilhamYaz: function (x) {
+    if (!DB) { BELLEK.ilham = BELLEK.ilham || {}; BELLEK.ilham[x.id] = x; return Promise.resolve(); }
+    return dbIs('ilham', 'readwrite', function (st) { st.put(x); });
+  },
+  ilhamSil: function (id) {
+    if (!DB) { if (BELLEK.ilham) delete BELLEK.ilham[id]; return Promise.resolve(); }
+    return dbIs('ilham', 'readwrite', function (st) { st.delete(id); });
+  },
   hepsiniSil: function () {
-    BELLEK = { parca: {}, resim: {} };
+    BELLEK = { parca: {}, resim: {}, ilham: {} };
     if (!DB) return Promise.resolve();
     return new Promise(function (coz, red) {
       var tx = DB.transaction(['parca', 'resim'], 'readwrite');
       tx.objectStore('parca').clear(); tx.objectStore('resim').clear();
+      try { DB.transaction('ilham', 'readwrite').objectStore('ilham').clear(); } catch (e) { }
       tx.oncomplete = function () { coz(); }; tx.onerror = function () { red(tx.error); };
     });
   }
@@ -108,6 +125,6 @@ var Depo = {
 /* Kombin geçmişi (en fazla 300) */
 function gecmisAl() {
   var g = LS.al('gecmis', []);
-  return Array.isArray(g) ? g.filter(function (x) { return x && idGecerli(x.id) && Array.isArray(x.p); }).slice(0, 300) : [];
+  return Array.isArray(g) ? g.filter(function (x) { return x && idGecerli(x.id) && Array.isArray(x.p); }).slice(0, 500) : [];
 }
-function gecmisYaz(g) { LS.yaz('gecmis', g.slice(0, 300)); }
+function gecmisYaz(g) { LS.yaz('gecmis', g.slice(0, 500)); }

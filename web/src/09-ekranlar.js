@@ -23,7 +23,7 @@ function ustBar() {
   return h('header', { class: 'ust' },
     h('div', { class: 'marka', 'aria-label': 'Kombinle' }, ikon('marka'), 'Kombinle'),
     h('div', { style: { display: 'flex', 'align-items': 'center', gap: '4px' } },
-      S.pro ? h('span', { class: 'pro-rozet' }, ikon('tac', 'k'), 'Pro')
+      S.pro ? h('span', { class: 'pro-rozet', text: t('rozet') })
         : h('button', { class: 'ikon-btn', 'aria-label': t('proBaslik'), style: { color: 'var(--altin)' }, on: { click: proSayfasi } }, ikon('tac')),
       h('button', { class: 'ikon-btn', 'aria-label': t('ayarlar'), on: { click: ayarlarSayfasi } }, ikon('ayar'))));
 }
@@ -84,6 +84,7 @@ function bugunEkrani() {
   bol.appendChild(havaKarti());
   var giyim = S.parcalar.filter(function (p) { var g = TUR[p.tur] && TUR[p.tur].g; return g === 'ust' || g === 'alt' || g === 'tek'; });
   if (!S.parcalar.length) { bol.appendChild(bosDolapKarti()); return bol; }
+  var pk = planKarti(); if (pk) bol.appendChild(pk);
   bol.appendChild(istekKarti());
   if (!giyim.length || (!S.parcalar.some(function (p) { return TUR[p.tur].g === 'tek'; }) &&
     !(S.parcalar.some(function (p) { return TUR[p.tur].g === 'ust'; }) && S.parcalar.some(function (p) { return TUR[p.tur].g === 'alt'; })))) {
@@ -92,6 +93,7 @@ function bugunEkrani() {
   var sonucAlani = h('div', { id: 'sonucAlani' });
   bol.appendChild(sonucAlani);
   if (S.sonuc) sonucCiz(sonucAlani);
+  bol.appendChild(araclarBolumu());
   return bol;
 }
 function bosDolapKarti() {
@@ -230,7 +232,11 @@ function kombinIste() {
   var btn = $('#onerBtn'); if (btn) { btn.disabled = true; temizle(btn); btn.appendChild(h('span', { class: 'yukleniyor' })); btn.appendChild(document.createTextNode(t('hazirlaniyor'))); }
   setTimeout(function () {
     var sonuc;
-    try { sonuc = kombinOner(S.parcalar.filter(function (p) { return TUR[p.tur] && TUR[p.tur].g !== 'ic' || p.tur === 'kulotlu'; }), c); }
+    try {
+      sonuc = null;
+      if (A.kendiMod) { var kl = kendiKombinlerdenOner(c); if (kl.length) sonuc = { kombinler: kl }; else tost(t('kendiYok')); }
+      if (!sonuc) sonuc = kombinOner(oneriParcalari(), c);
+    }
     catch (e) { hataYakala(e); sonuc = { kombinler: [] }; }
     S.mesgul = false;
     if (!sonuc.kombinler.length) {
@@ -287,21 +293,21 @@ function masaCiz(k) {
   var parca = function (p, uzun, aci) {
     if (!p) return null;
     return h('button', {
-      class: 'parca' + (uzun ? ' uzun' : ''), style: { '--aci': aci + 'deg' }, 'aria-label': parcaAd(p),
+      class: 'parca' + (uzun ? ' uzun' : '') + (p.kesik ? ' kesik' : ''), style: { '--aci': aci + 'deg' }, 'aria-label': parcaAd(p),
       on: { click: function () { parcaDuzenle(p, null); } }
     }, resimEl(p.id, false, null, parcaAd(p)), h('span', { class: 'ad', text: turAd(p.tur) }));
   };
   var sol = h('div', { class: 'sutun' }), sag = h('div', { class: 'sutun' });
-  if (k.tek) sol.appendChild(parca(k.tek, true, -2));
-  else { sol.appendChild(parca(k.ust, false, -2.5)); sol.appendChild(parca(k.alt, true, 1.5)); }
+  if (k.tek) ekle(sol, parca(k.tek, true, -2));
+  else { ekle(sol, parca(k.ust, false, -2.5)); ekle(sol, parca(k.alt, true, 1.5)); }
   var ustSag = k.dis || k.kat;
-  if (ustSag) sag.appendChild(parca(ustSag, false, 3));
-  if (k.dis && k.kat) sag.appendChild(parca(k.kat, false, -2));
-  if (k.ayk) sag.appendChild(parca(k.ayk, false, -3.5));
+  if (ustSag) ekle(sag, parca(ustSag, false, 3));
+  if (k.dis && k.kat) ekle(sag, parca(k.kat, false, -2));
+  if (k.ayk) ekle(sag, parca(k.ayk, false, -3.5));
   var kucukler = (k.aks || []).slice(0, 6);
   if (kucukler.length) {
     var kp = h('div', { class: 'kucuk-parcalar' });
-    kucukler.forEach(function (a, i) { kp.appendChild(parca(a, false, i % 2 ? 3 : -3)); });
+    kucukler.forEach(function (a, i) { ekle(kp, parca(a, false, i % 2 ? 3 : -3)); });
     sag.appendChild(kp);
   }
   if (!sag.childNodes.length) sag.appendChild(h('div'));

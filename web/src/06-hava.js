@@ -29,16 +29,17 @@ function konumBul() {
 
 /* ---------- Hava durumu (MET Norway, CC BY 4.0) ---------- */
 var havaIstekte = null;
-function havaGetir(lat, lon, zorla) {
+function havaGetir(lat, lon, zorla, anahtar) {
+  anahtar = anahtar || 'hava';
   lat = Math.round(lat * 100) / 100; lon = Math.round(lon * 100) / 100;
-  var on = LS.al('hava', null), simdi = Date.now();
+  var on = LS.al(anahtar, null), simdi = Date.now();
   var ayniYer = on && sayiMi(on.lat) && Math.abs(on.lat - lat) < 0.06 && Math.abs(on.lon - lon) < 0.06 && Array.isArray(on.saatler);
   if (ayniYer && !zorla && simdi - on.alindi < 45 * 60000 && simdi - on.alindi >= 0) return Promise.resolve(on);
   if (ayniYer && zorla && simdi - on.alindi < 60000) return Promise.resolve(on); /* çok sık yenilemeyi engelle */
-  if (havaIstekte) return havaIstekte;
+  if (havaIstekte && anahtar === 'hava') return havaIstekte;
   var kontrol = window.AbortController ? new AbortController() : null;
   var z = setTimeout(function () { if (kontrol) kontrol.abort(); }, 12000);
-  havaIstekte = fetch(HAVA_ADRES + '?lat=' + lat.toFixed(2) + '&lon=' + lon.toFixed(2), {
+  var istek = fetch(HAVA_ADRES + '?lat=' + lat.toFixed(2) + '&lon=' + lon.toFixed(2), {
     method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-cache', redirect: 'error', signal: kontrol ? kontrol.signal : undefined
   }).then(function (r) {
     if (!r.ok) throw new Error('http ' + r.status);
@@ -49,19 +50,20 @@ function havaGetir(lat, lon, zorla) {
     if (metin.length > 3e6) throw new Error('buyuk');
     var veri = havaAyikla(JSON.parse(metin));
     var kayit = { lat: lat, lon: lon, alindi: Date.now(), saatler: veri };
-    LS.yaz('hava', kayit);
+    LS.yaz(anahtar, kayit);
     return kayit;
   }).catch(function (e) {
     if (ayniYer && simdi - on.alindi < 30 * 3600000) { on.eski = true; return on; }
     throw e;
-  }).then(function (v) { clearTimeout(z); havaIstekte = null; return v; }, function (e) { clearTimeout(z); havaIstekte = null; throw e; });
-  return havaIstekte;
+  }).then(function (v) { clearTimeout(z); if (anahtar === 'hava') havaIstekte = null; return v; }, function (e) { clearTimeout(z); if (anahtar === 'hava') havaIstekte = null; throw e; });
+  if (anahtar === 'hava') havaIstekte = istek;
+  return istek;
 }
 function havaAyikla(j) {
   var ts = j && j.properties && j.properties.timeseries;
   if (!Array.isArray(ts) || !ts.length) throw new Error('bicim');
   var cikti = [];
-  for (var i = 0; i < ts.length && cikti.length < 96; i++) {
+  for (var i = 0; i < ts.length && cikti.length < 160; i++) {
     var s = ts[i]; if (!s || typeof s.time !== 'string') continue;
     var t = Date.parse(s.time); if (!isFinite(t)) continue;
     var d = s.data && s.data.instant && s.data.instant.details; if (!d || !sayiMi(d.air_temperature)) continue;

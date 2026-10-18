@@ -26,7 +26,7 @@ with sync_playwright() as pw:
     p.locator('.sayfa.acik .alt-bar .btn.ana').click(); p.wait_for_timeout(600)
     p.click('#mikBtn'); p.wait_for_timeout(400)
     ok(p.input_value('#istek') == 'akşam düğüne gideceğim' and 'dinle:tr-TR' in p.evaluate('window.__cagri'), 'mikrofon: telefonun ses tanıması metni yazdı')
-    p.click('header .ikon-btn[aria-label="Kombinle Pro"]'); p.wait_for_timeout(500)
+    p.click('header .ikon-btn[aria-label="Kraliçe Modu 👑"]'); p.wait_for_timeout(500)
     ok('₺149,99' in p.inner_text('.sayfa.acik'), 'Pro fiyatı köprüden')
     p.click('.sayfa.acik .btn.altin'); p.wait_for_timeout(600)
     ok(p.locator('header .pro-rozet').count() == 1, 'köprü üzerinden Pro satın alındı')

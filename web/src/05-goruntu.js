@@ -224,7 +224,7 @@ function analizEt(px, W, H, alfaVar) {
   var oneri = function (a) {
     var koyuMavi = /kot|lacivert|mavi|acikmavi/.test(sonuc.renk);
     switch (a) {
-      case 'ayk': return cift ? ['spor', 'babet', 'bot'] : f.ar >= 0.95 ? ['bot', 'spor', 'topuklu'] : (f.dolu < 0.42 ? ['sandalet', 'terlik', 'topuklu'] : ['spor', 'babet', 'topuklu']);
+      case 'ayk': return cift ? ['spor', 'loafer', 'bot'] : f.ar >= 0.95 ? ['bot', 'spor', 'topuklu'] : (f.dolu < 0.42 ? ['sandalet', 'terlik', 'topuklu'] : ['spor', 'babet', 'topuklu']);
       case 'canta': return ['canta'];
       case 'pantolon': return koyuMavi ? ['kot', 'kumas', 'tayt'] : (f.darBacak && /siyah|antrasit/.test(sonuc.renk) ? ['tayt', 'kumas', 'kot'] : ['kumas', 'kot', 'esofman']);
       case 'sort': return ['sort'];
@@ -402,4 +402,119 @@ function yapayZekaBirlestir(an, etiketler) {
   if (!en.tur && an.grup === en.grup && an.turlar[0] && TUR[an.turlar[0]].g === en.grup) an.guven = Math.max(an.guven, Math.min(0.75, (an.guven + en.c) / 2 + 0.2));
   an.yz = true;
   an.sekilYok = false;
+}
+
+/* ---------- Arka plan silme ----------
+   Telefonda Google ML Kit (konu ayırma) kullanılır; yoksa ya da model hazır değilse
+   uygulamanın kendi zemin analiziyle kesilir. Sonuç saydam WebP olarak saklanır. */
+function arkaPlanSil(blob) {
+  var yerel = YEREL && typeof YEREL.arkaSil === 'function'
+    ? blobDataUrl(blob).then(function (d) { return yerelCagir('arkaSil', [d.slice(d.indexOf(',') + 1)], 60000); }).then(function (d) {
+      if (!d.ok || typeof d.png !== 'string' || d.png.length > 20e6) return null;
+      return resimCoz(dataUrlBlob2('data:image/png;base64,' + d.png, 'image/png')).then(function (bmp) {
+        var c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+        c.getContext('2d').drawImage(bmp.kaynak || bmp, 0, 0);
+        try { if (bmp.close) bmp.close(); if (bmp.kapat) bmp.kapat(); } catch (e) { }
+        return c;
+      });
+    }).catch(function () { return null; })
+    : Promise.resolve(null);
+  return yerel.then(function (c) {
+    if (c) return c;
+    return resimCoz(blob).then(function (bmp) {
+      var r = zeminAyir(bmp);
+      try { if (bmp.close) bmp.close(); if (bmp.kapat) bmp.kapat(); } catch (e) { }
+      if (!r) throw new Error('kesilemedi');
+      return r;
+    });
+  }).then(function (c) {
+    var kirpik = saydamKirp(c);
+    if (!kirpik) throw new Error('kesilemedi');
+    var buyuk = olcekle(kirpik, 1024), kucuk = olcekle(kirpik, 420);
+    var px = olcekle(kirpik, 128), x = px.getContext('2d', { willReadFrequently: true });
+    var analiz = null;
+    try { analiz = analizEt(x.getImageData(0, 0, px.width, px.height).data, px.width, px.height, true); } catch (e) { }
+    return Promise.all([saydamBlob(buyuk, 0.9), saydamBlob(kucuk, 0.85)]).then(function (b) { return { buyuk: b[0], kucuk: b[1], analiz: analiz }; });
+  });
+}
+function dataUrlBlob2(d, tur) {
+  var i = d.indexOf(','), b = atob(d.slice(i + 1)), a = new Uint8Array(b.length);
+  for (var k = 0; k < b.length; k++) a[k] = b.charCodeAt(k);
+  return new Blob([a], { type: tur });
+}
+function olcekle(c, enFazla) {
+  var o = Math.min(1, enFazla / Math.max(c.width, c.height));
+  var d = document.createElement('canvas'); d.width = Math.max(1, Math.round(c.width * o)); d.height = Math.max(1, Math.round(c.height * o));
+  var x = d.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, d.width, d.height);
+  return d;
+}
+function saydamBlob(c, kalite) {
+  return new Promise(function (coz) {
+    try { c.toBlob(function (b) { if (b && b.size) coz(b); else c.toBlob(function (p) { coz(p); }, 'image/png'); }, 'image/webp', kalite); }
+    catch (e) { coz(dataUrlBlob2(c.toDataURL('image/png'), 'image/png')); }
+  });
+}
+/* Saydam olmayan alanın çevresini %6 boşlukla kırp */
+function saydamKirp(c) {
+  var x = c.getContext('2d', { willReadFrequently: true }), W = c.width, H = c.height;
+  var d = x.getImageData(0, 0, W, H).data, x0 = W, y0 = H, x1 = -1, y1 = -1, dolu = 0;
+  for (var y = 0; y < H; y += 2) for (var i = 0; i < W; i += 2) {
+    if (d[(y * W + i) * 4 + 3] > 40) { dolu++; if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  if (x1 < 0 || dolu < (W * H / 4) * 0.02) return null;
+  var p = Math.round(Math.max(x1 - x0, y1 - y0) * 0.06);
+  x0 = Math.max(0, x0 - p); y0 = Math.max(0, y0 - p); x1 = Math.min(W - 1, x1 + p); y1 = Math.min(H - 1, y1 + p);
+  var o = document.createElement('canvas'); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+  o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+  return o;
+}
+/* Uygulamanın kendi zemin ayırma yöntemi (sade zeminli fotoğraflar için) */
+function zeminAyir(bmp) {
+  var buyuk = tuvaleCiz(bmp, 1024);
+  var W = buyuk.width, H = buyuk.height, o = Math.min(1, 200 / Math.max(W, H));
+  var kw = Math.max(8, Math.round(W * o)), kh = Math.max(8, Math.round(H * o));
+  var k = document.createElement('canvas'); k.width = kw; k.height = kh;
+  var kx = k.getContext('2d', { willReadFrequently: true }); kx.drawImage(buyuk, 0, 0, kw, kh);
+  var px = kx.getImageData(0, 0, kw, kh).data, N = kw * kh;
+  var L = new Float32Array(N), A2 = new Float32Array(N), B2 = new Float32Array(N), i;
+  for (i = 0; i < N; i++) { var lab = rgbLab(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]); L[i] = lab[0]; A2[i] = lab[1]; B2[i] = lab[2]; }
+  var b = Math.max(2, Math.round(Math.min(kw, kh) * 0.04)), kenar = [];
+  for (var y = 0; y < kh; y++) for (var x = 0; x < kw; x++) if (x < b || y < b || x >= kw - b || y >= kh - b) kenar.push(y * kw + x);
+  var med = function (arr) { var s = kenar.map(function (q) { return arr[q]; }).sort(function (p, q) { return p - q; }); return s[s.length >> 1]; };
+  var bg = [med(L), med(A2), med(B2)];
+  var dl = kenar.map(function (q) { return labMesafe([L[q], A2[q], B2[q]], bg); }).sort(function (p, q) { return p - q; });
+  if (dl[Math.floor(dl.length * 0.9)] > 26) return null; /* zemin karışık: güvenle kesilemez */
+  var esik = Math.max(12, dl[dl.length >> 1] * 3 + 6), m = new Uint8Array(N);
+  for (i = 0; i < N; i++) {
+    var dL = L[i] - bg[0], dA = A2[i] - bg[1], dB = B2[i] - bg[2], kr = Math.sqrt(dA * dA + dB * dB);
+    m[i] = Math.sqrt(dL * dL + kr * kr) > esik && !(dL < 0 && dL > -24 && kr < 7) ? 1 : 0;
+  }
+  m = morfoloji(morfoloji(m, kw, kh, 1), kw, kh, 0);
+  m = morfoloji(morfoloji(m, kw, kh, 0), kw, kh, 1);
+  var bl = bilesenler(m, kw, kh); if (!bl.length) return null;
+  bl.sort(function (p, q) { return q.alan - p.alan; });
+  var tut = {}; tut[bl[0].no] = 1; if (bl[1] && bl[1].alan > bl[0].alan * 0.4) tut[bl[1].no] = 1;
+  var etk = bl[0].etk, son = new Uint8Array(N), alan = 0;
+  for (i = 0; i < N; i++) if (tut[etk[i]]) { son[i] = 1; alan++; }
+  if (alan < N * 0.04 || alan > N * 0.93) return null;
+  /* delikleri doldur (kenardan ulaşılamayan küçük boşluklar) */
+  var dis = new Uint8Array(N), yig = [];
+  for (x = 0; x < kw; x++) { yig.push(x, (kh - 1) * kw + x); } for (y = 0; y < kh; y++) { yig.push(y * kw, y * kw + kw - 1); }
+  yig = yig.filter(function (q) { return !son[q]; }); yig.forEach(function (q) { dis[q] = 1; });
+  while (yig.length) {
+    var q = yig.pop(), qx = q % kw, qy = (q / kw) | 0;
+    [qx > 0 ? q - 1 : -1, qx < kw - 1 ? q + 1 : -1, qy > 0 ? q - kw : -1, qy < kh - 1 ? q + kw : -1].forEach(function (r) { if (r >= 0 && !son[r] && !dis[r]) { dis[r] = 1; yig.push(r); } });
+  }
+  var maske = document.createElement('canvas'); maske.width = kw; maske.height = kh;
+  var mx = maske.getContext('2d'), md = mx.createImageData(kw, kh);
+  for (i = 0; i < N; i++) { var a = son[i] || !dis[i] ? 255 : 0; md.data[i * 4 + 3] = a; }
+  mx.putImageData(md, 0, 0);
+  var sonuc = document.createElement('canvas'); sonuc.width = W; sonuc.height = H;
+  var sx = sonuc.getContext('2d');
+  sx.drawImage(buyuk, 0, 0);
+  sx.globalCompositeOperation = 'destination-in';
+  sx.imageSmoothingEnabled = true; sx.imageSmoothingQuality = 'high';
+  try { sx.filter = 'blur(' + Math.max(1, Math.round(W / kw * 0.6)) + 'px)'; } catch (e) { }
+  sx.drawImage(maske, 0, 0, W, H);
+  return sonuc;
 }
