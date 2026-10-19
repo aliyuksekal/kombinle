@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="zemin">#F7F5FD</color>
-    <color name="zemin_koyu">#0E0A24</color>
+    <color name="zemin">#F8FAFC</color>
+    <color name="zemin_koyu">#131313</color>
     <color name="ikon_zemin">#8A3A62</color>
 </resources>

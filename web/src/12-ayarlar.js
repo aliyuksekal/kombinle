@@ -36,7 +36,7 @@ function ayarlarSayfasi() {
     /* pro ve destek */
     gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('proBaslik') }),
       h('div', { class: 'ayar-grup' },
-        satir('tac', S.pro ? t('proAcik') : t('proyaGec'), S.pro ? t('proAcikAlt') : t('proAlt', Math.max(0, UCRETSIZ_HAK - hakKullanilan())), function () { if (!S.pro) proSayfasi(); }, S.pro ? ikon('tik', 'k') : null),
+        satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? t('proAcikAlt') : t('jetonVar', jeton()), function () { if (!S.pro) magazaSayfasi(); }, S.pro ? ikon('tik', 'k') : null),
         satir('yenile', t('geriYukle'), null, satinAlimlariGeriYukle),
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
@@ -86,38 +86,6 @@ function proDurumuDenetle() {
     try { sahip = !!odeme().owned(PRO_URUN); } catch (e) { }
     if (sahip !== S.pro || A.pro !== sahip) { S.pro = sahip; A.pro = sahip; ayarKaydet(); ciz(); }
   });
-}
-function proSayfasi(oz) {
-  if (S.pro) return;
-  if (typeof oz !== 'string') oz = '';
-  var fiyat = h('p', { class: 'pro-fiyat', text: S.fiyat || '' });
-  var kalan = Math.max(0, UCRETSIZ_HAK - hakKullanilan());
-  var icerik = h('div', null,
-    h('p', { class: 'alt-yazi', text: oz ? t('ozBitti', t('oz_' + oz)) : kalan > 0 ? t('proLead', kalan) : t('proLeadBitti') }),
-    fiyat,
-    [['isilti', 'proO1'], ['tac', 'proO5'], ['takvim', 'proO6'], ['yenile', 'proO3'], ['kalkan', 'proO4']].map(function (x) {
-      return h('div', { class: 'pro-ozellik' }, ikon(x[0]), h('span', { text: t(x[1]) }));
-    }));
-  var al = h('button', { class: 'btn altin', on: { click: satinAl } }, ikon('tac', 'k'), t('proyaGec'));
-  var s = sayfaAc({ baslik: t('proBaslik'), icerik: icerik, altBar: [h('button', { class: 'btn ikincil', on: { click: function () { s.kapat(); } }, text: t('simdiDegil') }), al] });
-  if (odemeHazir() && !S.fiyat) {
-    zamanAsimi(odeme().products([PRO_URUN]), 10000).then(function (l) {
-      var u = (l || []).filter(function (x) { return x && x.id === PRO_URUN; })[0];
-      if (u && typeof u.price === 'string') { S.fiyat = kirp(u.price, 24); fiyat.textContent = S.fiyat; }
-    }).catch(function () { });
-  }
-  var alimda = false;
-  function satinAl() {
-    if (alimda) return;
-    if (!odemeHazir()) { tost(t('odemeYok')); return; }
-    alimda = true; al.disabled = true;
-    zamanAsimi(odeme().buy(PRO_URUN), 180000).then(function (ok) {
-      var sahip = false; try { sahip = !!odeme().owned(PRO_URUN); } catch (e) { }
-      if (ok && sahip) { S.pro = true; A.pro = true; ayarKaydet(); s.kapat(); tost(t('proTesekkur')); ciz(); }
-      else tost(t('odemeTamamlanmadi'));
-    }).catch(function () { tost(t('odemeTamamlanmadi')); })
-      .then(function () { alimda = false; al.disabled = false; });
-  }
 }
 function satinAlimlariGeriYukle() {
   if (!odemeHazir()) { tost(t('odemeYok')); return; }
@@ -294,13 +262,3 @@ function gizlilikSayfasi() {
 }
 
 /* ---------- Kraliçe Modu sınırları: her yeni özellik 3 kez ücretsiz ---------- */
-var OZELLIK_HAK = 3;
-var OZELLIKLER = ['arka', 'takvim', 'kur', 'eslestir', 'bavul', 'istatistik', 'ilham'];
-function ozKalan(oz) { return S.pro ? Infinity : Math.max(0, OZELLIK_HAK - (sinirla(LS.al('hak_' + oz, 0), 0, 1e6) | 0)); }
-function ozIzin(oz) { if (ozKalan(oz) > 0) return true; proSayfasi(oz); return false; }
-function ozKullan(oz) { if (!S.pro && OZELLIKLER.indexOf(oz) >= 0) LS.yaz('hak_' + oz, (sinirla(LS.al('hak_' + oz, 0), 0, 1e6) | 0) + 1); }
-function ozHakYazi(oz) {
-  if (S.pro) return null;
-  var k = ozKalan(oz);
-  return h('p', { class: 'hak', text: k > 0 ? t('ozKaldi', k) : t('ozKalmadi') });
-}

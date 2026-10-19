@@ -7,10 +7,11 @@ window.KombinleNative = {
   konum: req => yanit(req, {ok: true, lat: 40.9903, lon: 29.0291, ad: 'Kadıköy, İstanbul'}), konumAyarlari: () => {},
   surum: () => '1.0.7', cubuk: k => window.__cagri.push('cubuk:' + k),
   dinle: (req, dil) => { window.__cagri.push('dinle:' + dil); yanit(req, {ok: true, metin: 'akşam düğüne gideceğim'}); },
-  etiketle: (req, b64) => { window.__cagri.push('etiketle:' + b64.length); yanit(req, {ok: true, etiketler: [{t: 'Jeans', c: 0.91}, {t: 'Pattern', c: 0.3}]}); },
+  etiketle: (req, b64) => { const ilk = !window.__cagri.some(c => c.startsWith('etiketle')); window.__cagri.push('etiketle:' + b64.length); yanit(req, {ok: true, etiketler: ilk ? [{t: 'Jeans', c: 0.91}, {t: 'Pattern', c: 0.3}] : []}); },
   dosyaKaydet: (req, ad, tur, b64) => { window.__cagri.push('kaydet:' + ad); yanit(req, {ok: true, yazildi: true}); },
-  odemeSorgula: (req, ids) => yanit(req, {ok: true, products: [{id: 'kombinle_pro', price: '₺149,99'}]}),
-  odemeAl: (req, id) => { window.__sahip.push(id); yanit(req, {ok: true, owned: window.__sahip}); },
+  odemeSorgula: (req, ids) => yanit(req, {ok: true, products: [{id: 'kombinle_pro', price: '₺149,99'}, {id: 'jeton_100', price: '₺41,99'}]}),
+  odemeAl: (req, id) => { window.__cagri.push('al:' + id); if (id.indexOf('jeton_') === 0) { window.__defter = (window.__defter || 0) + parseInt(id.slice(6)); } else window.__sahip.push(id); yanit(req, {ok: true, owned: window.__sahip}); },
+  jetonTeslim: () => { const n = window.__defter || 0; window.__defter = 0; return n; },
   odemeSahip: () => JSON.stringify(window.__sahip),
   odemeGeriYukle: req => yanit(req, {ok: true, owned: window.__sahip})
 };"""
@@ -26,10 +27,23 @@ with sync_playwright() as pw:
     p.locator('.sayfa.acik .alt-bar .btn.ana').click(); p.wait_for_timeout(600)
     p.click('#mikBtn'); p.wait_for_timeout(400)
     ok(p.input_value('#istek') == 'akşam düğüne gideceğim' and 'dinle:tr-TR' in p.evaluate('window.__cagri'), 'mikrofon: telefonun ses tanıması metni yazdı')
-    p.click('header .ikon-btn[aria-label="Kraliçe Modu 👑"]'); p.wait_for_timeout(500)
-    ok('₺149,99' in p.inner_text('.sayfa.acik'), 'Pro fiyatı köprüden')
-    p.click('.sayfa.acik .btn.altin'); p.wait_for_timeout(600)
-    ok(p.locator('header .pro-rozet').count() == 1, 'köprü üzerinden Pro satın alındı')
+    j0 = p.evaluate("+localStorage.getItem('kb_jeton')")
+    p.set_input_files('#dosyaSec', ['foto/tisort_kirmizi.jpg', 'foto/ayakkabi_siyah.jpg'])
+    for i in range(2):
+        p.wait_for_selector('.sayfa.acik .buyuk-resim', timeout=15000); p.wait_for_timeout(300)
+        p.locator('.sayfa.acik .alt-bar .btn.ana').click(); p.wait_for_timeout(700)
+    p.click('nav.alt-menu button:nth-child(1)'); p.wait_for_timeout(400)
+    p.click('#onerBtn'); p.wait_for_selector('#sonucAlani .g-sonuc', timeout=8000)
+    ok(p.evaluate("+localStorage.getItem('kb_jeton')") == j0 - 1, 'kombin 1 jeton düşürdü')
+    p.click('#jetonHap'); p.wait_for_timeout(500)
+    ok('₺149,99' in p.inner_text('.sayfa.acik') and '₺41,99' in p.inner_text('.sayfa.acik'), 'PRO ve jeton fiyatları köprüden')
+    once = p.evaluate("+localStorage.getItem('kb_jeton')")
+    p.locator('.sayfa.acik .g-fiyat').first.click(); p.wait_for_timeout(1500)
+    ok(p.evaluate("+localStorage.getItem('kb_jeton')") == once + 100, '100 jeton telefon defterinden teslim alındı')
+    ok(p.evaluate("window.__defter") == 0, 'defter sıfırlandı (çift teslim yok)')
+    p.click('#jetonHap'); p.wait_for_timeout(500)
+    p.click('.sayfa.acik .g-pro-btn'); p.wait_for_timeout(800)
+    ok('PRO' in p.inner_text('#jetonHap'), 'köprü üzerinden PRO satın alındı')
     p.click('header .ikon-btn[aria-label="Ayarlar"]'); p.wait_for_timeout(400)
     ok('1.0.7' in p.inner_text('.sayfa.acik'), 'sürüm telefondan')
     p.click('.sayfa.acik button.satir:has-text("Yedek al")'); p.wait_for_timeout(1500)

@@ -15,21 +15,6 @@ function baglamKur(oid, hv, ek) {
 function varsayilanHava() { return aktifHava() || elleHava({ sicaklik: 'ilik', yagmur: false }); }
 
 /* ---------- Bugün ekranındaki araç kutuları ---------- */
-function araclarBolumu() {
-  var kutu = function (ik, baslik, alt, oz, fn) {
-    var k = ozKalan(oz);
-    return h('button', { class: 'arac', on: { click: fn } }, ikon(ik), h('b', { text: baslik }),
-      h('small', { class: !S.pro && k <= 0 ? 'kilit' : null, text: S.pro ? alt : k > 0 ? alt + ' ' + t('ucretsizKalan', k) : t('kraliceyle') }));
-  };
-  return h('section', null,
-    h('h2', { class: 'baslik', style: { 'margin-top': '26px' }, text: t('araclar') }),
-    h('div', { class: 'araclar' },
-      kutu('aks', t('bavulBaslik'), t('bavulAlt'), 'bavul', bavulAc),
-      kutu('aski', t('kurBaslik'), t('kurAlt'), 'kur', function () { kombinKur(null); }),
-      kutu('galeri', t('ilhamBaslik'), t('ilhamAlt'), 'ilham', ilhamPanosu),
-      kutu('termometre', t('istatistikBaslik'), t('istatistikAlt'), 'istatistik', istatistikSayfasi)));
-}
-
 /* ---------- Takvimde planlanan kombin (Bugün ekranı) ---------- */
 function planKarti() {
   var gun = new Date(); if (S.gun === 1) gun = new Date(Date.now() + 86400000);

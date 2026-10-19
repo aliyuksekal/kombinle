@@ -34,7 +34,13 @@ final class Odeme implements PurchasesUpdatedListener {
 
     static final String PRO = "kombinle_pro";
     private static final Set<String> KALICI = new HashSet<>(Collections.singletonList(PRO));
-    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek"));
+    private static final Map<String, Integer> JETON = new HashMap<>();
+    static {
+        JETON.put("jeton_100", 100);
+        JETON.put("jeton_300", 300);
+        JETON.put("jeton_500", 500);
+    }
+    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_100", "jeton_300", "jeton_500"));
 
     private final Activity act;
     private final Kopru kopru;
@@ -113,13 +119,37 @@ final class Odeme implements PurchasesUpdatedListener {
         boolean tuketilen = false;
         for (String id : p.getProducts()) if (TUKETILEN.contains(id)) tuketilen = true;
         if (tuketilen) {
-            istemci.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.getPurchaseToken()).build(), (r, t) -> { });
+            final List<String> urunler = new ArrayList<>(p.getProducts());
+            final int adet = p.getQuantity() > 0 ? p.getQuantity() : 1;
+            istemci.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(p.getPurchaseToken()).build(), (r, t) -> {
+                // Jeton yalnızca Google Play tüketimi onayladıktan sonra deftere yazılır;
+                // sayfa jetonTeslim() ile alır. Böylece uygulama kapalıyken biten alım da kaybolmaz.
+                if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) return;
+                int toplam = 0;
+                for (String id : urunler) {
+                    Integer n = JETON.get(id);
+                    if (n != null) toplam += n * adet;
+                }
+                if (toplam > 0) jetonYaz(toplam);
+            });
             return false;
         }
         if (!p.isAcknowledged()) {
             istemci.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.getPurchaseToken()).build(), r -> { });
         }
         return true;
+    }
+
+    private synchronized void jetonYaz(int n) {
+        long v = Math.min(10_000_000L, (long) ayar.getInt("jetonBekleyen", 0) + n);
+        ayar.edit().putInt("jetonBekleyen", (int) v).commit();
+    }
+
+    /** Teslim edilmemiş jetonları verir ve sıfırlar (her jeton bir kez teslim edilir). */
+    synchronized int jetonTeslim() {
+        int v = ayar.getInt("jetonBekleyen", 0);
+        if (v > 0) ayar.edit().putInt("jetonBekleyen", 0).commit();
+        return Math.max(0, v);
     }
 
     private void kaydet() {

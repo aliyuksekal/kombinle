@@ -4,22 +4,22 @@ from ortak import *
 def kombin(p, metin, ortam=None):
     p.fill('#istek', metin)
     if ortam:
-        p.click('.cipler .cip:has-text("%s")' % ortam)
-    p.click('#onerBtn'); p.wait_for_selector('#sonucAlani .masa', timeout=8000); p.wait_for_timeout(300)
+        p.click('.g-ortam button:has-text("%s"), .g-diger button:has-text("%s")' % (ortam, ortam))
+    p.click('#onerBtn'); p.wait_for_selector('#sonucAlani .g-sonuc', timeout=8000); p.wait_for_timeout(300)
     return okuSonuc(p)
 
 def okuSonuc(p):
-    parca = p.eval_on_selector_all('#sonucAlani .masa .parca', 'e => e.map(x => x.getAttribute("aria-label"))')
-    neden = p.inner_text('#sonucAlani .nedenler')
+    parca = p.eval_on_selector_all('#sonucAlani .g-parcalar .g-parca', 'e => e.map(x => x.getAttribute("aria-label"))')
+    neden = p.text_content('#sonucAlani .nedenler')
     return parca, neden
 
 def hepsi(p):
     """3 alternatifi de topla"""
     sonuclar = []
-    n = p.eval_on_selector_all('#sonucAlani .eylemler .ikon-btn', 'e => e.length')
+    n = p.eval_on_selector_all('#sonucAlani .g-eylem .g-btn-ikon', 'e => e.length')
     for i in range(3):
         sonuclar.append(okuSonuc(p))
-        b = p.locator('#sonucAlani .eylemler .ikon-btn[aria-label="Başka öner"]')
+        b = p.locator('#sonucAlani .g-eylem .g-btn-ikon[aria-label="Başka öner"]')
         if b.count() == 0: break
         b.click(); p.wait_for_timeout(250)
     return sonuclar
@@ -39,7 +39,7 @@ with sync_playwright() as pw:
     ok(bool(iceren(parca, 'Kumaş pantolon', 'Gömlek', 'Bluz', 'Blazer', 'Uzun etek')), 'toplantıda şık parça var')
     ok(bool(iceren(parca, 'Trençkot', 'Mont', 'Kaban', 'Yağmurluk', 'Blazer', 'Hırka')), 'serin havada dış katman var')
     ok('İş için' in neden, 'neden: ortam açıklaması')
-    ok('Ücretsiz 5' in p.inner_text('.hak'), 'örnek dolap hakkı düşürmedi')
+    ok('15 Jeton' in p.inner_text('#jetonHap'), 'örnek dolap jeton düşürmedi')
     o.ekran('20_toplanti', tam=True)
 
     print('— Senaryo: hayvan barınağı')

@@ -6,7 +6,6 @@
    ========================================================= */
 
 var SURUM = '1.0.0';
-var UCRETSIZ_HAK = 5;
 var PRO_URUN = 'kombinle_pro';
 var DESTEK_CAY = 'destek_cay', DESTEK_YEMEK = 'destek_yemek';
 var HAVA_ADRES = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
@@ -56,6 +55,9 @@ function temizle(el) { while (el && el.firstChild) el.removeChild(el.firstChild)
 
 /* ---------- İkonlar (sabit SVG) ---------- */
 var IK = {
+  zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  pusula: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+  ampul: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   marka: '<path d="M12 5.2a1.3 1.3 0 1 1 1.3-1.3"/><path d="M12 5.2v.9L7.3 8.3h9.4L12 6.1"/><path d="M9.6 8.4l.4 1.9c-.6 1-.8 2.1-.7 3.2h5.4c.1-1.1-.1-2.2-.7-3.2l.4-1.9"/><path d="M9.3 13.5h5.4l3.2 7.3c-1.7.7-3.7 1-5.9 1s-4.2-.3-5.9-1z"/>',
   aski: '<path d="M12 7a2 2 0 1 1 2-2"/><path d="M12 7v1.5L3.6 15a1.4 1.4 0 0 0 .9 2.5h15a1.4 1.4 0 0 0 .9-2.5L12 8.5"/>',
   gunes: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',

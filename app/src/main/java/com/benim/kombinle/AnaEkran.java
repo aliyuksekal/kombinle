@@ -86,7 +86,7 @@ public class AnaEkran extends Activity {
         koyuCubuk = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
 
         kok = new FrameLayout(this);
-        kok.setBackgroundColor(koyuCubuk ? 0xFF0E0A24 : 0xFFF7F5FD);
+        kok.setBackgroundColor(koyuCubuk ? 0xFF131313 : 0xFFFFFFFF);
         web = new WebView(this);
         web.setBackgroundColor(Color.TRANSPARENT);
         kok.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -459,8 +459,8 @@ public class AnaEkran extends Activity {
 
     void cubuklariAyarla(boolean koyu) {
         koyuCubuk = koyu;
-        kok.setBackgroundColor(koyu ? 0xFF0E0A24 : 0xFFF7F5FD);
-        getWindow().getDecorView().setBackgroundColor(koyu ? 0xFF0E0A24 : 0xFFF7F5FD);
+        kok.setBackgroundColor(koyu ? 0xFF131313 : 0xFFFFFFFF);
+        getWindow().getDecorView().setBackgroundColor(koyu ? 0xFF131313 : 0xFFFFFFFF);
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         c.setAppearanceLightStatusBars(!koyu);
         c.setAppearanceLightNavigationBars(!koyu);

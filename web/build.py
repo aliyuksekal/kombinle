@@ -34,7 +34,7 @@ def yaz(ad, app_js, boot_js):
     if '</script' in app_js.lower() or '</script' in boot_js.lower():
         sys.exit('script içinde </script> geçiyor')
     csp = ("default-src 'none'; script-src " + ozet(boot_js) + ' ' + ozet(app_js) +
-           "; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src https://api.met.no blob: data:; "
+           "; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; "
            "media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'")
     html = (sablon.replace('{{CSP}}', csp).replace('{{FONTS}}', fonts)
             .replace('{{BOOT}}', boot_js).replace('{{APP}}', app_js))

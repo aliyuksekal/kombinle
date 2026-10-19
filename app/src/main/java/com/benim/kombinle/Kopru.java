@@ -226,6 +226,11 @@ public final class Kopru {
     }
 
     @JavascriptInterface
+    public int jetonTeslim() {
+        return guvenli ? odeme.jetonTeslim() : 0;
+    }
+
+    @JavascriptInterface
     public void odemeGeriYukle(final String req) {
         if (!guvenli || !istekGecerli(req)) return;
         odeme.geriYukle(req);

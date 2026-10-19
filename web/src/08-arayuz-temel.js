@@ -1,6 +1,6 @@
 /* ---------- Uygulama durumu ---------- */
 var S = {
-  sekme: 'bugun', parcalar: [], hava: { durum: 'bos' }, gun: 0, istek: '', ortamSecili: '', sonuc: null, sonucNo: 0,
+  sekme: 'bugun', parcalar: [], hava: { durum: 'bos' }, gun: 0, istek: '', ortamSecili: 'is', tarzMod: 'oto', sonuc: null, sonucNo: 0,
   filtre: 'hepsi', ara: '', mesgul: false, pro: false, kayitli: {}, gecmisFiltre: 'hepsi', elleHava: null, fiyat: ''
 };
 var URL_ONBELLEK = {};
@@ -85,7 +85,7 @@ function resimUrl(id, buyuk) {
   var anahtar = id + (buyuk ? ':b' : ':k');
   if (URL_ONBELLEK[anahtar]) return Promise.resolve(URL_ONBELLEK[anahtar]);
   return Depo.resimAl(id).then(function (r) {
-    if (!r) return '';
+    if (!r) { var p = S.parcalar.filter(function (x) { return x.id === id; })[0]; return p && typeof p.url === 'string' && /^https:\/\//.test(p.url) ? p.url : ''; }
     var b = buyuk ? r.buyuk : r.kucuk;
     if (!(b instanceof Blob)) return '';
     var u = URL.createObjectURL(b);
@@ -97,7 +97,7 @@ function urlBirak(id) {
   [':b', ':k'].forEach(function (s) { if (URL_ONBELLEK[id + s]) { try { URL.revokeObjectURL(URL_ONBELLEK[id + s]); } catch (e) { } delete URL_ONBELLEK[id + s]; } });
 }
 function resimEl(id, buyuk, sinif, alt) {
-  var img = h('img', { class: sinif || null, alt: alt || '', decoding: 'async', loading: 'lazy', draggable: 'false' });
+  var img = h('img', { class: sinif || null, alt: alt || '', decoding: 'async', loading: 'lazy', draggable: 'false', referrerpolicy: 'no-referrer' });
   resimUrl(id, buyuk).then(function (u) { if (u) img.src = u; else img.replaceWith(h('div', { class: 'resimsiz' })); });
   return img;
 }

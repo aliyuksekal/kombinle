@@ -82,7 +82,9 @@ function baslat() {
   $('#dosyaSec').addEventListener('change', function (e) { var f = e.target.files; dosyalarSecildi(f); e.target.value = ''; });
   $('#yedekSec').addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; yedekSecildi(f); e.target.value = ''; });
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible' || !A.karsilandi) return;
+    if (document.visibilityState !== 'visible') return;
+    var jn = jetonTeslimAl(); if (jn > 0) { tost(t('jetonYuklendi', jn)); if (A.karsilandi) ciz(); }
+    if (!A.karsilandi) return;
     if (S.hava.durum === 'konumYok' && S.hava.kapali) havaYukle(true);
     else if (S.hava.kayit && Date.now() - S.hava.kayit.alindi > 60 * 60000) havaYukle(false);
   });
@@ -97,6 +99,7 @@ function baslat() {
   }).catch(function (e) { hataYakala(e); ciz(); });
   if (A.karsilandi) havaYukle(false);
   proDurumuDenetle();
+  setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', baslat); else baslat();

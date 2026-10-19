@@ -10,6 +10,7 @@ function ciz() {
     kok.appendChild(ustBar());
     if (S.sekme === 'dolap') kok.appendChild(dolapEkrani());
     else if (S.sekme === 'kombin') kok.appendChild(kombinlerEkrani());
+    else if (S.sekme === 'kesfet') kok.appendChild(kesfetEkrani());
     else kok.appendChild(bugunEkrani());
   } catch (e) { hataYakala(e); hataEkrani(kok); }
 }
@@ -19,26 +20,6 @@ function hataEkrani(kok) {
     h('h1', { class: 'baslik', text: t('hataBaslik') }), h('p', { class: 'alt-yazi', text: t('hataMetin') }),
     h('button', { class: 'btn ana', style: { 'margin-top': '18px' }, on: { click: function () { location.reload(); } }, text: t('yenidenBaslat') })));
 }
-function ustBar() {
-  var kalan = Math.max(0, UCRETSIZ_HAK - hakKullanilan());
-  return h('header', { class: 'ust' },
-    h('div', { class: 'marka-blok', 'aria-label': 'Kombinle' }, h('img', { class: 'marka-logo', src: LOGO_ROZET, alt: '' }),
-      h('div', null, h('span', { class: 'ad', text: 'Kombinle' }), h('small', { text: t('altBaslik') }))),
-    h('div', { style: { display: 'flex', 'align-items': 'center', gap: '4px' } },
-      S.pro ? h('span', { class: 'hak-hap pro-rozet', text: t('rozet') })
-        : h('button', { class: 'hak-hap ikon-btn', style: { width: 'auto', height: 'auto' }, 'aria-label': t('proBaslik'), on: { click: function () { proSayfasi(); } } }, ikon('isilti', 'k'), t('hakHap', kalan)),
-      h('button', { class: 'ikon-btn', 'aria-label': t('ayarlar'), on: { click: ayarlarSayfasi } }, ikon('ayar'))));
-}
-function altMenuCiz() {
-  var ic = temizle($('#altMenu .ic'));
-  [['bugun', 'isilti', 'sBugun'], ['dolap', 'aski', 'sDolap'], ['kombin', 'kalp', 'sKombin']].forEach(function (x) {
-    ic.appendChild(h('button', {
-      'aria-current': S.sekme === x[0] ? 'page' : null,
-      on: { click: function () { if (S.sekme !== x[0]) { S.sekme = x[0]; ciz(); window.scrollTo(0, 0); } } }
-    }, ikon(x[1]), t(x[2])));
-  });
-}
-
 /* ---------- Karşılama ---------- */
 function karsilamaEkrani() {
   var vitrin = h('img', { class: 'logo-tam', src: LOGO_TAM, alt: 'Kombinle' });
@@ -76,26 +57,6 @@ function cizimIllustrasyon(c, ikonAd, renk) {
 }
 
 /* ---------- Bugün ---------- */
-function bugunEkrani() {
-  var bol = h('section', null);
-  var tarih = new Date(); if (S.gun === 1) tarih = new Date(Date.now() + 86400000);
-  bol.appendChild(h('h1', { class: 'baslik', text: S.gun === 1 ? t('yarinBaslik') : t('bugunBaslik') }));
-  bol.appendChild(h('p', { class: 'alt-yazi', text: tarihYaz(tarih.getTime()) }));
-  bol.appendChild(havaKarti());
-  var giyim = S.parcalar.filter(function (p) { var g = TUR[p.tur] && TUR[p.tur].g; return g === 'ust' || g === 'alt' || g === 'tek'; });
-  if (!S.parcalar.length) { bol.appendChild(bosDolapKarti()); return bol; }
-  var pk = planKarti(); if (pk) bol.appendChild(pk);
-  bol.appendChild(istekKarti());
-  if (!giyim.length || (!S.parcalar.some(function (p) { return TUR[p.tur].g === 'tek'; }) &&
-    !(S.parcalar.some(function (p) { return TUR[p.tur].g === 'ust'; }) && S.parcalar.some(function (p) { return TUR[p.tur].g === 'alt'; })))) {
-    bol.appendChild(h('div', { class: 'kart' }, h('p', { class: 'alt-yazi', text: t('azParca') })));
-  }
-  var sonucAlani = h('div', { id: 'sonucAlani' });
-  bol.appendChild(sonucAlani);
-  if (S.sonuc) sonucCiz(sonucAlani);
-  bol.appendChild(araclarBolumu());
-  return bol;
-}
 function bosDolapKarti() {
   return h('div', { class: 'kart bos' },
     h('div', { class: 'resim' }, ikon('aski')),
@@ -104,60 +65,6 @@ function bosDolapKarti() {
     h('div', { class: 'dugmeler' },
       h('button', { class: 'btn ana', on: { click: ekleMenusu } }, ikon('arti'), t('kiyafetEkle')),
       h('button', { class: 'btn ikincil', on: { click: ornekDolapYukle }, text: t('ornekleDene') })));
-}
-function havaKarti() {
-  var k = h('div', { class: 'kart hava-kart', id: 'havaKarti' });
-  var hv = S.hava;
-  if (hv.durum === 'yukleniyor' || hv.durum === 'bos') {
-    k.appendChild(h('div', { class: 'hava' }, h('div', { class: 'iskelet', style: { width: '96px', height: '58px' } }),
-      h('div', null, h('div', { class: 'iskelet', style: { width: '60%', height: '14px', 'margin-bottom': '8px' } }), h('div', { class: 'iskelet', style: { width: '85%', height: '12px' } }))));
-    return k;
-  }
-  if (hv.durum === 'konumYok') {
-    k.appendChild(h('h2', { class: 'baslik', text: hv.kapali ? t('konumKapaliBaslik') : t('konumBaslik') }));
-    k.appendChild(h('p', { class: 'alt-yazi', text: hv.kapali ? t('konumKapaliMetin') : t('konumMetin') }));
-    k.appendChild(h('div', { class: 'sarili', style: { 'margin-top': '14px' } },
-      hv.kapali && YEREL && YEREL.konumAyarlari ? h('button', { class: 'btn ana kucuk', on: { click: function () { YEREL.konumAyarlari(); } } }, ikon('konum', 'k'), t('konumAc'))
-        : h('button', { class: 'btn ana kucuk', on: { click: function () { A.konum = null; ayarKaydet(); havaYukle(true); } } }, ikon('konum', 'k'), t('konumKullan')),
-      h('button', { class: 'btn ikincil kucuk', on: { click: sehirSec }, text: t('sehirSec') })));
-    k.appendChild(elleHavaSecici());
-    return k;
-  }
-  if (hv.durum === 'hata' && !S.elleHava) {
-    k.appendChild(h('h2', { class: 'baslik', text: t('havaHataBaslik') }));
-    k.appendChild(h('p', { class: 'alt-yazi', text: t('havaHataMetin') }));
-    k.appendChild(h('div', { class: 'sarili', style: { 'margin-top': '12px' } },
-      h('button', { class: 'btn ikincil kucuk', on: { click: function () { havaYukle(true); } } }, ikon('yenile', 'k'), t('tekrarDene'))));
-    k.appendChild(elleHavaSecici());
-    return k;
-  }
-  var o = aktifHava();
-  if (!o) { k.appendChild(elleHavaSecici()); return k; }
-  var notlar = h('div', { class: 'notlar' });
-  if (o.yagmur || o.yagSaat) notlar.appendChild(h('span', { class: 'etiket uyari' }, ikon('semsiye'), t('etYagmur', Math.round(o.yag * 10) / 10)));
-  if (o.kar) notlar.appendChild(h('span', { class: 'etiket uyari' }, ikon('kar'), t('hvKar')));
-  if (o.ruzgarli) notlar.appendChild(h('span', { class: 'etiket' }, ikon('ruzgar'), t('etRuzgar', Math.round(o.ruzgar * 3.6))));
-  if (Math.abs(Math.round(o.his) - Math.round(o.simdi)) >= 2 && !o.elle) notlar.appendChild(h('span', { class: 'etiket' }, ikon('termometre'), t('etHis', Math.round(o.his))));
-  if (A.isi) notlar.appendChild(h('span', { class: 'etiket' }, t(A.isi < 0 ? 'etUsur' : 'etSicaklar')));
-  var yer = S.hava.yer ? (S.hava.yer.ad || t('konumun')) : t('konumun');
-  k.appendChild(h('div', { class: 'hava' },
-    h('div', { class: 'derece' }, ikon(havaIkonu(o.sembol)), (o.elle ? Math.round(o.his) : Math.round(S.gun === 0 ? o.simdi : o.max)) + '°'),
-    h('div', { style: { 'min-width': '0' } },
-      h('button', { class: 'yer', on: { click: sehirSec }, 'aria-label': t('sehirSec') }, ikon('konum', 'k'), h('span', { text: o.elle ? t('elleSecildi') : yer })),
-      h('div', { class: 'durum', text: havaDurumMetni(o) + (o.elle ? '' : ', ' + t('enDusukYuksek', Math.round(o.min), Math.round(o.max))) })),
-    notlar.childNodes.length ? notlar : null));
-  var seg = h('div', { class: 'seg', role: 'group', 'aria-label': t('gunSec') });
-  [[0, 'bugun'], [1, 'yarin']].forEach(function (g) {
-    seg.appendChild(h('button', {
-      'aria-pressed': S.gun === g[0] ? 'true' : 'false', disabled: o.elle && g[0] === 1 ? true : null,
-      on: { click: function () { if (S.gun !== g[0]) { S.gun = g[0]; S.sonuc = null; ciz(); } } }, text: t(g[1])
-    }));
-  });
-  var kaynak = o.elle ? h('button', { class: 'kaynak', on: { click: function () { S.elleHava = null; havaYukle(true); } }, text: t('havayiYenile') })
-    : h('span', { class: 'kaynak', text: (o.eski ? t('eskiVeri') + ' ' : '') + t('kaynakMet') });
-  k.appendChild(h('div', { class: 'hava-alt' }, seg, kaynak));
-  if (o.elle) k.appendChild(elleHavaSecici());
-  return k;
 }
 function elleHavaSecici() {
   var sec = S.elleHava || { sicaklik: '', yagmur: false };
@@ -182,45 +89,12 @@ function aktifHava() {
   var p = S.pencere || { bas: 8, son: 21 };
   return gunOzeti(S.hava.kayit, S.gun, p);
 }
-function istekKarti() {
-  var alan = h('textarea', {
-    class: 'istek', id: 'istek', rows: '2', maxlength: '300', placeholder: t('istekYer'), 'aria-label': t('istekEtiket'),
-    on: { input: function (e) { S.istek = kirp(e.target.value, 300); } }
-  });
-  alan.value = S.istek;
-  var mik = h('button', { class: 'mik', id: 'mikBtn', 'aria-label': t('sesleSoyle'), on: { click: function () { sesliDinle(alan, mik); } } }, ikon('mik'));
-  var izgara = h('div', { class: 'ortam-izgara', role: 'group', 'aria-label': t('ortamSec') });
-  var cipler = h('div', { class: 'cipler', role: 'group', 'aria-label': t('ortamSec') });
-  var ortamCip = function (id) {
-    return h('button', {
-      class: 'cip ortam-cip', 'aria-pressed': S.ortamSecili === id ? 'true' : 'false', text: ortamAd(id),
-      on: { click: function (e) { S.ortamSecili = S.ortamSecili === id ? '' : id; $$('.ortam-cip').forEach(function (b) { b.setAttribute('aria-pressed', b === e.currentTarget && S.ortamSecili ? 'true' : 'false'); }); } }
-    });
-  };
-  ['is', 'gunluk', 'davet', 'spor'].forEach(function (id) { izgara.appendChild(ortamCip(id)); });
-  ['randevu', 'pratik', 'doga', 'seyahat', 'okul', 'plaj', 'taziye'].forEach(function (id) { cipler.appendChild(ortamCip(id)); });
-  var tarz = h('select', { 'aria-label': t('tarzMod'), on: { change: function (e) { S.tarzMod = e.target.value; } } });
-  [['', 'tmOto'], ['sik', 'tmSik'], ['rahat', 'tmRahat'], ['minimal', 'tmMinimal'], ['renkli', 'tmRenkli']].forEach(function (x) {
-    var o = h('option', { value: x[0], text: t(x[1]) }); if ((S.tarzMod || '') === x[0]) o.selected = true; tarz.appendChild(o);
-  });
-  var kalan = Math.max(0, UCRETSIZ_HAK - hakKullanilan());
-  var btn = h('button', { class: 'btn ana tam', id: 'onerBtn', style: { 'margin-top': '14px' }, on: { click: kombinIste } }, ikon('isilti'), t('kombinOner'));
-  return h('div', { class: 'kart' },
-    h('h2', { class: 'baslik', text: t('istekBaslik') }),
-    h('div', { class: 'istek-alan' }, alan, mik),
-    izgara, cipler,
-    h('label', { class: 'tarz-sec' }, h('span', { class: 'etk', style: { display: 'block', 'font-size': '13px', color: 'var(--soluk)', margin: '0 0 6px' }, text: t('tarzMod') }), tarz),
-    btn,
-    S.pro ? null : h('p', { class: 'hak' }, kalan > 0 ? t('hakKaldi', kalan) : t('hakBitti')));
-}
-
 /* ---------- Kombin isteği ---------- */
-function hakKullanilan() { return sinirla(LS.al('hak', 0), 0, 1e6) | 0; }
 function kombinIste() {
   if (S.mesgul) return;
   var gercek = S.parcalar.filter(function (p) { return !p.ornek; });
-  var kalan = UCRETSIZ_HAK - hakKullanilan();
-  if (!S.pro && kalan <= 0 && gercek.length) { proSayfasi(); return; }
+  if (gercek.length && !ozIzin('kombin')) return;
+  if (!S.ortamTik) akilliOrtam();
   var cumle = cumleCoz(S.istek, S.ortamSecili);
   if (cumle.gun >= 0 && cumle.gun !== S.gun && S.hava.durum === 'tamam' && !S.elleHava) S.gun = cumle.gun;
   S.pencere = cumle.pencere;
@@ -260,7 +134,7 @@ function kombinIste() {
       return;
     }
     var ornekMi = sonuc.kombinler[0] && kombinParcalari(sonuc.kombinler[0]).every(function (p) { return p.ornek; });
-    if (!S.pro && !ornekMi) LS.yaz('hak', hakKullanilan() + 1);
+    if (!ornekMi) ozKullan('kombin');
     S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now() };
     S.sonucNo = 0; S.kayitli = {};
     ciz();
@@ -269,43 +143,6 @@ function kombinIste() {
 }
 function kombinParcalari(k) { return [k.dis, k.kat, k.tek, k.ust, k.alt, k.ayk].concat(k.aks || []).filter(Boolean); }
 
-function sonucCiz(alan) {
-  var s = S.sonuc, k = s.liste[S.sonucNo];
-  if (!k) return;
-  var kart = h('div', { class: 'kart masa-kart' });
-  kart.appendChild(h('div', { class: 'masa-ust' },
-    h('div', null, h('h2', { class: 'baslik', text: t('onerimiz') }),
-      h('p', { class: 'alt-yazi', style: { 'font-size': '12.5px' }, text: ortamAd(s.cumle.ortam) + (s.c.tarzMod ? ', ' + t(TARZ_ETK[s.c.tarzMod]) : '') })),
-    h('span', { class: 'uyum', text: t('uyumlu', uyumPuani(k, s.c)) })));
-  kart.appendChild(h('div', { class: 'ipucu' }, h('b', null, ikon('isilti', 'k'), t('stilistIpucu')), h('p', { text: stilistIpucu(k, s.c) })));
-  kart.appendChild(masaCiz(k));
-  var anl = h('div', { class: 'anladim' });
-  anl.appendChild(h('span', { class: 'etiket' }, ikon('isilti'), ortamAd(s.cumle.ortam)));
-  var p = s.cumle.pencere;
-  if (p.bas !== 8 || p.son !== 21) anl.appendChild(h('span', { class: 'etiket' }, ikon('takvim'), (p.bas < 10 ? '0' : '') + p.bas + ':00–' + (p.son >= 24 ? '24' : p.son) + ':00'));
-  s.cumle.renkTercih.slice(0, 2).forEach(function (r) { if (RENK[r]) anl.appendChild(h('span', { class: 'etiket' }, h('i', { style: { width: '10px', height: '10px', 'border-radius': '50%', background: RENK[r].hex, display: 'inline-block' } }), renkAd(r))); });
-  s.cumle.turKac.slice(0, 3).forEach(function (r) { anl.appendChild(h('span', { class: 'etiket' }, ikon('kapat', 'k'), turAd(r))); });
-  if (s.c.tesettur) anl.appendChild(h('span', { class: 'etiket' }, ikon('esarp'), t('tesetturKisa')));
-  kart.appendChild(anl);
-  var ul = h('ul', { class: 'nedenler' });
-  k.nedenler.forEach(function (n) { ul.appendChild(h('li', null, ikon(n.i, 'k'), h('span', { text: n.m }))); });
-  kart.appendChild(ul);
-  var kayit = S.kayitli[S.sonucNo];
-  var giy = h('button', {
-    class: 'btn ana', disabled: kayit && kayit.giyildi ? true : null,
-    on: { click: function () { kombinKaydet(k, true); } }
-  }, ikon('tik'), kayit && kayit.giyildi ? t('kaydedildi') : t('bunuGiy'));
-  var baska = h('button', {
-    class: 'ikon-btn', 'aria-label': t('baskaOner'), title: t('baskaOner'),
-    on: { click: function () { S.sonucNo = (S.sonucNo + 1) % s.liste.length; if (S.sonucNo === 0) tost(t('hepsiniGordun')); ciz(); var a = $('#sonucAlani'); if (a) a.scrollIntoView({ block: 'start' }); } }
-  }, ikon('yenile'));
-  var fav = h('button', {
-    class: 'ikon-btn', 'aria-label': t('favori'), 'aria-pressed': kayit && kayit.fav ? 'true' : 'false',
-    on: { click: function () { kombinKaydet(k, false); } }
-  }, ikon('kalp'));
-  kart.appendChild(h('div', { class: 'eylemler' }, giy, s.liste.length > 1 ? baska : h('span'), fav));
-  alan.appendChild(kart);
-}
 function masaCiz(k) {
   var parca = function (p, uzun, aci) {
     if (!p) return null;

@@ -378,7 +378,7 @@ function kendiKombinlerdenOner(c) {
   return l.slice(0, 3);
 }
 
-var TARZ_ETK = { sik: 'tmSik', rahat: 'tmRahat', minimal: 'tmMinimal', renkli: 'tmRenkli' };
+var TARZ_ETK = { oto: 'tmOto', sik: 'tmSik', rahat: 'tmRahat', minimal: 'tmMinimal', renkli: 'tmRenkli' };
 /* Uyum puanı: renk uyumu, havaya uygunluk ve tarz eşleşmesinden 70–98 arası */
 function uyumPuani(k, c) {
   var giysi = [k.ust, k.alt, k.tek, k.kat, k.dis].filter(Boolean);
