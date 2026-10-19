@@ -26,7 +26,7 @@ function dolapEkrani() {
     bol.appendChild(h('div', { class: 'tahmin' }, ikon('bilgi', 'k'), h('span', { style: { flex: '1' }, text: t('ornekVar') }),
       h('button', { class: 'btn kucuk ikincil', on: { click: ornekleriSil }, text: t('ornekleriKaldir') })));
   }
-  var izgara = h('div', { class: 'izgara' });
+  var izgara = h('div', { class: 'izgara kartlar' });
   izgaraDoldur(izgara);
   bol.appendChild(izgara);
   bol.appendChild(h('button', { class: 'ekle-fab', on: { click: ekleMenusu } }, ikon('arti'), t('ekle')));
@@ -48,10 +48,12 @@ function izgaraDoldur(izgara) {
   });
   if (!liste.length) { izgara.appendChild(h('p', { class: 'alt-yazi', style: { 'grid-column': '1/-1' }, text: t('bulunamadi') })); return; }
   liste.forEach(function (p) {
-    izgara.appendChild(h('button', { class: 'oge' + (p.kesik ? ' kesik' : '') + (p.dinlen ? ' dinlen' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
-      resimEl(p.id, false, null, ''),
+    var mv = p.mevsim ? MEVSIMLER.filter(function (m) { return p.mevsim.indexOf(m[0]) >= 0; }).map(function (m) { return A.dil === 'en' ? m[2] : m[1]; }).join(', ') : t('dortMevsim');
+    izgara.appendChild(h('button', { class: 'oge giysi-kart' + (p.kesik ? ' kesik' : '') + (p.dinlen ? ' dinlen' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
+      h('span', { class: 'foto' }, resimEl(p.id, false, null, '')),
       p.ornek ? h('span', { class: 'ornek', text: t('ornek') }) : null,
-      h('span', { class: 'alt' }, h('i', { style: { background: (RENK[p.renk] || RENK.siyah).hex } }), h('span', { text: p.ad || turAd(p.tur) }))));
+      h('b', { text: p.ad || parcaAd(p) }),
+      h('small', null, h('i', { style: { background: (RENK[p.renk] || RENK.siyah).hex } }), renkAd(p.renk) + ', ' + (p.dinlen ? t('dinlende') : mv))));
   });
 }
 

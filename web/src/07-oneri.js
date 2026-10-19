@@ -137,6 +137,7 @@ function parcaPuan(p, c) {
   if (o.kirli && ACIK_RENKLER[p.renk]) s -= (tur.g === 'ayk' || tur.g === 'alt') ? 4 : 2.5;
   if (o.koyu) { if (KOYU_SADE[p.renk]) s += 2; else if (!rk.notr) s -= 3.5; if (p.desen) s -= 2; }
   if (c.renkli && !rk.notr) s += 1.5;
+  if (c.minimal) { if (!rk.notr) s -= 2.5; if (p.desen) s -= 2; }
   if (c.renkTercih.length && (c.renkTercih.indexOf(p.renk) >= 0 || c.renkTercih.indexOf(p.renk2) >= 0)) s += 3;
   if (c.renkKac.indexOf(p.renk) >= 0) s -= 12; else if (c.renkKac.indexOf(p.renk2) >= 0) s -= 4;
   if (c.turTercih.indexOf(p.tur) >= 0) s += 6;
@@ -375,4 +376,39 @@ function kendiKombinlerdenOner(c) {
   });
   l.sort(function (a, b) { return b.puan - a.puan; });
   return l.slice(0, 3);
+}
+
+var TARZ_ETK = { sik: 'tmSik', rahat: 'tmRahat', minimal: 'tmMinimal', renkli: 'tmRenkli' };
+/* Uyum puanı: renk uyumu, havaya uygunluk ve tarz eşleşmesinden 70–98 arası */
+function uyumPuani(k, c) {
+  var giysi = [k.ust, k.alt, k.tek, k.kat, k.dis].filter(Boolean);
+  if (!giysi.length) return 80;
+  var W = giysi.reduce(function (t2, p) { return t2 + (TUR[p.tur].w || 0); }, 0), T = hedefIsi(c.h.kisisel);
+  var tz = giysi.concat(k.ayk ? [k.ayk] : []).filter(function (p) { return tarzVar(p, c.f); }).length / (giysi.length + (k.ayk ? 1 : 0));
+  var p = 80 + renkUyum(giysi.concat(k.ayk ? [k.ayk] : []), c) * 3 - Math.max(0, Math.abs(W - T) - 0.5) * 4 + tz * 8;
+  return Math.round(sinirla(p, 70, 98));
+}
+/* Stilistten özel ipucu: kombine, ortama ve havaya göre iki kısa öneri */
+function stilistIpucu(k, c) {
+  var tum = kombinParcalari(k), giysi = [k.ust, k.alt, k.tek, k.kat, k.dis].filter(Boolean);
+  var renkli = giysi.filter(function (p) { return RENK[p.renk] && !RENK[p.renk].notr; });
+  var var_ = function (tr) { return tum.some(function (p) { return p.tur === tr; }); };
+  var l = [];
+  var o = c.oid;
+  if (o === 'is') l.push(t('ip_is'));
+  else if (o === 'davet') l.push(t('ip_davet'));
+  else if (o === 'randevu') l.push(t('ip_randevu'));
+  else if (o === 'pratik' || o === 'doga') l.push(t('ip_pratik'));
+  else if (o === 'spor') l.push(t('ip_spor'));
+  else if (o === 'seyahat') l.push(t('ip_seyahat'));
+  else if (o === 'taziye') l.push(t('ip_taziye'));
+  if (renkli.length === 1) l.push(t('ip_tekRenk', renkAd(renkli[0].renk).toLocaleLowerCase(A.dil === 'tr' ? 'tr' : 'en')));
+  else if (!renkli.length && !c.minimal && o !== 'taziye') l.push(t('ip_notr'));
+  else if (renkli.length >= 2) l.push(t('ip_cokRenk'));
+  if (c.h.yagmur) l.push(t('ip_yagmur'));
+  else if (c.h.kisisel <= 6 && !var_('atki') && !var_('esarp')) l.push(t('ip_soguk'));
+  else if (c.h.kisisel >= 26) l.push(t('ip_sicak'));
+  if (!var_('canta') && l.length < 2) l.push(t('ip_canta'));
+  if (l.length < 2) l.push(c.tesettur ? t('ip_esarp') : t('ip_genel'));
+  return l.slice(0, 2).join(' ');
 }

@@ -10,7 +10,7 @@ os.makedirs(DIST, exist_ok=True)
 
 parcalar = sorted(f for f in glob.glob(os.path.join(SRC, '[0-9][0-9]-*.js')))
 govde = '\n'.join(open(f, encoding='utf-8').read() for f in parcalar)
-uygulama = '(function () {\n' + govde + '\n})();\n'
+uygulama = '(function () {\n"use strict";\n' + govde + '\n})();\n'
 open(os.path.join(DIST, 'app.full.js'), 'w', encoding='utf-8').write(uygulama)
 boot = open(os.path.join(SRC, 'boot.js'), encoding='utf-8').read().strip()
 fonts = open(os.path.join(KOK, 'fonts', 'fonts.css'), encoding='utf-8').read()

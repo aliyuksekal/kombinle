@@ -33,7 +33,7 @@ function temaUygula(secim) {
   try { localStorage.setItem('kb_tema', secim); } catch (e) { }
   var koyu = secim === 'koyu' || (secim === 'oto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.setAttribute('data-tema', koyu ? 'koyu' : 'acik');
-  var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', koyu ? '#191117' : '#FAF5F7');
+  var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', koyu ? '#0E0A24' : '#F7F5FD');
   if (YEREL && YEREL.cubuk) try { YEREL.cubuk(!!koyu); } catch (e) { }
 }
 function temaSecimi() { try { var x = localStorage.getItem('kb_tema'); return x === 'acik' || x === 'koyu' ? x : 'oto'; } catch (e) { return 'oto'; } }
