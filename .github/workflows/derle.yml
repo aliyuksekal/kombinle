@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths-ignore: ['README.md', 'magaza/**', 'egitim/**']
   workflow_dispatch:
+    inputs:
+      olc:
+        description: 'Gerçek fotoğraflarla tanıma ölçümü yap'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -58,7 +63,7 @@ jobs:
 
       # Gerçek fotoğraflarla tanıma ölçümü: yalnız commit mesajında [olc] varsa (yapay zekâ maliyeti)
       - name: Kıyafet tanıma ölçümü
-        if: contains(github.event.head_commit.message, '[olc]')
+        if: contains(github.event.head_commit.message, '[olc]') || inputs.olc
         continue-on-error: true
         timeout-minutes: 12
         env:
