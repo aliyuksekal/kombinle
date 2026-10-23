@@ -34,10 +34,14 @@ function sesliOku(metin) {
   if (!m) return;
   var sira = ++SES.sira;
   /* Kombinle AI'nin doğal insan sesi; alınamazsa telefonun kendi sesi */
-  if (yzAcik() && LS.al('dogalSes', true) !== false) {
+  var sesSinir = sahipMi() ? 200 : S.pro ? SES_GUNLUK.pro : SES_GUNLUK.ucretsiz;
+  var sesHakki = gunlukSayac('ses') < sesSinir;
+  if (!sesHakki && yzAcik() && LS.al('dogalSes', true) !== false && !SES.uyarildi) { SES.uyarildi = true; tost(S.pro ? t('dogalSesBitti') : t('dogalSesBittiUcretsiz', SES_GUNLUK.ucretsiz)); }
+  if (sesHakki && yzAcik() && LS.al('dogalSes', true) !== false) {
     yzIste('/v1/ses', { metin: kirp(m, 700), dil: A.dil }, 30000).then(function (v) {
-      if (sira !== SES.sira) return;
       if (!v || typeof v.ses !== 'string' || v.ses.length < 100) throw new Error('ses');
+      gunlukArtir('ses');   // yalnız gerçekten alınan doğal ses hakkından düşer
+      if (sira !== SES.sira) return;
       sesCal(v.ses, typeof v.tip === 'string' && /^audio\/[a-z0-9.+-]+$/.test(v.tip) ? v.tip : 'audio/wav', function () { if (sira === SES.sira) telefonSesi(m); });
     }).catch(function () { if (sira === SES.sira) telefonSesi(m); });
     return;

@@ -5,18 +5,20 @@
 /* ---------- Jeton ekonomisi ----------
    Yeni kullanıcı 15 jetonla başlar; her yapay zekâ işi 1 jeton.
    Fiyatlar ABD doları tabanlıdır (Play Console'da varsayılan fiyat USD; yerel para birimine Play çevirir).
-   Hesap (Türkiye, kullanıcı başına): fiyat KDV %20 dahil → Google payı %15 → 20/B stopajı %15 → elde ~%60.
-   Bir yapay zekâ işinin maliyeti ~0,009–0,012 $; en ucuz paket bile jeton başına ~0,015 $ net bırakır.
+   Türkiye'de elde kalan: fiyat ÷1,20 (KDV) ×0,85 (Google) ×0,85 (20/B stopajı) ≈ %60.
+   Maliyet: yapay zekâ işi ~0,009–0,012 $, sohbet ~0,002 $ (hafif model), doğal ses ~0,005 $ (2027'de ~0,011 $).
    Ayrıntı: magaza/FIYATLANDIRMA.md. Uygulamada gösterilen fiyat Play'den gelen yerel fiyattır; aşağıdakiler yalnız yedek.
-   PRO aylık abonedir; "sınırsız" adil kullanımla: günde 25 yapay zekâ işi ve 40 sohbet mesajı. */
+   PRO aylık abonedir; "sınırsız" adil kullanımla: günde 20 yapay zekâ işi, 40 sohbet mesajı, 20 doğal sesli cevap. */
 var BASLANGIC_JETON = 15;
 var JETON_PAKETLERI = [
   { id: 'jeton_50', adet: 50, fiyat: '$1.99' },
   { id: 'jeton_150', adet: 150, fiyat: '$4.99', avantaj: 16 },
   { id: 'jeton_400', adet: 400, fiyat: '$9.99', avantaj: 37, populer: true }
 ];
-var PRO_FIYAT = '$7.99';
-var PRO_GUNLUK = 25, SOHBET_GUNLUK = { ucretsiz: 10, pro: 40 };
+var PRO_FIYAT = '$9.99';
+var PRO_GUNLUK = 20, SOHBET_GUNLUK = { ucretsiz: 5, pro: 40 };
+/* doğal (yapay zekâ) sesle okunan cevap: ücretsizde günde 3, PRO'da 20; sonrası telefonun kendi sesiyle */
+var SES_GUNLUK = { ucretsiz: 3, pro: 20 };
 var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1, renk: 1 };
 function sayacGunu() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function gunlukSayac(ad) { var x = LS.al('gs_' + ad, null); return x && x.g === sayacGunu() && sayiMi(x.n) ? x.n : 0; }
@@ -552,7 +554,7 @@ function magazaSayfasi(oz) {
   gov.appendChild(h('div', { class: 'g-pro' },
     h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), h('h4', { text: t('proAylikBaslik') })), proFiyat),
     h('p', { class: 'g-pro-kiyas', text: t('proKiyas', PRO_GUNLUK * 30) }),
-    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
+    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS7', SES_GUNLUK.pro), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
     proBtn,
     h('p', { class: 'g-pro-not', text: t('aboneNot') })));
   gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('jetonPaketleri') }));

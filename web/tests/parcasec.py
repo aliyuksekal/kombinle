@@ -93,6 +93,12 @@ with sync_playwright() as pw:
     sh = [a['g'] for a in p.evaluate('window.__api') if a['yol'] == '/v1/sohbet']
     ok(sh[-1]['ilk'] is False, 'aynı açılışta süren konuşma selamsız')
     o.ekran('e4_sohbet')
+    p.evaluate("localStorage.setItem('kb_gs_sohbet', JSON.stringify({g: '', n: 0})); window.__api = []")
+    for i in range(3):
+        p.fill('.sh-girdi', 'soru ' + str(i)); p.press('.sh-girdi', 'Enter'); p.wait_for_timeout(900)
+    ses = [a for a in p.evaluate('window.__api') if a['yol'] == '/v1/ses']
+    ok(len(ses) == 0 or p.evaluate("JSON.parse(localStorage.getItem('kb_gs_ses')).n") >= 3, 'doğal ses sayacı işliyor')
+    ok(p.evaluate("(JSON.parse(localStorage.getItem('kb_gs_ses')) || {n: 0}).n") <= 3, 'ücretsizde günde en fazla 3 doğal ses')
     p.evaluate("localStorage.setItem('kb_dogalSes', 'false'); window.__api = []")
     p.fill('.sh-girdi', 'teşekkürler'); p.press('.sh-girdi', 'Enter'); p.wait_for_timeout(900)
     ok(not [a for a in p.evaluate('window.__api') if a['yol'] == '/v1/ses'], 'doğal ses kapalıyken telefonun sesi kullanılır')

@@ -253,6 +253,7 @@ r = await iste('/v1/sohbet', { mesaj: 'Toplantı için ne giysem?', dil: 'ru', g
 ok(r.veri.ok && r.veri.sonuc.yanit.includes('blazer'), 'sohbet yanıtı');
 const sy = yzIstekleri[yzIstekleri.length - 1].g;
 ok(sy.contents[0].parts[0].text.includes('русский'), 'sohbet dili Rusça istendi');
+ok(yzIstekleri[yzIstekleri.length - 1].url.includes('gemini-3.1-flash-lite'), 'sohbet ucuz (hafif) modelle yapılıyor');
 ok((await iste('/v1/sohbet', { mesaj: '' })).veri.hata === 'bos', 'boş mesaj reddedildi');
 // selamlaşma: ilk cevapta saate göre, sonra selamsız
 yzYanit = () => ({ yanit: 'Günaydın! Bugün krem kazağın çok yakışır.', parcalar: [], oneriler: [] });
@@ -286,6 +287,7 @@ ok(!syz.includes('"prenses" diye hitap edebilirsin'), 'her cevapta prenses hitab
   r = await iste('/v1/ses', { metin: 'Selam! 💜 Krem kazağın çok yakışır.\n- Altına kot', dil: 'tr' });
   ok(r.veri.ok && r.veri.ses === wav && r.veri.tip === 'audio/wav', 'doğal ses (güncel model) döndü');
   const sg = adresler[0].g;
+  ok(sg.model === 'gemini-3.8-flash-lite-tts', 'doğal ses ucuz ses modeliyle');
   ok(sg.model && sg.input[0].content[0].text === 'Selam! Krem kazağın çok yakışır. Altına kot' && sg.generation_config.speech_config[0].voice, 'emoji ve madde işaretleri okunmuyor, ses seçili: ' + sg.input[0].content[0].text);
   kip = 'eski';
   r = await iste('/v1/ses', { metin: 'Merhaba', dil: 'en' });
