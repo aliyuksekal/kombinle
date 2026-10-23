@@ -425,6 +425,63 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   delete env.GUNLUK_YZ;
 }
 
+// kişisel renk analizi
+{
+  yzIstekleri = [];
+  yzYanit = () => ({ yuz: true, mevsim: 'kis', alt: 'soguk', kontrast: 'yuksek', iyi: ['siyah', 'beyaz', 'fusya', 'lacivert'], kacin: ['hardal'], metal: 'gumus', ruj: ['kirmizi_soguk'], aciklama: 'x', ipuclari: [] });
+  const r = await iste('/v1/renk', { resim: jpeg, renkler: [['siyah', 'Siyah'], ['beyaz', 'Beyaz'], ['fusya', 'Fuşya'], ['lacivert', 'Lacivert'], ['hardal', 'Hardal']], dil: 'tr' }, cihazB);
+  ok(r.veri.ok && r.veri.sonuc.mevsim === 'kis' && r.veri.sonuc.iyi.length === 4, 'renk analizi sonucu döndü');
+  ok(yzIstekleri.length === 1 && yzIstekleri[0].g.contents[0].parts.some(p => p.inlineData), 'selfie yapay zekâya gitti');
+  yzYanit = () => ({ yuz: false, mevsim: 'kis', alt: 'notr', kontrast: 'orta', iyi: [], kacin: [], metal: 'ikisi', ruj: [], aciklama: '', ipuclari: [] });
+  ok((await iste('/v1/renk', { resim: jpeg, renkler: [['siyah', 'Siyah']], dil: 'tr' }, cihazB)).veri.sonuc.yuz === false, 'yüz yoksa yalnız yuz=false');
+  ok((await iste('/v1/renk', { resim: 'kotu', renkler: [['siyah', 'Siyah']] }, cihazB)).veri.hata === 'resim', 'bozuk resim reddedildi');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+}
+
+// kombin: palet ve tekrar ipuçları yönergeye giriyor
+{
+  yzIstekleri = [];
+  yzYanit = () => ({ kombinler: [], havaNotu: '' });
+  await iste('/v1/kombin', { parcalar: [{ i: 'p1aa', t: 'bluz' }, { i: 'p2bb', t: 'kot' }], palet: ['fusya', 'lacivert'], tekrar: ['p1aa', 'uydurma'], dil: 'tr' }, cihazB);
+  const y = yzIstekleri[0].g.contents[0].parts[0].text;
+  ok(y.includes('fusya, lacivert') && y.includes('KULLANMA: p1aa.') && !y.includes('uydurma'), 'palet ve tekrar ipucu yönergede');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+}
+
+// "A mı B mi?" anketleri
+{
+  const ANKETCI = cihazD, OYCU = cihazB;
+  ok((await iste('/v1/anket', { resimA: jpeg, resimB: jpeg, soru: 'Akşam yemeği' }, cihazD, { oturumsuz: true, ip: '9.9.9.9' })).durum === 401, 'anket hesap ister');
+  yzIstekleri = [];
+  let r = await iste('/v1/anket', { resimA: jpeg, resimB: jpeg, soru: 'Akşam yemeğine hangisi?', gorunurluk: 'herkes' }, ANKETCI);
+  ok(r.veri.ok && /^[a-z0-9]{20}$/.test(r.veri.id), 'anket açıldı');
+  ok(yzIstekleri[0].g.contents[0].parts.filter(p => p.inlineData).length === 2, 'iki görsel de denetlendi');
+  const aid = r.veri.id;
+  yzYanit = () => ({ uygun: false, neden: 'ciplaklik' });
+  ok((await iste('/v1/anket', { resimA: jpeg, resimB: jpeg, soru: 'x' }, ANKETCI)).veri.neden === 'ciplaklik', 'uygunsuz anket reddedildi');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  ok((await iste('/v1/anket', { resimA: jpeg, resimB: jpeg, soru: 'bak www.site.com' }, ANKETCI)).veri.hata === 'baglanti', 'bağlantılı soru reddedildi');
+  let l = await iste('/v1/anketler', {}, OYCU);
+  ok(l.veri.liste.some(x => x.id === aid && x.secim === '' && x.a === 0), 'anket akışta, oy yok');
+  ok((await iste('/v1/anketoy', { id: aid, secim: 'a' }, ANKETCI)).veri.hata === 'kendi', 'kendi anketine oy verilemez');
+  r = await iste('/v1/anketoy', { id: aid, secim: 'a' }, OYCU);
+  ok(r.veri.ok && r.veri.a === 1 && r.veri.b === 0, 'oy sayıldı');
+  r = await iste('/v1/anketoy', { id: aid, secim: 'b' }, OYCU);
+  ok(r.veri.a === 0 && r.veri.b === 1, 'oy değiştirilebilir, çift oy yok');
+  ok((await iste('/v1/anketoy', { id: aid, secim: 'c' }, OYCU)).veri.hata === 'girdi', 'geçersiz seçim reddedildi');
+  l = await iste('/v1/anketler', {}, OYCU);
+  ok(l.veri.liste.find(x => x.id === aid).secim === 'b', 'kendi oyu akışta görünüyor');
+  const bn = await iste('/v1/bildirim', {}, ANKETCI);
+  ok(bn.veri.liste.some(b => b.tur === 'anket' && b.paylasim === aid), 'anket sahibine bildirim gitti');
+  const res = await isci.fetch(new Request('https://x/v1/anketresim/' + aid + '/a'), env, {});
+  ok(res.status === 200 && res.headers.get('Content-Type') === 'image/jpeg', 'anket görseli sunuluyor');
+  ok((await isci.fetch(new Request('https://x/v1/anketresim/' + aid + '/c'), env, {})).status === 405, 'geçersiz görsel yolu reddedildi');
+  ok((await iste('/v1/anketler', { sira: 'benim' }, ANKETCI)).veri.liste.length === 1, 'benim anketlerim');
+  ok((await iste('/v1/anketsil', { id: aid }, OYCU)).durum === 404, 'başkasının anketi silinemez');
+  ok((await iste('/v1/anketsil', { id: aid }, ANKETCI)).veri.ok, 'anket silindi');
+  ok(!(await iste('/v1/anketler', {}, OYCU)).veri.liste.some(x => x.id === aid), 'silinen anket akışta yok');
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

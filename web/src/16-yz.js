@@ -125,7 +125,8 @@ function yzKombin(c, cumle, hv) {
   S.parcalar.forEach(function (p) { if (!p.ornek) harita[p.id] = p; });
   return yzIste('/v1/kombin', {
     plan: S.istek || '', ortam: ortamAd(cumle.ortam), tarz: t(TARZ_ETK[c.tarzMod] || 'tmOto'), tesettur: !!A.tesettur,
-    hava: yzHava(hv), parcalar: yzParcaListesi(), dil: A.dil
+    hava: yzHava(hv), parcalar: yzParcaListesi(), dil: A.dil,
+    palet: renkAnalizi() ? renkAnalizi().iyi : [], tekrar: tekrarListesi(c.tekrar || {})
   }, 50000).then(function (v) {
     var s = v.sonuc;
     if (!s || typeof s !== 'object' || !Array.isArray(s.kombinler)) return null;
@@ -292,12 +293,13 @@ function toplulukBolumu() {
   var kap = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } });
   if (yzKurulu()) kap.appendChild(kisilerKarti());
   var seg = h('div', { class: 'g-haplar' });
-  [['yeni', 'tpHerkes'], ['takip', 'tpTakip'], ['populer', 'tpPopuler'], ['benim', 'tpBenim']].forEach(function (x) {
+  [['yeni', 'tpHerkes'], ['takip', 'tpTakip'], ['populer', 'tpPopuler'], ['anket', 'tpAnket'], ['benim', 'tpBenim']].forEach(function (x) {
     seg.appendChild(h('button', { 'aria-pressed': TOPLULUK.sira === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () {
       if (TOPLULUK.sira === x[0]) return;
       TOPLULUK.sira = x[0];
       $$('button', seg).forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
       this.setAttribute('aria-pressed', 'true');
+      if (x[0] === 'anket') { anketYukle(true); return; }
       toplulukYukle(true);
     } } }));
   });
@@ -305,12 +307,13 @@ function toplulukBolumu() {
   var alan = h('div', { id: 'toplulukAlani', style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } });
   kap.appendChild(alan);
   toplulukDoldur(alan);
-  if (!TOPLULUK.yuklendi && !TOPLULUK.yukleniyor && yzKurulu()) setTimeout(function () { toplulukYukle(true); }, 0);
+  if (TOPLULUK.sira !== 'anket' && !TOPLULUK.yuklendi && !TOPLULUK.yukleniyor && yzKurulu()) setTimeout(function () { toplulukYukle(true); }, 0);
   return kap;
 }
 function toplulukDoldur(alan) {
   temizle(alan);
   if (!yzKurulu()) { alan.appendChild(h('div', { class: 'g-bos-not' }, ikon('bilgi', 'k'), h('span', { text: t('tpYok') }))); return; }
+  if (TOPLULUK.sira === 'anket') { anketlerDoldur(alan); return; }
   var adres = sunucuAdres();
   var eng = engelliler();
   var liste = TOPLULUK.liste.filter(function (x) { return eng.indexOf(x.yazar) < 0; });

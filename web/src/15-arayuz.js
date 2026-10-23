@@ -14,7 +14,7 @@ var JETON_PAKETLERI = [
 ];
 var PRO_FIYAT = '449,99 ₺';
 var PRO_GUNLUK = 25, SOHBET_GUNLUK = { ucretsiz: 10, pro: 40 };
-var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1 };
+var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1, renk: 1 };
 function sayacGunu() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function gunlukSayac(ad) { var x = LS.al('gs_' + ad, null); return x && x.g === sayacGunu() && sayiMi(x.n) ? x.n : 0; }
 function gunlukArtir(ad) { LS.yaz('gs_' + ad, { g: sayacGunu(), n: gunlukSayac(ad) + 1 }); }
@@ -214,6 +214,7 @@ function istekKarti() {
   var mik = h('button', { class: 'mik', id: 'mikBtn', 'aria-label': t('sesleSoyle'), on: { click: function () { sesliDinle(alan, mik); } } }, ikon('mik', 'k'));
   kart.appendChild(h('label', { class: 'g-etiket', text: t('detayEtiket') }));
   kart.appendChild(h('div', { class: 'g-girdi-kap' }, alan, mik));
+  kart.appendChild(kimleSecici());
   kart.appendChild(h('button', { class: 'g-olustur', id: 'onerBtn', on: { click: kombinIste } }, ikon('isilti', 'k vurgu'), t('kombinOner')));
   if (!S.pro && !sahipMi() && S.parcalar.some(function (p) { return !p.ornek; })) kart.appendChild(h('p', { class: 'hak', text: t('jetonBilgi', 1, jeton()) }));
   return kart;
@@ -227,6 +228,7 @@ function sonucCiz(alan) {
     h('div', null, h('h4', { text: yz && yz.baslik ? yz.baslik : t('onerimiz') }),
       h('p', null, yz ? h('span', { class: 'g-yz-rozet' }, ikon('isilti', 'k'), t('yzRozet')) : null, ortamAd(s.c.oid) + ' • ' + t(TARZ_ETK[s.c.tarzMod] || 'tmOto'))),
     h('span', { class: 'g-uyum', text: t('uyumlu', yz && yz.uyum ? yz.uyum : uyumPuani(k, s.c)) })));
+  var tu = tekrarUyarisi(k, s.tekrar); if (tu) kart.appendChild(tu);
   if (s.havaNotu) kart.appendChild(h('div', { class: 'g-hava-not' }, ikon('semsiye', 'k'), h('div', null, h('b', { text: t('havaNotu') }), h('p', { text: s.havaNotu }))));
   kart.appendChild(h('div', { class: 'g-ipucu' },
     h('div', null, ikon('ampul', 'k'), t('stilistIpucu')), h('p', { text: yz && yz.ipucu ? yz.ipucu : stilistIpucu(k, s.c) })));
@@ -262,6 +264,7 @@ function sonucCiz(alan) {
   k.nedenler.forEach(function (n) { ul.appendChild(h('li', null, ikon(n.i, 'k'), h('span', { text: n.m }))); });
   neden.appendChild(ul);
   kart.appendChild(neden);
+  kart.appendChild(makyajBolumu(k, s.c));
   var kayit = S.kayitli[S.sonucNo];
   var kayitli = !!(kayit && kayit.fav);
   var ornekMi = parcalar.every(function (p) { return p.ornek; });
@@ -271,6 +274,9 @@ function sonucCiz(alan) {
     s.liste.length > 1 ? h('button', { class: 'g-btn-ikon', 'aria-label': t('baskaOner'), on: { click: function () { S.sonucNo = (S.sonucNo + 1) % s.liste.length; if (S.sonucNo === 0) tost(t('hepsiniGordun')); ciz(); var a2 = $('#sonucAlani'); if (a2) a2.scrollIntoView({ block: 'start' }); } } }, ikon('yenile', 'k')) : null));
   /* gardıroba eklenince: paylaşım ve gizlilik ayarı */
   if (kayitli && yzKurulu() && !ornekMi) kart.appendChild(paylasPaneli(k, kayit, bilgi));
+  if (s.liste.length > 1 && yzKurulu() && !ornekMi) kart.appendChild(h('button', { class: 'g-btn-cizgi', style: { width: '100%', 'margin-top': '10px' }, on: { click: function () {
+    anketOlustur(k, s.liste[(S.sonucNo + 1) % s.liste.length], bilgi);
+  } } }, ikon('kisi', 'k'), t('akSor')));
   alan.appendChild(kart);
 }
 function kombinGardiroba(k) {
@@ -373,7 +379,9 @@ function araclarBolumu() {
       kutu('kalp', t('sKombin'), t('kombinlerimKisa'), '', function () { S.sekme = 'kombin'; ciz(); window.scrollTo(0, 0); }),
       kutu('aks', t('bavulBaslik'), t('bavulAlt'), 'bavul', bavulAc),
       kutu('aski', t('kurBaslik'), t('kurAlt'), 'kur', function () { kombinKur(null); }),
-      kutu('termometre', t('istatistikBaslik'), t('istatistikAlt'), 'istatistik', istatistikSayfasi)));
+      kutu('termometre', t('istatistikBaslik'), t('istatistikAlt'), 'istatistik', istatistikSayfasi),
+      yzKurulu() ? kutu('palet', t('renkBaslik'), renkAnalizi() ? t('mv_' + renkAnalizi().mevsim) + ' • ' + t('renkAlt') : t('renkAlt'), 'renk', renkAnaliziSayfasi) : null,
+      kutu('aks', t('alsamBaslik'), t('alsamAlt'), '', alsamMiSayfasi)));
 }
 
 /* ---------- Gardırop ---------- */

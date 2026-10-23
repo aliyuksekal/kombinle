@@ -911,6 +911,70 @@ button.hesap-av{border:0;cursor:pointer}
 .olasilik{align-items:center}
 .olasilik-etk{font-size:11.5px;font-weight:700;color:var(--soluk);margin-right:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ---- renk analizi, makyaj, tekrar uyarısı, alsam mı, anket ---- */
+.renk-ornek{display:inline-block;width:16px;height:16px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),0 0 0 2px var(--yuzey)}
+.renk-ornek.buyuk{width:30px;height:30px}
+.renk-ornek.metal-altin{background:linear-gradient(135deg,#f6e3a6,#c9952f 55%,#f3d98c)}
+.renk-ornek.metal-gumus{background:linear-gradient(135deg,#f4f5f7,#a8adb6 55%,#e6e8ec)}
+.renk-ornek.metal-ikisi{background:linear-gradient(135deg,#f6e3a6 0 50%,#c8ccd3 50% 100%)}
+.palet-kart{background:var(--yuzey2);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.palet-bas{display:flex;align-items:center;gap:12px}
+.palet-bas b{display:block;font-size:18px}
+.palet-bas small{color:var(--soluk);font-size:12.5px}
+.palet-metin{margin:0;font-size:14px;line-height:1.55}
+.renk-sira{display:flex;flex-wrap:wrap;gap:10px 12px}
+.renk-hap{display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;text-align:center}
+.renk-hap small{font-size:11px;color:var(--soluk);line-height:1.2}
+.renk-sira.kacin .renk-ornek{opacity:.8;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),0 0 0 2px var(--yuzey),0 0 0 3px color-mix(in srgb,#ef4444 55%,transparent)}
+.renk-ipucu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.renk-ipucu li{display:flex;gap:8px;align-items:flex-start}
+.renk-ipucu .ik{color:var(--vurgu);flex:none;margin-top:2px}
+.g-makyaj summary{display:flex;align-items:center;gap:6px}
+.g-makyaj summary::before{content:none!important}
+.makyaj-liste{list-style:none;margin:8px 0 4px;padding:0;display:flex;flex-direction:column;gap:10px}
+.makyaj-liste li{display:flex;gap:12px;align-items:center}
+.makyaj-liste b{font-size:13.5px;font-weight:600}
+.makyaj-liste b span{font-weight:700}
+.makyaj-liste small{display:block;color:var(--soluk);font-size:12px;line-height:1.35}
+.g-tekrar{background:color-mix(in srgb,#F59E0B 13%,var(--yuzey));border-color:color-mix(in srgb,#F59E0B 35%,transparent)}
+.g-tekrar .ik{color:#D97706}
+.g-tekrar p{margin:2px 0 0;font-size:13px}
+.g-kimle{padding-top:4px}
+.alsam-ust{display:flex;gap:12px;align-items:center;background:var(--yuzey2);border-radius:20px;padding:10px}
+.alsam-ust img{width:84px;height:84px;object-fit:cover;border-radius:14px;background:var(--yuzey);flex:none}
+.alsam-ust b{display:block;font-size:15px}
+.alsam-ust small{display:block;color:var(--soluk);font-size:12px;margin:2px 0 6px}
+.alsam-ust select{width:100%}
+.alsam-karar{display:flex;gap:10px;align-items:flex-start;border-radius:18px;padding:12px 14px;border:1px solid var(--cizgi)}
+.alsam-karar b{font-size:16px}
+.alsam-karar p{margin:2px 0 0;font-size:13.5px}
+.alsam-karar.al{background:color-mix(in srgb,#10B981 13%,var(--yuzey));border-color:color-mix(in srgb,#10B981 35%,transparent)}
+.alsam-karar.al .ik{color:#059669}
+.alsam-karar.dusun{background:color-mix(in srgb,#F59E0B 13%,var(--yuzey));border-color:color-mix(in srgb,#F59E0B 35%,transparent)}
+.alsam-karar.dusun .ik{color:#D97706}
+.alsam-karar.alma{background:color-mix(in srgb,#EF4444 12%,var(--yuzey));border-color:color-mix(in srgb,#EF4444 32%,transparent)}
+.alsam-karar.alma .ik{color:#DC2626}
+.alsam-maliyet{margin:0;font-size:13.5px;color:var(--soluk)}
+.alsam-sira{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.alsam-kucuk{flex:none;width:64px;height:64px;border-radius:12px;overflow:hidden;background:var(--yuzey2);display:block;padding:0;border:0}
+.alsam-kucuk img,.alsam-kucuk .resimsiz{width:100%;height:100%;object-fit:cover;display:block}
+.alsam-kucuk.aday{box-shadow:0 0 0 2px var(--vurgu)}
+.ak-soru{margin:0;font-weight:600;font-size:15px}
+.ak-ikili{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ak-kap{position:relative}
+.ak-secenek{position:relative;display:block;width:100%;padding:0;border:2px solid transparent;border-radius:18px;overflow:hidden;background:var(--yuzey2);aspect-ratio:3/4;color:var(--murekkep)}
+.ak-secenek img{width:100%;height:100%;object-fit:cover;display:block}
+.ak-secenek[aria-pressed="true"]{border-color:var(--vurgu)}
+.ak-secenek.kazanan .ak-yuzde{background:var(--vurgu);color:var(--vurgu-ust)}
+.ak-harf{position:absolute;left:8px;top:8px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;background:rgba(15,23,42,.62);color:#fff}
+.ak-cubuk{position:absolute;left:0;bottom:0;height:5px;width:0;background:var(--vurgu);transition:width .5s ease}
+.ak-yuzde{position:absolute;right:8px;top:8px;min-width:0;padding:0 8px;height:26px;line-height:26px;border-radius:99px;font-weight:800;font-size:13px;background:rgba(15,23,42,.62);color:#fff}
+.ak-yuzde:empty{display:none}
+.ak-kap .buyut-btn{top:auto;bottom:12px;right:8px;width:30px;height:30px}
+.ak-toplam{color:var(--soluk);font-size:12.5px;text-align:center}
+.ak-secenek.bos{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--cizgi)}
+.ak-secenek.bos .ak-harf{background:var(--vurgu);color:var(--vurgu-ust)}
+.ak-secenek.bos small{font-size:12px;color:var(--soluk)}
 </style>
 </head>
 <body>

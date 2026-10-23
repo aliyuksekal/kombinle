@@ -177,7 +177,7 @@ function bildirimSayfasi() {
     if (s.kapandi) return;
     BILDIRIM.okunmamis = 0; rozetGuncelle();
     temizle(gov);
-    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip'].indexOf(b.tur) >= 0; }) : [];
+    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip', 'anket'].indexOf(b.tur) >= 0; }) : [];
     if (!l.length) { gov.appendChild(h('div', { class: 'g-bos-not' }, ikon('zil', 'k'), h('span', { text: t('bildirimYok') }))); return; }
     var bugun = [], once = [];
     l.forEach(function (b) { (Date.now() - b.zaman < 86400000 * 7 ? bugun : once).push(b); });
@@ -186,11 +186,12 @@ function bildirimSayfasi() {
       gov.appendChild(h('span', { class: 'g-bolum-etk', text: grup[1] }));
       grup[0].forEach(function (b) {
         var ad = kirp(b.takma, 24);
-        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : t('bnTakip');
+        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : b.tur === 'anket' ? t('bnAnket') : t('bnTakip');
         var ac = function () {
           s.kapat();
           setTimeout(function () {
-            if (b.tur === 'takip' || !/^[a-z0-9]{20}$/.test(b.paylasim)) profilSayfasi(b.kod, b);
+            if (b.tur === 'anket') { S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; ANKET.sira = 'benim'; ANKET.yuklendi = false; ciz(); window.scrollTo(0, 0); }
+            else if (b.tur === 'takip' || !/^[a-z0-9]{20}$/.test(b.paylasim)) profilSayfasi(b.kod, b);
             else paylasimAcId(b.paylasim);
           }, 250);
         };
@@ -198,7 +199,7 @@ function bildirimSayfasi() {
         var satir = kisiSatiri({ kod: b.kod, takma: ad, kadi: b.kadi, av: b.av, takipte: b.takipte, benim: b.tur !== 'takip' }, ac, ek);
         if (b.yeni) satir.classList.add('yeni');
         if (b.tur !== 'takip' && /^[a-z0-9]{20}$/.test(b.paylasim) && sunucuAdres()) {
-          satir.appendChild(h('button', { class: 'bn-resim', 'aria-label': t('paylasim'), on: { click: ac } }, h('img', { src: sunucuAdres() + '/v1/resim/' + b.paylasim, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })));
+          satir.appendChild(h('button', { class: 'bn-resim', 'aria-label': t('paylasim'), on: { click: ac } }, h('img', { src: sunucuAdres() + (b.tur === 'anket' ? '/v1/anketresim/' + b.paylasim + '/a' : '/v1/resim/' + b.paylasim), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })));
         }
         gov.appendChild(satir);
       });

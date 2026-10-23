@@ -21,8 +21,11 @@ function ayarYukle() {
     pro: x.pro === true,
     kendiMod: x.kendiMod === true,
     yz: x.yz !== false,
+    renkAnaliz: null,
+    cevreler: Array.isArray(x.cevreler) ? x.cevreler.filter(function (c) { return c && typeof c.id === 'string' && /^cv[a-z0-9]{4,12}$/.test(c.id) && typeof c.ad === 'string'; }).slice(0, 10).map(function (c) { return { id: c.id, ad: kirp(c.ad, 20) }; }) : [],
     ozelTur: Array.isArray(x.ozelTur) ? x.ozelTur.filter(function (o) { return o && /^oz[a-z0-9]{4,20}$/.test(o.id) && typeof o.ad === 'string' && typeof o.g === 'string'; }).slice(0, 40).map(function (o) { return { id: o.id, g: o.g, ad: kirp(o.ad, 24) }; }) : []
   };
+  try { A.renkAnaliz = renkAnaliziTemizle(x.renkAnaliz); } catch (e) { A.renkAnaliz = null; }
   ozelTurKaydet(A.ozelTur);
   if (!A.dil) { var nl = String(navigator.language || 'tr').slice(0, 2).toLowerCase(); A.dil = ['tr', 'en', 'ru', 'uz'].indexOf(nl) >= 0 ? nl : 'en'; }
 }

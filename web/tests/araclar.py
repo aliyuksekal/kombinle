@@ -22,7 +22,7 @@ def kur(p, ad):
 with sync_playwright() as pw:
     o = Oturum(pw, hava=met_yanit(taban=13)); p = o.ac()
     p.click('text=Örnek dolapla dene'); p.wait_for_selector('#istek'); p.wait_for_timeout(1500)
-    ok(p.locator('.g-araclar .g-arac').count() == 4, 'Bugün ekranında 4 araç')
+    ok(p.locator('.g-araclar .g-arac').count() == (6 if p.evaluate('!!(window.KombinleNative && window.KombinleNative.yzVar && window.KombinleNative.yzVar())') else 5), 'Bugün ekranında araçlar (Alsam mı dahil)')
     o.ekran('70_araclar', tam=True)
 
     print('— Kombin kur (ücretsiz)')

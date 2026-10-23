@@ -144,3 +144,33 @@ CREATE TABLE IF NOT EXISTS pro_hediye (
   bitis INTEGER NOT NULL,
   zaman INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS anket (
+  id TEXT PRIMARY KEY,
+  yazar TEXT NOT NULL,
+  takma TEXT NOT NULL,
+  soru TEXT NOT NULL DEFAULT '',
+  resim_a BLOB NOT NULL,
+  tip_a TEXT NOT NULL,
+  resim_b BLOB NOT NULL,
+  tip_b TEXT NOT NULL,
+  oy_a INTEGER NOT NULL DEFAULT 0,
+  oy_b INTEGER NOT NULL DEFAULT 0,
+  zaman INTEGER NOT NULL,
+  gorunurluk TEXT NOT NULL DEFAULT 'herkes',
+  gizli INTEGER NOT NULL DEFAULT 0,
+  sikayet INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS an_zaman ON anket(zaman DESC);
+CREATE INDEX IF NOT EXISTS an_yazar ON anket(yazar, zaman DESC);
+CREATE TABLE IF NOT EXISTS anket_oy (
+  anket TEXT NOT NULL,
+  cihaz TEXT NOT NULL,
+  secim TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  PRIMARY KEY (anket, cihaz)
+);
+CREATE TABLE IF NOT EXISTS anket_sikayet (
+  anket TEXT NOT NULL,
+  cihaz TEXT NOT NULL,
+  PRIMARY KEY (anket, cihaz)
+);

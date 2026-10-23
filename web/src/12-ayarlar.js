@@ -161,7 +161,7 @@ function yedekAl() {
       return { id: p.id, tur: p.tur, renk: p.renk, renk2: p.renk2 || '', desen: p.desen ? 1 : 0, tarz: p.tarz, su: p.su ? 1 : 0, ad: p.ad || '', eklendi: p.eklendi || 0, giy: p.giy || 0, son: p.son || 0, marka: p.marka || '', fiyat: p.fiyat || 0, kumas: p.kumas || '', mevsim: p.mevsim || '', dinlen: p.dinlen ? 1 : 0, kesik: p.kesik ? 1 : 0, foto: foto };
     });
   })).then(function (parcalar) {
-    var veri = { uygulama: 'kombinle', bicim: 1, tarih: new Date().toISOString(), ayar: { tesettur: A.tesettur, isi: A.isi, ozelTur: A.ozelTur }, parcalar: parcalar, gecmis: gecmisAl() };
+    var veri = { uygulama: 'kombinle', bicim: 1, tarih: new Date().toISOString(), ayar: { tesettur: A.tesettur, isi: A.isi, ozelTur: A.ozelTur, cevreler: A.cevreler, renkAnaliz: A.renkAnaliz }, parcalar: parcalar, gecmis: gecmisAl() };
     var blob = new Blob([JSON.stringify(veri)], { type: 'application/json' });
     var ad = 'kombinle-yedek-' + bugunAnahtar() + '.json';
     if (YEREL) {
@@ -253,7 +253,8 @@ function yedekUygula(veri, durum) {
         if (!ids.length) return;
         var hv = x.h && typeof x.h === 'object' ? { min: sinirla(x.h.min, -60, 60) | 0, max: sinirla(x.h.max, -60, 60) | 0, s: typeof x.h.s === 'string' ? x.h.s.replace(/[^a-z_]/g, '').slice(0, 30) : '' } : null;
         var plan = typeof x.plan === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x.plan) ? x.plan : undefined;
-        g.push({ id: x.id, tarih: sinirla(x.tarih, 0, simdi + 864e5), p: ids, o: ORTAMLAR[x.o] ? x.o : 'gunluk', m: kirp(x.m, 80), ad: kirp(x.ad, 40), fav: x.fav === true, giyildi: x.giyildi === true, kendi: x.kendi === 1 ? 1 : undefined, plan: plan, h: hv });
+        g.push({ id: x.id, tarih: sinirla(x.tarih, 0, simdi + 864e5), p: ids, o: ORTAMLAR[x.o] ? x.o : 'gunluk', m: kirp(x.m, 80), ad: kirp(x.ad, 40), fav: x.fav === true, giyildi: x.giyildi === true, kendi: x.kendi === 1 ? 1 : undefined, plan: plan, h: hv,
+          kim: Array.isArray(x.kim) ? x.kim.filter(function (c) { return typeof c === 'string' && /^(aile|is|arkadas|okul|akraba|cv[a-z0-9]{4,12})$/.test(c); }).slice(0, 6) : undefined });
       });
       g.sort(function (a, b) { return b.tarih - a.tarih; });
       gecmisYaz(g);
@@ -261,6 +262,12 @@ function yedekUygula(veri, durum) {
     if (veri.ayar && typeof veri.ayar === 'object') {
       if (typeof veri.ayar.tesettur === 'boolean') A.tesettur = veri.ayar.tesettur;
       if (veri.ayar.isi === -1 || veri.ayar.isi === 0 || veri.ayar.isi === 1) A.isi = veri.ayar.isi;
+      if (Array.isArray(veri.ayar.cevreler)) {
+        var cv = (A.cevreler || []).slice();
+        veri.ayar.cevreler.slice(0, 10).forEach(function (c) { if (c && typeof c.id === 'string' && /^cv[a-z0-9]{4,12}$/.test(c.id) && typeof c.ad === 'string' && !cv.some(function (y) { return y.id === c.id; })) cv.push({ id: c.id, ad: kirp(c.ad, 20) }); });
+        A.cevreler = cv.slice(-10);
+      }
+      if (veri.ayar.renkAnaliz && !A.renkAnaliz) A.renkAnaliz = renkAnaliziTemizle(veri.ayar.renkAnaliz);
 
       ayarKaydet();
     }

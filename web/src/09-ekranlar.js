@@ -120,6 +120,9 @@ function kombinIste() {
   else if (tm === 'minimal') c.minimal = true;
   else if (tm === 'renkli') c.renkli = true;
   c.tarzMod = tm;
+  var tekrar = tekrarHaritasi(S.kimle);
+  c.bonus = paletBonusu(tekrarBonusu({}, tekrar));
+  c.tekrar = tekrar;
   S.mesgul = true;
   var btn = $('#onerBtn'); if (btn) { btn.disabled = true; temizle(btn); btn.appendChild(h('span', { class: 'yukleniyor' })); btn.appendChild(document.createTextNode(t('hazirlaniyor'))); }
   function yerel() {
@@ -140,7 +143,7 @@ function kombinIste() {
     }
     var ornekMi = sonuc.kombinler[0] && kombinParcalari(sonuc.kombinler[0]).every(function (p) { return p.ornek; });
     if (!ornekMi) ozKullan('kombin');
-    S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now(), havaNotu: havaNotu || '' };
+    S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now(), havaNotu: havaNotu || '', tekrar: tekrar };
     S.sonucNo = 0; S.kayitli = {};
     ciz();
     var alan = $('#sonucAlani'); if (alan) alan.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -203,6 +206,8 @@ function kombinKaydet(k, giyildi) {
       if (ids.indexOf(p.id) >= 0) { p.son = simdi; p.giy = sinirla((p.giy || 0) + 1, 0, 99999); Depo.parcaYaz(p).catch(hataYakala); }
     });
     tost(t('giyildiTost'));
+    var kid = kayit.id;
+    setTimeout(function () { giyimCevresiKaydet(kid); }, 500);
   } else {
     kayit.fav = !kayit.fav;
     tost(kayit.fav ? t('favEklendi') : t('favCikti'));
