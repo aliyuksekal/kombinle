@@ -48,6 +48,7 @@ function parcaDuzenle(p, yeni) {
   function ciz2() {
     temizle(gov);
     var img = yeni ? h('img', { class: 'buyuk-resim', src: geciciUrl, alt: '' }) : resimEl(p.id, true, 'buyuk-resim', parcaAd(p));
+    img.addEventListener('click', function () { if (img.src) goruntuleyiciAc(img.src, img.alt); });
     gov.appendChild(img);
     var arkaBtn = h('button', { class: 'btn ikincil kucuk', on: { click: arkaPlaniSil } }, ikon('isilti', 'k'), t('arkaSil'));
     var araclar = h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, (yeni ? yeniResim.kesik : p.kesik) ? null : arkaBtn,
@@ -59,6 +60,7 @@ function parcaDuzenle(p, yeni) {
       else if (an.turlar.length) msg = t('emin');
       else msg = t('turSec');
       gov.appendChild(h('div', { class: 'tahmin' }, ikon('isilti', 'k'), h('span', { text: msg })));
+      if (an.bulut) gov.appendChild(h('p', { class: 'ai-not', style: { 'text-align': 'left' }, text: t('aiNot') }));
     } else {
       gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '10px' }, text: p.giy ? t('giyimBilgi', p.giy, tarihYaz(p.son)) : t('henuzGiyilmedi') }));
     }
@@ -108,7 +110,7 @@ function parcaDuzenle(p, yeni) {
     /* mevsim */
     var mv = h('div', { class: 'sarili' });
     MEVSIMLER.forEach(function (m) {
-      mv.appendChild(h('button', { class: 'cip', 'aria-pressed': tas.mevsim.indexOf(m[0]) >= 0 ? 'true' : 'false', text: A.dil === 'en' ? m[2] : m[1],
+      mv.appendChild(h('button', { class: 'cip', 'aria-pressed': tas.mevsim.indexOf(m[0]) >= 0 ? 'true' : 'false', text: yerelAd('mevsim', m[0], m[1], m[2]),
         on: { click: function () { tas.mevsim = tas.mevsim.indexOf(m[0]) >= 0 ? tas.mevsim.replace(m[0], '') : tas.mevsim + m[0]; ciz2(); } } }));
     });
     gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('mevsimEtk') }), mv));

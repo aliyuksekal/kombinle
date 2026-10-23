@@ -1,11 +1,13 @@
 /* ---------- Sesle söyleme ---------- */
 var dinleyici = null;
-function sesliDinle(alan, btn) {
-  var dil = A.dil === 'tr' ? 'tr-TR' : 'en-US';
+var KONUSMA_DILI = { tr: 'tr-TR', en: 'en-US', ru: 'ru-RU', uz: 'uz-UZ' };
+function sesliDinle(alan, btn, bitti) {
+  var dil = KONUSMA_DILI[A.dil] || 'tr-TR';
   var yaz = function (m) {
     m = kirp(m, 300); if (!m) return;
     alan.value = kirp((alan.value ? alan.value.replace(/\s+$/, '') + ' ' : '') + m, 300);
-    S.istek = alan.value;
+    if (alan.id === 'istek') { S.istek = alan.value; try { akilliOrtam(); } catch (e) { } }
+    if (bitti) bitti(alan.value);
   };
   if (dinleyici) { try { dinleyici.stop(); } catch (e) { } return; }
   if (YEREL) {
@@ -101,5 +103,15 @@ function baslat() {
   proDurumuDenetle();
   setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
+  acilisKapat();
+}
+/* Açılış animasyonu en az ~2,7 sn görünür (dokununca hemen geçer), sonra yumuşakça kaybolur */
+function acilisKapat() {
+  var a = document.getElementById('acilis'); if (!a) return;
+  var bitir = function () { if (a.classList.contains('bitti')) return; a.classList.add('bitti'); setTimeout(function () { try { a.remove(); } catch (e) { } }, 700); };
+  a.addEventListener('click', bitir);
+  var azalt = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var gecen = (window.performance && performance.now) ? performance.now() : 0;
+  setTimeout(bitir, Math.max(0, (azalt ? 900 : 2700) - gecen));
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', baslat); else baslat();

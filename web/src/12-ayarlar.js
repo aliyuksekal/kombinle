@@ -1,26 +1,41 @@
 /* ---------- Ayarlar ---------- */
 function ayarlarSayfasi() {
+  if (YIGIN.length) YIGIN.slice().reverse().forEach(function (k) { try { k.kapat(); } catch (e) { } });
+  S.sekme = 'ayarlar'; ciz(); window.scrollTo(0, 0);
+}
+function ayarlarEkrani() {
+  var kap = h('section', { class: 'ayar-sekme' }, h('h2', { text: t('ayarlar') }));
   var gov = h('div');
+  kap.appendChild(gov);
+  ayarIcerik(gov);
+  return kap;
+}
+function ayarIcerik(gov) {
   function satir(ik, baslik, alt, fn, sag) {
     return h('button', { class: 'satir', on: { click: fn } },
       h('span', { class: 'sol' }, ikon(ik), h('div', null, baslik, alt ? h('small', { text: alt }) : null)), sag || ikon('sag', 'k'));
   }
   function ciz3() {
     temizle(gov);
+    /* AI Prenses */
+    if (typeof sohbetAc === 'function') {
+      gov.appendChild(h('div', { class: 'ai-kart' }, h('b', { text: t('prensesBaslik') }), h('p', { text: t('prensesKart') }),
+        h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { sohbetAc(); } } }, ikon('isilti', 'k'), t('sohbetBaslat'))));
+    }
     /* görünüm */
     var tema = temaSecimi();
-    var temaSeg = h('div', { class: 'seg' });
-    [['oto', 'temaOto'], ['acik', 'temaAcik'], ['koyu', 'temaKoyu']].forEach(function (x) {
-      temaSeg.appendChild(h('button', { 'aria-pressed': tema === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { temaUygula(x[0]); ciz3(); ciz(); } } }));
+    var izgara = h('div', { class: 'tema-izgara' });
+    TEMALAR.forEach(function (x) {
+      izgara.appendChild(h('button', { class: 'tema-sec', 'aria-pressed': tema === x[0] ? 'true' : 'false', on: { click: function () { temaUygula(x[0]); ciz(); } } },
+        h('i', { style: { background: x[2] } }), t(x[1])));
     });
-    var dilSeg = h('div', { class: 'seg' });
-    [['tr', 'Türkçe'], ['en', 'English']].forEach(function (x) {
-      dilSeg.appendChild(h('button', { 'aria-pressed': A.dil === x[0] ? 'true' : 'false', text: x[1], on: { click: function () { A.dil = x[0]; ayarKaydet(); s.kapat(); ciz(); setTimeout(ayarlarSayfasi, 320); } } }));
+    var dilSeg = h('div', { class: 'tema-izgara', style: { 'grid-template-columns': 'repeat(2,1fr)' } });
+    DILLER.forEach(function (x) {
+      dilSeg.appendChild(h('button', { class: 'tema-sec', 'aria-pressed': A.dil === x[0] ? 'true' : 'false', on: { click: function () { A.dil = x[0]; ayarKaydet(); document.documentElement.lang = x[0]; ciz(); } } },
+        h('i', { style: { background: 'var(--grad)', color: '#fff', display: 'grid', 'place-items': 'center', 'font-size': '13px', 'font-weight': '900', 'font-style': 'normal' }, text: x[0].toUpperCase() }), x[1]));
     });
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('gorunum') }),
-      h('div', { class: 'ayar-grup' },
-        h('div', { class: 'satir' }, h('span', { class: 'sol' }, ikon(document.documentElement.getAttribute('data-tema') === 'koyu' ? 'ay' : 'gunes'), h('div', null, t('tema'))), temaSeg),
-        h('div', { class: 'satir' }, h('span', { class: 'sol' }, ikon('dil'), h('div', null, t('dil'))), dilSeg))));
+    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('temaBaslik') }), izgara, h('p', { class: 'ayar-not', text: t('amoledNot') })));
+    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('dil') }), dilSeg));
     /* kişisel */
     var isiSeg = h('div', { class: 'seg' });
     [[-1, 'isiUsur'], [0, 'isiNormal'], [1, 'isiSicaklar']].forEach(function (x) {
@@ -47,9 +62,8 @@ function ayarlarSayfasi() {
         satir('yukle', t('yedekYukle'), t('yedekYukleAlt'), function () { $('#yedekSec').click(); }),
         satir('kalkan', t('gizlilik'), t('gizlilikAlt'), gizlilikSayfasi),
         satir('cop', t('hepsiniSil'), t('hepsiniSilAlt'), hepsiniSil))));
-    gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '18px', 'font-size': '12px' }, text: 'Kombinle ' + (YEREL && YEREL.surum ? kirp(YEREL.surum(), 20) : SURUM) + ', matali. ' + t('kaynakMetUzun') }));
+    gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '18px', 'font-size': '12px', 'text-align': 'center', 'white-space': 'pre-line' }, text: t('hakkinda') + '\n' + 'Kombinle ' + (YEREL && YEREL.surum ? kirp(YEREL.surum(), 20) : SURUM) + ', matali. ' + t('kaynakMetUzun') }));
   }
-  var s = sayfaAc({ baslik: t('ayarlar'), icerik: gov });
   ciz3();
 }
 function sehirSec() {
@@ -249,7 +263,7 @@ function hepsiniSil() {
       URL_ONBELLEK = {};
       return Depo.hepsiniSil().then(function () {
         S.parcalar = []; S.sonuc = null; LS.sil('gecmis'); A.tesettur = false; A.isi = 0; ayarKaydet();
-        tumSayfalariKapat(); tost(t('hepsiSilindi')); ciz();
+        tumSayfalariKapat(); tost(t('hepsiSilindi')); S.sekme = 'bugun'; ciz();
       });
     });
   }).catch(function (e) { hataYakala(e); tost(t('kayitHata')); });

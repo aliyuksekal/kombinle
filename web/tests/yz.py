@@ -101,7 +101,7 @@ with sync_playwright() as pw:
     p.go_back(); p.wait_for_timeout(400)
 
     print('— Topluluk')
-    p.click('nav.alt-menu button:nth-child(3)'); p.wait_for_timeout(1200)
+    p.click('nav.alt-menu button[data-sekme="kesfet"]'); p.wait_for_timeout(1200)
     ok(p.locator('.g-akis').count() == 2, 'geçersiz paylaşım elendi, 2 kart')
     ok(p.evaluate('window.__xss') is None and '<img' in p.inner_text('#toplulukAlani'), 'paylaşımdaki kod düz metin')
     src = p.get_attribute('.g-akis img.g-akis-resim', 'src') if p.locator('.g-akis img.g-akis-resim').count() else ''
@@ -117,7 +117,7 @@ with sync_playwright() as pw:
     ok(p.locator('.g-akis').count() == 1 and 'şikâyetin alındı' in p.inner_text('#tost'), 'şikâyet edilen paylaşım gizlendi')
 
     print('— Paylaşım')
-    p.click('nav.alt-menu button:nth-child(1)'); p.wait_for_timeout(500)
+    p.click('nav.alt-menu button[data-sekme="bugun"]'); p.wait_for_timeout(500)
     p.fill('#istek', 'toplantı'); p.click('#onerBtn'); p.wait_for_selector('#sonucAlani .g-sonuc'); p.wait_for_timeout(400)
     p.click('#sonucAlani .g-btn-ikon[aria-label="Paylaş"]'); p.wait_for_timeout(1500)
     ok(p.locator('.sayfa.acik .g-paylas-onizleme img').count() == 1, 'kolaj önizlemesi')
@@ -140,8 +140,8 @@ with sync_playwright() as pw:
     ok('toplulukta' in p.inner_text('#tost'), 'paylaşıldı')
 
     print('— Arayüzde Google/Gemini adı yok')
-    p.click('header .ikon-btn[aria-label="Ayarlar"]'); p.wait_for_timeout(400)
-    p.click('.sayfa.acik button.satir:has-text("Gizlilik")'); p.wait_for_timeout(400)
+    p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
+    p.click('.ayar-sekme button.satir:has-text("Gizlilik")'); p.wait_for_timeout(400)
     tum = p.evaluate("document.body.innerText")
     ok('Google' not in tum and 'Gemini' not in tum, 'gizlilik ve ayarlar sayfasında marka adı yok')
     o.ekran('85_gizlilik')

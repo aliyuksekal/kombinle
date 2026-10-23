@@ -86,12 +86,13 @@ public class AnaEkran extends Activity {
         koyuCubuk = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
 
         kok = new FrameLayout(this);
-        kok.setBackgroundColor(koyuCubuk ? 0xFF131313 : 0xFFFFFFFF);
+        kok.setBackgroundColor(ACILIS_RENGI);   // açılış animasyonuyla aynı mor: beyaz parlama olmaz
         web = new WebView(this);
         web.setBackgroundColor(Color.TRANSPARENT);
         kok.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(kok);
-        cubuklariAyarla(koyuCubuk);
+        cubuklariAyarla(true);
+        zeminRengi(ACILIS_RENGI);
 
         // Sistem çubukları ve klavye kadar boşluk bırak (Android 15 kenardan kenara ekran)
         ViewCompat.setOnApplyWindowInsetsListener(kok, (v, ic) -> {
@@ -457,10 +458,16 @@ public class AnaEkran extends Activity {
 
     /* ---------------- görünüm ---------------- */
 
+    static final int ACILIS_RENGI = 0xFF1B0C40;
+
+    /** Temanın zemin rengi (sayfa bildirir): kenar boşlukları ve kaydırma taşmasında görünür. */
+    void zeminRengi(int renk) {
+        kok.setBackgroundColor(renk);
+        getWindow().getDecorView().setBackgroundColor(renk);
+    }
+
     void cubuklariAyarla(boolean koyu) {
         koyuCubuk = koyu;
-        kok.setBackgroundColor(koyu ? 0xFF131313 : 0xFFFFFFFF);
-        getWindow().getDecorView().setBackgroundColor(koyu ? 0xFF131313 : 0xFFFFFFFF);
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         c.setAppearanceLightStatusBars(!koyu);
         c.setAppearanceLightNavigationBars(!koyu);
@@ -484,12 +491,16 @@ public class AnaEkran extends Activity {
             return;
         }
         long simdi = System.currentTimeMillis();
-        if (simdi - sonGeri < 2000) {
+        // sayfa "çıkmak istiyor musun?" sorusunu kendisi sorar; sayfa yanıt vermiyorsa iki basışta çıkılır
+        if (kopru == null || !kopru.guvenli || (simdi - sonGeri < 2000 && kopru.sonGeriYanit < sonGeri)) {
+            if (kopru == null || !kopru.guvenli) {
+                if (simdi - sonGeri >= 2000) { sonGeri = simdi; Toast.makeText(this, R.string.cikis, Toast.LENGTH_SHORT).show(); return; }
+            }
             super.onBackPressed();
-        } else {
-            sonGeri = simdi;
-            Toast.makeText(this, R.string.cikis, Toast.LENGTH_SHORT).show();
+            return;
         }
+        sonGeri = simdi;
+        try { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('kbgeri'))", null); } catch (Throwable ignored) { }
     }
 
     @Override

@@ -29,6 +29,8 @@ if [ -z "$D1" ]; then
 fi
 [ -n "$D1" ] || { echo "D1 kimliği alınamadı"; exit 1; }
 sed -i "s/__D1_ID__/$D1/" wrangler.toml
+# eski veritabanına yeni sütunlar (varsa hata verir, sorun değil), sonra tablolar
+while IFS= read -r g; do [ -n "$g" ] && $W d1 execute kombinle --remote --command "$g" < /dev/null > /dev/null 2>&1 || true; done < gocler.sql
 $W d1 execute kombinle --remote --file schema.sql > /dev/null
 
 echo "› yayınlanıyor"

@@ -11,6 +11,7 @@ function ciz() {
     if (S.sekme === 'dolap') kok.appendChild(dolapEkrani());
     else if (S.sekme === 'kombin') kok.appendChild(kombinlerEkrani());
     else if (S.sekme === 'kesfet') kok.appendChild(kesfetEkrani());
+    else if (S.sekme === 'ayarlar') kok.appendChild(ayarlarEkrani());
     else kok.appendChild(bugunEkrani());
   } catch (e) { hataYakala(e); hataEkrani(kok); }
 }

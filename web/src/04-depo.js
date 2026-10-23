@@ -13,7 +13,7 @@ var A = {};
 function ayarYukle() {
   var x = LS.al('ayar', {}) || {};
   A = {
-    dil: x.dil === 'tr' || x.dil === 'en' ? x.dil : '',
+    dil: ['tr', 'en', 'ru', 'uz'].indexOf(x.dil) >= 0 ? x.dil : '',
     konum: konumGecerli(x.konum) ? x.konum : null,
     tesettur: x.tesettur === true,
     isi: x.isi === -1 || x.isi === 1 ? x.isi : 0,
@@ -24,20 +24,37 @@ function ayarYukle() {
     ozelTur: Array.isArray(x.ozelTur) ? x.ozelTur.filter(function (o) { return o && /^oz[a-z0-9]{4,20}$/.test(o.id) && typeof o.ad === 'string' && typeof o.g === 'string'; }).slice(0, 40).map(function (o) { return { id: o.id, g: o.g, ad: kirp(o.ad, 24) }; }) : []
   };
   ozelTurKaydet(A.ozelTur);
-  if (!A.dil) A.dil = /^tr/i.test(navigator.language || 'tr') ? 'tr' : 'en';
+  if (!A.dil) { var nl = String(navigator.language || 'tr').slice(0, 2).toLowerCase(); A.dil = ['tr', 'en', 'ru', 'uz'].indexOf(nl) >= 0 ? nl : 'en'; }
 }
 function ayarKaydet() { LS.yaz('ayar', A); }
 function konumGecerli(k) {
   return !!k && typeof k === 'object' && sayiMi(k.lat) && sayiMi(k.lon) && Math.abs(k.lat) <= 90 && Math.abs(k.lon) <= 180 && typeof k.ad === 'string' && k.ad.length <= 60;
 }
-function temaUygula(secim) {
-  try { localStorage.setItem('kb_tema', secim); } catch (e) { }
-  var koyu = secim === 'koyu' || (secim === 'oto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.documentElement.setAttribute('data-tema', koyu ? 'koyu' : 'acik');
-  var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', koyu ? '#131313' : '#F8FAFC');
-  if (YEREL && YEREL.cubuk) try { YEREL.cubuk(!!koyu); } catch (e) { }
+var TEMALAR = [
+  ['oto', 'temaOto', 'linear-gradient(135deg,#fff5f8 50%,#0a0612 50%)'], ['pembe', 'temaPembe', 'linear-gradient(135deg,#fff5f8,#ec4899)'],
+  ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#f8f5ff,#8b5cf6)'], ['altin', 'temaAltin', 'linear-gradient(135deg,#fffbf0,#d97706)'],
+  ['mint', 'temaMint', 'linear-gradient(135deg,#f0fdf8,#10b981)'], ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#fdf6f3,#d4735a)'],
+  ['acik', 'temaAcik', 'linear-gradient(135deg,#fdfcff,#ec4899)'], ['koyu', 'temaKoyu', 'linear-gradient(135deg,#0a0612,#f472b6)'],
+  ['amoled', 'temaAmoled', 'linear-gradient(135deg,#000000,#ff4d94)']
+];
+var TEMA_ZEMIN = { pembe: '#fff5f8', lavanta: '#f8f5ff', altin: '#fffbf0', mint: '#f0fdf8', rosegold: '#fdf6f3', acik: '#fdfcff', koyu: '#0a0612', amoled: '#000000' };
+function temaRengi(secim) {
+  if (secim !== 'oto' && TEMA_ZEMIN[secim]) return secim;
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'koyu' : 'pembe';
 }
-function temaSecimi() { try { var x = localStorage.getItem('kb_tema'); return x === 'acik' || x === 'koyu' ? x : 'oto'; } catch (e) { return 'oto'; } }
+function temaUygula(secim) {
+  if (!TEMALAR.some(function (x) { return x[0] === secim; })) secim = 'oto';
+  try { localStorage.setItem('kb_tema', secim); } catch (e) { }
+  var renk = temaRengi(secim), koyu = renk === 'koyu' || renk === 'amoled';
+  document.documentElement.setAttribute('data-tema', koyu ? 'koyu' : 'acik');
+  document.documentElement.setAttribute('data-renk', renk);
+  var m = $('meta[name="theme-color"]'); if (m) m.setAttribute('content', TEMA_ZEMIN[renk]);
+  if (YEREL && YEREL.cubuk) try { YEREL.cubuk(!!koyu); } catch (e) { }
+  if (YEREL && typeof YEREL.zemin === 'function') try { YEREL.zemin(TEMA_ZEMIN[renk]); } catch (e) { }
+}
+function temaSecimi() {
+  try { var x = localStorage.getItem('kb_tema'); return TEMALAR.some(function (y) { return y[0] === x; }) ? x : 'oto'; } catch (e) { return 'oto'; }
+}
 
 /* IndexedDB: kıyafet bilgileri ve fotoğraflar. Açılamazsa bellekte çalışır. */
 var DB = null, BELLEK = { parca: {}, resim: {} }, DB_YOK = false;

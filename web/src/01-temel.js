@@ -55,6 +55,17 @@ function temizle(el) { while (el && el.firstChild) el.removeChild(el.firstChild)
 
 /* ---------- İkonlar (sabit SVG) ---------- */
 var IK = {
+  ev: '<path d="M3 11.5 12 4l9 7.5M5 9.8V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8"/>',
+  gardirop: '<path d="M20.38 3.46 16 2l-4 2-4-2-4.38 1.46A2 2 0 0 0 2 5.46v14.08A1.46 1.46 0 0 0 3.46 21h17.08a1.46 1.46 0 0 0 1.46-1.46V5.46a2 2 0 0 0-1.62-2z"/><path d="M12 4v17"/>',
+  prenses: '<path d="M12 6V5c0-1.6 2.2-1.6 2.2-3"/><path d="M4 13c3-2.6 5.6-3.8 8-4.4 2.4.6 5 1.8 8 4.4"/><path d="M9 10.5 12 13l3-2.5c1 2 .8 3.6-.2 5 1.6 2.6 1.8 4.8.4 6.2-1.6 1.6-4.8 1.6-6.4 0-1.4-1.4-1.2-3.6.4-6.2-1-1.4-1.2-3-.2-5z" fill="currentColor" stroke="none"/>',
+  gonder: '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
+  hoparlor: '<path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+  sessiz: '<path d="M11 5 6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6"/>',
+  yorum: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+  kisi: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  kilit: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  dunya: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  buyut: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
   paylas: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
   yukari: '<path d="M7 10v11H3V10zM7 10l4-8c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.3l-1.4 8a2 2 0 0 1-2 1.7H7"/>',
   asagi: '<path d="M17 14V3h4v11zM17 14l-4 8c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.3l1.4-8a2 2 0 0 1 2-1.7H17"/>',

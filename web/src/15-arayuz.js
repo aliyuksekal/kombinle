@@ -58,15 +58,20 @@ function ustBar() {
       h('div', null, h('h1', { text: 'Kombinle' }), h('span', { text: t('altBaslik') }))),
     h('div', { class: 'g-ust-sag' },
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
-        ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) })),
-      h('button', { class: 'ikon-btn', 'aria-label': t('ayarlar'), on: { click: ayarlarSayfasi } }, ikon('ayar'))));
+        ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
 }
+var SEKMELER = ['bugun', 'dolap', 'kesfet', 'ayarlar'];
+function sekmeyeGec(ad) { if (S.sekme !== ad) { S.sekme = ad; ciz(); window.scrollTo(0, 0); } }
 function altMenuCiz() {
   var ic = temizle($('#altMenu .ic'));
-  [['bugun', 'isilti', 'sBugun'], ['dolap', 'ust', 'sDolap'], ['kesfet', 'pusula', 'sKesfet']].forEach(function (x) {
+  [['bugun', 'ev', 'sBugun'], ['dolap', 'gardirop', 'sDolap'], ['ai'], ['kesfet', 'pusula', 'sKesfet'], ['ayarlar', 'ayar', 'ayarlar']].forEach(function (x) {
+    if (x[0] === 'ai') {
+      ic.appendChild(h('button', { class: 'ai-orta', 'aria-label': t('prensesBaslik'), on: { click: function () { sohbetAc(); } } }, ikon('prenses')));
+      return;
+    }
     ic.appendChild(h('button', {
-      'aria-current': S.sekme === x[0] ? 'page' : null,
-      on: { click: function () { if (S.sekme !== x[0]) { S.sekme = x[0]; ciz(); window.scrollTo(0, 0); } } }
+      'aria-current': S.sekme === x[0] || (x[0] === 'bugun' && S.sekme === 'kombin') ? 'page' : null, 'data-sekme': x[0],
+      on: { click: function () { sekmeyeGec(x[0]); } }
     }, ikon(x[1]), t(x[2])));
   });
 }
@@ -205,6 +210,7 @@ function sonucCiz(alan) {
   if (s.havaNotu) kart.appendChild(h('div', { class: 'g-hava-not' }, ikon('semsiye', 'k'), h('div', null, h('b', { text: t('havaNotu') }), h('p', { text: s.havaNotu }))));
   kart.appendChild(h('div', { class: 'g-ipucu' },
     h('div', null, ikon('ampul', 'k'), t('stilistIpucu')), h('p', { text: yz && yz.ipucu ? yz.ipucu : stilistIpucu(k, s.c) })));
+  if (yz) kart.appendChild(h('p', { class: 'ai-not', text: t('aiNot') }));
   var izgara = h('div', { class: 'g-parcalar' });
   kombinParcalari(k).forEach(function (p) {
     izgara.appendChild(h('button', { class: 'g-parca' + (p.kesik ? ' kesik' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
@@ -292,7 +298,7 @@ function izgaraDoldur(izgara) {
   });
   if (!liste.length) { izgara.appendChild(h('p', { class: 'alt-yazi', style: { 'grid-column': '1/-1' }, text: t('bulunamadi') })); return; }
   liste.forEach(function (p) {
-    var mv = p.mevsim ? MEVSIMLER.filter(function (m) { return p.mevsim.indexOf(m[0]) >= 0; }).map(function (m) { return A.dil === 'en' ? m[2] : m[1]; }).join(', ') : t('dortMevsim');
+    var mv = p.mevsim ? MEVSIMLER.filter(function (m) { return p.mevsim.indexOf(m[0]) >= 0; }).map(function (m) { return yerelAd('mevsim', m[0], m[1], m[2]); }).join(', ') : t('dortMevsim');
     izgara.appendChild(h('button', { class: 'oge g-giysi' + (p.kesik ? ' kesik' : '') + (p.dinlen ? ' dinlen' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
       h('span', { class: 'foto' }, resimEl(p.id, false, null, '')),
       p.ornek ? h('span', { class: 'ornek', text: t('ornek') }) : null,
@@ -324,7 +330,7 @@ function baglantiylaEkle() {
   grup.addEventListener('change', turDoldur); turDoldur();
   var mevsim = h('select', { class: 'g-girdi' });
   mevsim.appendChild(h('option', { value: '', text: t('dortMevsim') }));
-  MEVSIMLER.forEach(function (m) { mevsim.appendChild(h('option', { value: m[0], text: A.dil === 'en' ? m[2] : m[1] })); });
+  MEVSIMLER.forEach(function (m) { mevsim.appendChild(h('option', { value: m[0], text: yerelAd('mevsim', m[0], m[1], m[2]) })); });
   var renk = h('select', { class: 'g-girdi' });
   RENKLER.forEach(function (r) { renk.appendChild(h('option', { value: r[0], text: renkAd(r[0]) })); });
   var url = h('input', { class: 'g-girdi', type: 'url', maxlength: '500', placeholder: 'https://...' });
@@ -371,7 +377,7 @@ function kesfetEkrani() {
   bol.appendChild(seg);
   var kayitli = LS.al('kesfetFav', []); if (!Array.isArray(kayitli)) kayitli = [];
   ILHAM_SECKI.forEach(function (x) {
-    var img = h('img', { class: 'g-akis-resim', src: x.url, alt: A.dil === 'en' ? x.en : x.tr, loading: 'lazy', referrerpolicy: 'no-referrer' });
+    var img = h('img', { class: 'g-akis-resim', src: x.url, alt: A.dil !== 'tr' ? x.en : x.tr, loading: 'lazy', referrerpolicy: 'no-referrer' });
     img.addEventListener('error', function () { img.replaceWith(h('div', { class: 'g-akis-resim bos', text: t('resimInternet') })); });
     var begen = h('button', { class: 'g-begen', 'aria-pressed': kayitli.indexOf(x.id) >= 0 ? 'true' : 'false' }, ikon('kalp', 'k'), t('kaydet'));
     begen.addEventListener('click', function () {
@@ -383,7 +389,7 @@ function kesfetEkrani() {
     bol.appendChild(h('div', { class: 'g-akis' },
       h('div', { class: 'g-akis-bas' }, h('span', { class: 'g-avatar', text: 'K' }), h('div', null, h('b', { text: t('kombinleStil') }), h('small', { text: t('editorSecki') }))),
       img,
-      h('div', { class: 'g-akis-alt' }, h('b', { text: A.dil === 'en' ? x.en : x.tr }), begen),
+      h('div', { class: 'g-akis-alt' }, h('b', { text: A.dil !== 'tr' ? x.en : x.tr }), begen),
       h('button', { class: 'g-btn-cizgi', on: { click: function () { seckidenKur(x); } } }, ikon('isilti', 'k'), t('benzeriniKur'), !S.pro ? h('small', { text: ' • ' + t('birJeton') }) : null)));
   });
   bol.appendChild(h('div', { class: 'g-dolap-bas', style: { 'margin-top': '22px' } },
@@ -399,7 +405,7 @@ function seckidenKur(x) {
   try { sonuc = kombinOner(oneriParcalari(), c); } catch (e) { hataYakala(e); sonuc = { kombinler: [] }; }
   if (!sonuc.kombinler.length) { tost(t('azParca')); return; }
   ozKullan('ilham');
-  onerilerSayfasi(A.dil === 'en' ? x.en : x.tr, t('ilhamSonucAlt'), sonuc.kombinler);
+  onerilerSayfasi(A.dil !== 'tr' ? x.en : x.tr, t('ilhamSonucAlt'), sonuc.kombinler);
 }
 
 /* ---------- AI Stil Mağazası (Google Play) ---------- */

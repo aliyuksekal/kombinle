@@ -3,7 +3,10 @@ package com.benim.kombinle;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.speech.tts.TextToSpeech;
 import android.webkit.JavascriptInterface;
+
+import java.util.Locale;
 
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.label.ImageLabel;
@@ -37,6 +40,7 @@ public final class Kopru {
     private ImageLabeler etiketleyici;
     private SubjectSegmenter ayirici;
     volatile boolean guvenli = false;
+    volatile long sonGeriYanit = 0;
 
     Kopru(AnaEkran ekran) {
         this.ekran = ekran;
@@ -59,6 +63,70 @@ public final class Kopru {
     public void cubuk(final boolean koyu) {
         if (!guvenli) return;
         ekran.ui.post(() -> ekran.cubuklariAyarla(koyu));
+    }
+
+    /** Sayfa geri tuşunu karşıladı. */
+    @JavascriptInterface
+    public void geriAlindi() {
+        if (guvenli) sonGeriYanit = System.currentTimeMillis();
+    }
+
+    /** Sayfadaki "Evet, çık" onayı. */
+    @JavascriptInterface
+    public void cik() {
+        if (!guvenli) return;
+        ekran.ui.post(ekran::finish);
+    }
+
+    @JavascriptInterface
+    public void zemin(final String hex) {
+        if (!guvenli || hex == null || !hex.matches("#[0-9a-fA-F]{6}")) return;
+        final int renk = 0xFF000000 | Integer.parseInt(hex.substring(1), 16);
+        ekran.ui.post(() -> ekran.zeminRengi(renk));
+    }
+
+    /* ---------------- sesli yanıt (telefonun metin okuma motoru) ---------------- */
+
+    private TextToSpeech okuyucu;
+    private volatile boolean okuyucuHazir = false;
+    private String bekleyenMetin, bekleyenDil;
+
+    @JavascriptInterface
+    public void konus(final String metin, final String dil) {
+        if (!guvenli || metin == null) return;
+        final String m = metin.length() > 1200 ? metin.substring(0, 1200) : metin;
+        final String d = dil != null && dil.matches("[a-zA-Z]{2}(-[a-zA-Z]{2})?") ? dil : "tr-TR";
+        ekran.ui.post(() -> {
+            try {
+                if (okuyucu == null) {
+                    bekleyenMetin = m; bekleyenDil = d;
+                    okuyucu = new TextToSpeech(ekran.getApplicationContext(), durum -> {
+                        okuyucuHazir = durum == TextToSpeech.SUCCESS;
+                        if (okuyucuHazir && bekleyenMetin != null) { oku(bekleyenMetin, bekleyenDil); bekleyenMetin = null; }
+                    });
+                } else if (okuyucuHazir) {
+                    oku(m, d);
+                } else {
+                    bekleyenMetin = m; bekleyenDil = d;
+                }
+            } catch (Throwable ignored) {
+            }
+        });
+    }
+
+    private void oku(String m, String d) {
+        try {
+            okuyucu.setLanguage(Locale.forLanguageTag(d));
+            okuyucu.setPitch(1.08f);
+            okuyucu.speak(m, TextToSpeech.QUEUE_FLUSH, null, "kombinle");
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @JavascriptInterface
+    public void sus() {
+        if (!guvenli) return;
+        ekran.ui.post(() -> { try { if (okuyucu != null) okuyucu.stop(); } catch (Throwable ignored) { } });
     }
 
     /* ---------------- konum ---------------- */
@@ -298,6 +366,7 @@ public final class Kopru {
 
     void kapat() {
         odeme.kapat();
+        try { if (okuyucu != null) { okuyucu.stop(); okuyucu.shutdown(); } } catch (Throwable ignored) { }
         try {
             if (etiketleyici != null) etiketleyici.close();
             if (ayirici != null) ayirici.close();

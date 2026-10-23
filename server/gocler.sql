@@ -1,0 +1,2 @@
+ALTER TABLE paylasim ADD COLUMN gorunurluk TEXT NOT NULL DEFAULT 'herkes'
+ALTER TABLE paylasim ADD COLUMN yorum_sayisi INTEGER NOT NULL DEFAULT 0

@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS paylasim (
   begenmeme INTEGER NOT NULL DEFAULT 0,
   sikayet INTEGER NOT NULL DEFAULT 0,
   gizli INTEGER NOT NULL DEFAULT 0,
-  zaman INTEGER NOT NULL
+  zaman INTEGER NOT NULL,
+  gorunurluk TEXT NOT NULL DEFAULT 'herkes',
+  yorum_sayisi INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS p_yeni ON paylasim(gizli, zaman DESC);
 CREATE INDEX IF NOT EXISTS p_yazar ON paylasim(yazar, zaman DESC);
@@ -37,4 +39,33 @@ CREATE TABLE IF NOT EXISTS kota (
 CREATE TABLE IF NOT EXISTS engelli (
   cihaz TEXT PRIMARY KEY,
   zaman INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS profil (
+  kod TEXT PRIMARY KEY,
+  takma TEXT NOT NULL,
+  zaman INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS pr_takma ON profil(takma);
+CREATE TABLE IF NOT EXISTS takip (
+  takipci TEXT NOT NULL,
+  takip TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  PRIMARY KEY (takipci, takip)
+);
+CREATE INDEX IF NOT EXISTS t_takip ON takip(takip);
+CREATE TABLE IF NOT EXISTS yorum (
+  id TEXT PRIMARY KEY,
+  paylasim TEXT NOT NULL,
+  yazar TEXT NOT NULL,
+  takma TEXT NOT NULL,
+  metin TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  sikayet INTEGER NOT NULL DEFAULT 0,
+  gizli INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS y_paylasim ON yorum(paylasim, zaman);
+CREATE TABLE IF NOT EXISTS yorum_sikayet (
+  yorum TEXT NOT NULL,
+  cihaz TEXT NOT NULL,
+  PRIMARY KEY (yorum, cihaz)
 );

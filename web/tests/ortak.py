@@ -44,8 +44,14 @@ class Oturum:
         self.p.on('pageerror', lambda e: self.hatalar.append('pageerror: ' + str(e)))
         self.p.on('console', lambda m: self.hatalar.append('console.' + m.type + ': ' + m.text) if m.type in ('error', 'warning', 'info') else None)
 
-    def ac(self):
+    def ac(self, acilis=False):
         self.p.goto(SAYFA)
+        if not acilis:
+            try:
+                self.p.click('#acilis', timeout=3000)
+                self.p.wait_for_selector('#acilis', state='detached', timeout=3000)
+            except Exception:
+                pass
         self.p.wait_for_timeout(400)
         return self.p
 

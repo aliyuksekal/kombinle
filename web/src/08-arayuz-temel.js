@@ -70,13 +70,13 @@ function onayla(baslik, metin, evet, tehlike) {
 }
 
 /* ---------- Ad yardımcıları ---------- */
-function turAd(id) { var x = TUR[id]; return x ? (A.dil === 'en' ? x.en : x.tr) : ''; }
-function grupAd(id) { var g = GRUPLAR.filter(function (x) { return x.id === id; })[0]; return g ? (A.dil === 'en' ? g.en : g.tr) : ''; }
-function renkAd(id) { var r = RENK[id]; return r ? (A.dil === 'en' ? r.en : r.tr) : ''; }
-function ortamAd(id) { var o = ORTAMLAR[id]; return o ? (A.dil === 'en' ? o.en : o.tr) : ''; }
+function turAd(id) { var x = TUR[id]; return x ? (x.ozel ? x.tr : yerelAd('tur', id, x.tr, x.en)) : ''; }
+function grupAd(id) { var g = GRUPLAR.filter(function (x) { return x.id === id; })[0]; return g ? yerelAd('grup', id, g.tr, g.en) : ''; }
+function renkAd(id) { var r = RENK[id]; return r ? yerelAd('renk', id, r.tr, r.en) : ''; }
+function ortamAd(id) { var o = ORTAMLAR[id]; return o ? yerelAd('ortam', id, o.tr, o.en) : ''; }
 function parcaAd(p) { return p.ad || (renkAd(p.renk) + ' ' + turAd(p.tur).toLocaleLowerCase(A.dil === 'tr' ? 'tr' : 'en')); }
 function tarihYaz(ts) {
-  try { return new Date(ts).toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : 'en-GB', { day: 'numeric', month: 'long', weekday: 'long' }); }
+  try { return new Date(ts).toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { day: 'numeric', month: 'long', weekday: 'long' }); }
   catch (e) { return bugunAnahtar(new Date(ts)); }
 }
 

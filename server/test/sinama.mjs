@@ -13,7 +13,7 @@ function hazirla(sql) {
     _calis() {
       const st = db.prepare(sql);
       // ?1 biçimi için adlandırılmış eşleme
-      if (/\?\d/.test(sql)) { const o = {}; degerler.forEach((x, i) => o[String(i + 1)] = x); return { st, arg: [o] }; }
+      if (/\?\d/.test(sql)) { const o = {}; degerler.forEach((x, i) => { if (new RegExp('\\?' + (i + 1) + '(?!\\d)').test(sql)) o[String(i + 1)] = x; }); return { st, arg: [o] }; }
       return { st, arg: degerler };
     },
     async first(kol) { const { st, arg } = nesne._calis(); const r = st.get(...arg); return r ? (kol ? r[kol] : r) : null; },
@@ -129,6 +129,56 @@ ok((await iste('/v1/sil', { id: id2 }, cihazA)).veri.ok, 'kendi paylaşımı sil
 let kota = 0;
 for (let i = 0; i < 12; i++) { const x = await iste('/v1/paylas', { resim: jpeg, takma: 'Zey', aciklama: 'k' + i }, cihazD, { ip: '9.9.9.9' }); if (x.durum === 429) kota++; }
 ok(kota > 0, 'paylaşım kotası işledi');
+
+// --- görünürlük, takip, yorum, kişiler, sohbet ---
+yzYanit = () => ({ uygun: true, neden: 'uygun' });
+const E = 'e'.repeat(64), F = 'f'.repeat(64), G2 = '9'.repeat(64);
+const pub = (await iste('/v1/paylas', { resim: jpeg, takma: 'Elif', aciklama: 'herkese', gorunurluk: 'herkes' }, E, { ip: '5.5.5.5' })).veri.id;
+const tkp = (await iste('/v1/paylas', { resim: jpeg, takma: 'Elif', aciklama: 'takipçilere', gorunurluk: 'takip' }, E, { ip: '5.5.5.5' })).veri.id;
+const gz = (await iste('/v1/paylas', { resim: jpeg, takma: 'Elif', aciklama: 'gizli', gorunurluk: 'gizli' }, E, { ip: '5.5.5.5' })).veri.id;
+let ak = (await iste('/v1/akis', {}, F)).veri.liste.map(x => x.id);
+ok(ak.includes(pub) && !ak.includes(tkp) && !ak.includes(gz), 'takip etmeyen yalnız herkese açık paylaşımı görür');
+ok((await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.length === 3, 'sahibi üçünü de görür');
+let ks = await iste('/v1/kisiler', { ara: 'eli' }, F);
+const elif = ks.veri.liste.find(k => k.takma === 'Elif');
+ok(elif && elif.paylasim === 1, 'kişi aramada profil bulundu: ' + JSON.stringify(ks.veri).slice(0, 120));
+ok((await iste('/v1/kisiler', { ara: "%' OR 1=1 --" }, F)).durum === 200, 'arama SQL enjeksiyonuna dayanıklı');
+r = await iste('/v1/takip', { kod: elif.kod, takip: true }, F);
+ok(r.veri.takipte && r.veri.takipci === 1, 'takip edildi');
+ak = (await iste('/v1/akis', {}, F)).veri.liste;
+ok(ak.some(x => x.id === tkp) && !ak.some(x => x.id === gz), 'takipçi takipçilere özel paylaşımı görür, gizliyi görmez');
+ok(ak.find(x => x.id === pub).takipte === 1, 'akışta takip bilgisi');
+ok((await iste('/v1/akis', { sira: 'takip' }, F)).veri.liste.length === 2, 'Takip Edilenler akışı');
+ok((await iste('/v1/akis', { sira: 'kisi', kisi: elif.kod }, F)).veri.liste.length === 2, 'kişinin paylaşımları');
+ok((await iste('/v1/takip', { kod: elif.kod, takip: true }, E)).veri.hata === 'kendi', 'kendini takip edemez');
+// yorumlar
+r = await iste('/v1/yorum', { id: pub, metin: 'Çok yakışmış!', takma: 'Ayşe' }, F);
+ok(r.veri.ok, 'yorum eklendi');
+yzYanit = () => ({ uygun: false, neden: 'nefret' });
+r = await iste('/v1/yorum', { id: pub, metin: 'kötü söz', takma: 'Ayşe' }, F);
+ok(r.veri.ok === false && r.veri.neden === 'nefret', 'hakaretli yorum reddedildi');
+yzYanit = () => ({ uygun: true, neden: 'uygun' });
+ok((await iste('/v1/yorum', { id: gz, metin: 'merhaba', takma: 'Ayşe' }, F)).durum === 404, 'gizli paylaşıma yorum yapılamaz');
+ok((await iste('/v1/yorum', { id: pub, metin: 'ara beni 05321234567', takma: 'Ayşe' }, F)).veri.hata === 'baglanti', 'yorumda telefon engellendi');
+let yl = (await iste('/v1/yorumlar', { id: pub }, E)).veri.liste;
+ok(yl.length === 1 && yl[0].silebilir === true && yl[0].benim === false, 'paylaşım sahibi yorumu silebilir');
+ok((await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.find(x => x.id === pub).yorum === 1, 'yorum sayısı');
+await iste('/v1/ysikayet', { id: yl[0].id }, G2);
+await iste('/v1/ysikayet', { id: yl[0].id }, cihazB);
+await iste('/v1/ysikayet', { id: yl[0].id }, cihazC);
+ok((await iste('/v1/yorumlar', { id: pub }, E)).veri.liste.length === 0, '3 şikâyetle yorum gizlendi');
+r = await iste('/v1/yorum', { id: pub, metin: 'ikinci', takma: 'Ayşe' }, F);
+ok((await iste('/v1/yorumsil', { id: r.veri.id }, G2)).durum === 404, 'başkası yorumu silemez');
+ok((await iste('/v1/yorumsil', { id: r.veri.id }, F)).veri.ok, 'yazarı yorumu sildi');
+r = await iste('/v1/takip', { kod: elif.kod, takip: false }, F);
+ok(r.veri.takipte === false && !(await iste('/v1/akis', {}, F)).veri.liste.some(x => x.id === tkp), 'takipten çıkınca özel paylaşım kayboldu');
+// sohbet
+yzYanit = (g) => ({ yanit: 'Lacivert blazerin harika olur prenses ✨', parcalar: ['p0001'], oneriler: ['Hangi ayakkabı?'] });
+r = await iste('/v1/sohbet', { mesaj: 'Toplantı için ne giysem?', dil: 'ru', gecmis: [{ r: 'k', m: 'merhaba' }, { r: 'a', m: 'selam' }], parcalar: [{ i: 'p0001', t: 'blazer', r: 'lacivert' }], hava: { simdi: 12 } });
+ok(r.veri.ok && r.veri.sonuc.yanit.includes('blazer'), 'sohbet yanıtı');
+const sy = yzIstekleri[yzIstekleri.length - 1].g;
+ok(sy.contents[0].parts[0].text.includes('русский'), 'sohbet dili Rusça istendi');
+ok((await iste('/v1/sohbet', { mesaj: '' })).veri.hata === 'bos', 'boş mesaj reddedildi');
 
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
