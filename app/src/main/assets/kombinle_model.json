@@ -1,0 +1,255 @@
+{
+ "surum": 1792774685,
+ "girdi": 224,
+ "olcek": "0-255",
+ "zemin": "#ffffff",
+ "siniflar": [
+  {
+   "id": "tisort",
+   "turlar": [
+    "tisort",
+    "bluz"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "sweat",
+   "turlar": [
+    "sweat",
+    "kazak"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "askili",
+   "turlar": [
+    "askili",
+    "bluz"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "gomlek_bluz",
+   "turlar": [
+    "bluz",
+    "gomlek",
+    "tunik"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "kazak",
+   "turlar": [
+    "kazak",
+    "sweat"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "hirka",
+   "turlar": [
+    "hirka",
+    "kazak"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "blazer",
+   "turlar": [
+    "blazer",
+    "ceket"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "ceket",
+   "turlar": [
+    "ceket",
+    "blazer",
+    "mont"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "yelek",
+   "turlar": [
+    "yelek"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "kaban",
+   "turlar": [
+    "kaban",
+    "tren",
+    "mont"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "mont",
+   "turlar": [
+    "mont",
+    "ceket"
+   ],
+   "grup": "dis"
+  },
+  {
+   "id": "kot",
+   "turlar": [
+    "kot"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "tayt",
+   "turlar": [
+    "tayt",
+    "kumas"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "kumas",
+   "turlar": [
+    "kumas",
+    "kot"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "sort",
+   "turlar": [
+    "sort"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "etek",
+   "turlar": [
+    "etek",
+    "uzunetek"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "uzunetek",
+   "turlar": [
+    "uzunetek",
+    "etek"
+   ],
+   "grup": "alt"
+  },
+  {
+   "id": "elbise",
+   "turlar": [
+    "elbise",
+    "uzunelbise",
+    "tunik"
+   ],
+   "grup": "tek"
+  },
+  {
+   "id": "uzunelbise",
+   "turlar": [
+    "uzunelbise",
+    "elbise",
+    "ferace"
+   ],
+   "grup": "tek"
+  },
+  {
+   "id": "tulum",
+   "turlar": [
+    "tulum"
+   ],
+   "grup": "tek"
+  },
+  {
+   "id": "ayakkabi",
+   "turlar": [],
+   "grup": "ayk"
+  },
+  {
+   "id": "canta",
+   "turlar": [
+    "canta"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "atki",
+   "turlar": [
+    "atki",
+    "esarp"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "bere",
+   "turlar": [
+    "bere"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "gozluk",
+   "turlar": [
+    "gozluk"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "eldiven",
+   "turlar": [
+    "eldiven"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "saat",
+   "turlar": [
+    "saat"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "kemer",
+   "turlar": [
+    "kemer"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "kulotlu",
+   "turlar": [
+    "kulotlu"
+   ],
+   "grup": "ic"
+  },
+  {
+   "id": "corap",
+   "turlar": [
+    "corap"
+   ],
+   "grup": "ic"
+  }
+ ],
+ "desenler": [
+  "duz",
+  "cizgili",
+  "kareli",
+  "cicekli",
+  "puantiyeli",
+  "hayvan",
+  "diger"
+ ],
+ "dogruluk": {
+  "tur": 0.766,
+  "desen": 0.846,
+  "duz_desenli": 0.882,
+  "emin75": 0.934,
+  "ornek": 1011
+ },
+ "kaynak": "Fashionpedia (etiketler CC BY 4.0)"
+}
