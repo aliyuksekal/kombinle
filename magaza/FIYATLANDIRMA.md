@@ -11,10 +11,10 @@ okur, kodda değişiklik gerekmez.
 
 | Ürün kimliği | Tür | USD | Yaklaşık TL |
 |---|---|---|---|
-| `jeton_50` | Tüketilebilir | 1,99 $ | ~99 ₺ |
-| `jeton_150` | Tüketilebilir | 4,99 $ | ~248 ₺ |
-| `jeton_400` | Tüketilebilir | 9,99 $ | ~497 ₺ |
-| `kombinle_pro_aylik` | Aylık abonelik | 9,99 $ | ~497 ₺ |
+| `jeton_50` | Tüketilebilir | 2,49 $ | ~124 ₺ |
+| `jeton_150` | Tüketilebilir | 6,49 $ | ~323 ₺ |
+| `jeton_400` | Tüketilebilir | 12,99 $ | ~646 ₺ |
+| `kombinle_pro_aylik` | Aylık abonelik | 14,99 $ | ~746 ₺ |
 
 Türkiye'de fiyatlar KDV dahil görünür. KDV'yi Google tahsil edip öder.
 
@@ -33,10 +33,10 @@ Türkiye'de elde kalan oran yaklaşık: fiyat ÷ 1,20 × 0,85 × 0,85 ≈ **fiya
 
 | Ürün | Türkiye net | Jeton başı net | ABD net | AB net |
 |---|---|---|---|---|
-| 50 jeton | 1,20 $ | 0,024 $ | 1,27 $ | 1,05 $ |
-| 150 jeton | 3,00 $ | 0,020 $ | 3,18 $ | 2,63 $ |
-| 400 jeton | 6,01 $ | 0,015 $ | 6,37 $ | 5,26 $ |
-| PRO aylık | 6,01 $ | – | 7,22 $ | 5,96 $ |
+| 50 jeton | 1,50 $ | 0,030 $ | 1,59 $ | 1,31 $ |
+| 150 jeton | 3,91 $ | 0,026 $ | 4,14 $ | 3,42 $ |
+| 400 jeton | 7,82 $ | 0,020 $ | 8,28 $ | 6,84 $ |
+| PRO aylık | 9,03 $ | – | 10,83 $ | 8,95 $ |
 
 ## Yapay zekâ maliyeti
 
@@ -65,11 +65,11 @@ Sunucu da bu sınırları ayrıca uygular: cihaz başına günlük doğal ses en
 
 ## Sürdürülebilirlik
 
-- **Jeton:** Her pakette jeton başına net gelir maliyetin üstünde. En dar durum AB'de 400'lük paket: net 0,013 $, maliyet 0,009–0,012 $.
-- **PRO (9,99 $, Türkiye'de net 6,01 $), aylık maliyet:**
-  - Ortalama kullanıcı (günde 4 iş, 8 mesaj, 6 sesli cevap): ~2,6 $ (2027'de ~3,6 $). Kâr ~3,4 $.
-  - Yoğun kullanıcı (günde 10 iş, 20 mesaj, 15 ses): ~6,6 $. Yaklaşık başa baş.
-  - Her gün tüm sınırları dolduran kullanıcı: ~12,8 $. Çok nadir; sınırlar bu kuyruğu keser.
+- **Jeton:** Her pakette jeton başına net gelir maliyetin en az ~1,5 katı. En dar durum AB'de 400'lük paket: net ~0,017 $, maliyet 0,009–0,012 $.
+- **PRO (14,99 $, Türkiye'de net 9,03 $), aylık maliyet:**
+  - Ortalama kullanıcı (günde 4 iş, 8 mesaj, 6 sesli cevap): ~2,6 $ (2027'de ~3,6 $). Kâr ~6,4 $.
+  - Yoğun kullanıcı (günde 10 iş, 20 mesaj, 15 ses): ~6,6 $. Kâr ~2,4 $.
+  - Her gün tüm sınırları dolduran kullanıcı: ~12,8 $. Çok nadir; Türkiye'de ~3,8 $ zarar. Sınırlar bu kuyruğu keser.
 - **Ücretsiz kullanıcı:** Aktif bir günde en fazla ~0,03 $ (5 mesaj, 3 ses), artı ilk gün dolabını kurarken tanıma. Bu, kullanıcı kazanma maliyetidir.
 - **Takip edilecekler:**
   - 1 Ocak 2027'de doğal ses fiyatı ikiye katlanıyor. O zaman ses sınırları ya da PRO fiyatı yeniden gözden geçirilmeli.

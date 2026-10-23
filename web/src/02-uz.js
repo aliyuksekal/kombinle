@@ -158,7 +158,7 @@ DIL.uz = {
   oncekiAy: 'Oldingi oy', sonrakiAy: 'Keyingi oy', gecmisBosGun: "Bu kunda saqlangan obraz yo'q.", takvimIpucu: "Obraz rejalashtirish uchun kunni bos. Oltin nuqtalar — rejalashtirilgan kunlar.",
   planMetin: function (d) { return d + ' uchun saqlangan obrazni tanla yoki yangisini tuz.'; }, yeniKombinKur: 'Yangi obraz tuzish', planKayitYok: "Hali saqlangan obraz yo'q.", planla: 'Obraz rejalashtirish', gorListe: "Ro'yxat", gorTakvim: 'Taqvim',
   proGunlukDoldu: function (n) { return 'Bugungi ' + n + " ta AI amali ishlatildi (adolatli foydalanish). Ertaga yangilanadi."; }, ayBasi: '/oy', aboneligiYonet: 'Obunani boshqarish / bekor qilish',
-  enAvantajli: 'ENG FOYDALI', proAylikBaslik: 'Kombinle PRO • Oylik', proKiyas: function (n) { return 'Oyiga ' + n + " tagacha AI amali: shu narxdagi 400 jetonli paketdan 1,5 baravar ko'p, har oy yangilanadi"; },
+  enAvantajli: 'ENG FOYDALI', proAylikBaslik: 'Kombinle PRO • Oylik', proKiyas: function (n) { return 'Oyiga ' + n + " tagacha AI amali: 400 jetonli paketdan 1,5 baravar ko'p, har oy yangilanadi"; },
   proS1: function (n) { return 'Kuniga ' + n + " ta aqlli obraz, tahlil va chamadon"; }, proS2: function (n) { return 'AI Malika bilan kuniga ' + n + ' ta xabar'; },
   proS3: "Jetonsiz: fonni o'chirish, ilhom va moslashtirish kiradi", proS4: 'Reklamasiz', proS5: 'Istalgan payt bekor qilish, majburiyatsiz',
   aboneNot: "Obuna har oy avtomatik yangilanadi; Play Store > Obunalar bo'limida istalgan payt bekor qilish mumkin. \"Cheksiz\" adolatli foydalanish doirasida amal qiladi.",

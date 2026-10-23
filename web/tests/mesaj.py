@@ -104,8 +104,8 @@ with sync_playwright() as pw:
     ok(sy.locator('.pr-sekmeler button', has_text='Takipçiler').count() == 1 and sy.locator('.pr-sekmeler button', has_text='Takip edilen').count() == 1, 'profilde Takipçiler ve Takip ettiklerim sekmeleri')
     sy.locator('.pr-sekmeler button', has_text='Takipçiler').click(); p.wait_for_timeout(500)
     ok('Zeynep' in sy.inner_text() and 'Ayşe' in sy.inner_text(), 'takipçiler listelendi')
-    sy.locator('.pr-sayi', has_text='takip').last.click(); p.wait_for_timeout(500)
-    ok('Merve' in sy.inner_text(), 'sayıya dokununca takip edilenler')
+    sy.locator('.pr-sekmeler button', has_text='Takip edilen').click(); p.wait_for_timeout(500)
+    ok('Merve' in sy.inner_text() and sy.locator('.pr-sayi').count() == 0, 'takip edilenler sekmesi; profilde sayı satırı yok')
     o.ekran('d3_profil_takip')
     sy.locator('.tk-ac', has_text='Merve').click(); p.wait_for_timeout(900)
     sp = p.locator('.sayfa.acik').last

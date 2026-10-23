@@ -11,11 +11,11 @@
    PRO aylık abonedir; "sınırsız" adil kullanımla: günde 20 yapay zekâ işi, 40 sohbet mesajı, 20 doğal sesli cevap. */
 var BASLANGIC_JETON = 15;
 var JETON_PAKETLERI = [
-  { id: 'jeton_50', adet: 50, fiyat: '$1.99' },
-  { id: 'jeton_150', adet: 150, fiyat: '$4.99', avantaj: 16 },
-  { id: 'jeton_400', adet: 400, fiyat: '$9.99', avantaj: 37, populer: true }
+  { id: 'jeton_50', adet: 50, fiyat: '$2.49' },
+  { id: 'jeton_150', adet: 150, fiyat: '$6.49', avantaj: 13 },
+  { id: 'jeton_400', adet: 400, fiyat: '$12.99', avantaj: 35, populer: true }
 ];
-var PRO_FIYAT = '$9.99';
+var PRO_FIYAT = '$14.99';
 var PRO_GUNLUK = 20, SOHBET_GUNLUK = { ucretsiz: 5, pro: 40 };
 /* doğal (yapay zekâ) sesle okunan cevap: ücretsizde günde 3, PRO'da 20; sonrası telefonun kendi sesiyle */
 var SES_GUNLUK = { ucretsiz: 3, pro: 20 };
