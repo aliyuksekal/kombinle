@@ -32,6 +32,7 @@ function ayarIcerik(gov) {
     gov.appendChild(kart('hesap', 'kisi', t('hBaslik'), hb ? hb.ad + ' • ' + hb.eposta : t('hAlt'), hesapBolumu(ciz3)));
     /* AI Prenses */
     gov.appendChild(kart('prenses', 'prenses', t('prensesBaslik'), t('cevrimiciAsistan'), h('div', null, h('p', { class: 'ayar-not', style: { margin: '0 0 12px' }, text: t('prensesKart') }),
+      h('div', { class: 'ayar-grup', style: { margin: '0 0 12px' } }, anahtarSatir(t('dogalSes'), t('dogalSesAlt'), LS.al('dogalSes', true) !== false, function (v) { LS.yaz('dogalSes', !!v); })),
       h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { sohbetAc(); } } }, ikon('isilti', 'k'), t('sohbetBaslat')))));
     /* görünüm */
     var tema = temaSecimi();

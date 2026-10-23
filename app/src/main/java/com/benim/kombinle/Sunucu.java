@@ -27,9 +27,9 @@ final class Sunucu {
 
     static final String ADRES = BuildConfig.SUNUCU;
     private static final String ANAHTAR = BuildConfig.UYGULAMA_ANAHTARI;
-    private static final Pattern YOL = Pattern.compile("/v1/(tani|kombin|analiz|paylas|akis|oy|sikayet|sil|sohbet|yorumlar|yorum|yorumsil|ysikayet|takip|kisiler|kayit|giris|sifre|cikis|ben|hesapsil|profil|kadi|ata|avatar|reklamlar|reklamsay|reklamekle|reklamsil|bildirim|kaydet|profilgor|takipler|duzenle|ksikayet|proata|prolar|renk|anket|anketler|anketoy|anketsil|aksikayet|dmliste|dmoku|dmyaz|dmkabul|dmsil|dmengel|dmsikayet|yonetim|durum|kodgonder|kodsifirla)");
+    private static final Pattern YOL = Pattern.compile("/v1/(tani|kombin|analiz|paylas|akis|oy|sikayet|sil|sohbet|yorumlar|yorum|yorumsil|ysikayet|takip|kisiler|kayit|giris|sifre|cikis|ben|hesapsil|profil|kadi|ata|avatar|reklamlar|reklamsay|reklamekle|reklamsil|bildirim|kaydet|profilgor|takipler|duzenle|ksikayet|proata|prolar|renk|anket|anketler|anketoy|anketsil|aksikayet|dmliste|dmoku|dmyaz|dmkabul|dmsil|dmengel|dmsikayet|yonetim|durum|kodgonder|kodsifirla|ses)");
     private static final int EN_FAZLA_GOVDE = 3 * 1024 * 1024;
-    private static final int EN_FAZLA_YANIT = 2 * 1024 * 1024;
+    private static final int EN_FAZLA_YANIT = 8 * 1024 * 1024;   // doğal ses yanıtı (WAV) birkaç MB olabilir
     private static volatile long saatFarki = 0;
 
     private Sunucu() { }

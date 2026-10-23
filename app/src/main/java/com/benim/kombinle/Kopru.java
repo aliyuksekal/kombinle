@@ -117,11 +117,43 @@ public final class Kopru {
         });
     }
 
+    private String secilenDil;
+
     private void oku(String m, String d) {
         try {
-            okuyucu.setLanguage(Locale.forLanguageTag(d));
-            okuyucu.setPitch(1.08f);
+            if (!d.equals(secilenDil)) {
+                Locale yer = Locale.forLanguageTag(d);
+                okuyucu.setLanguage(yer);
+                enIyiSes(yer);
+                secilenDil = d;
+            }
+            // doğal tını: perde ve hız oynatılmaz, çok az yavaş okunur
+            okuyucu.setPitch(1.0f);
+            okuyucu.setSpeechRate(0.95f);
             okuyucu.speak(m, TextToSpeech.QUEUE_FLUSH, null, "kombinle");
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /* Telefonda bu dil için kurulu en kaliteli sesi seçer (internet istemeyen sesler öncelikli) */
+    private void enIyiSes(Locale yer) {
+        try {
+            java.util.Set<android.speech.tts.Voice> sesler = okuyucu.getVoices();
+            if (sesler == null) return;
+            android.speech.tts.Voice simdiki = okuyucu.getVoice(), en = null;
+            int enPuan = Integer.MIN_VALUE;
+            for (android.speech.tts.Voice v : sesler) {
+                Locale l = v.getLocale();
+                if (l == null || !l.getLanguage().equals(yer.getLanguage())) continue;
+                java.util.Set<String> o = v.getFeatures();
+                if (o != null && o.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)) continue;
+                int puan = v.getQuality() * 10 - Math.min(v.getLatency(), 500) / 10;
+                if (v.isNetworkConnectionRequired()) puan -= 2000;
+                if (yer.getCountry().length() > 0 && yer.getCountry().equalsIgnoreCase(l.getCountry())) puan += 20;
+                if (simdiki != null && v.getName().equals(simdiki.getName())) puan += 15;   // eşitlikte varsayılan ses kalır
+                if (puan > enPuan) { enPuan = puan; en = v; }
+            }
+            if (en != null && (simdiki == null || !en.getName().equals(simdiki.getName()))) okuyucu.setVoice(en);
         } catch (Throwable ignored) {
         }
     }
@@ -265,12 +297,36 @@ public final class Kopru {
                     return;
                 }
                 JSONObject sonuc = model.tani(bmp);
+                // boydan/üzerinde çekilmiş fotoğraf mı? (yüz varsa uygulama hangi parçanın ekleneceğini sorar)
+                try { sonuc.put("yuz", yuzSay(bmp)); } catch (Throwable ignored) { }
                 bmp.recycle();
                 gonder(req, true, "sonuc", sonuc);
             } catch (Throwable t) {
                 gonder(req, false, "hata", "model");
             }
         });
+    }
+
+    /* Android'in yerleşik yüz bulucusu (ek kütüphane gerekmez); en fazla 3 yüz sayar */
+    private static int yuzSay(Bitmap kaynak) {
+        Bitmap b = null;
+        try {
+            int w = kaynak.getWidth() & ~1, h = kaynak.getHeight();
+            if (w < 32 || h < 32) return 0;
+            float o = Math.min(1f, 480f / Math.max(w, h));
+            int gw = Math.max(32, Math.round(w * o)) & ~1, gh = Math.max(32, Math.round(h * o));
+            b = Bitmap.createBitmap(gw, gh, Bitmap.Config.RGB_565);
+            new android.graphics.Canvas(b).drawBitmap(kaynak, null, new android.graphics.Rect(0, 0, gw, gh), new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG));
+            android.media.FaceDetector.Face[] yuzler = new android.media.FaceDetector.Face[3];
+            int n = new android.media.FaceDetector(gw, gh, 3).findFaces(b, yuzler);
+            int guvenli = 0;
+            for (int i = 0; i < n; i++) if (yuzler[i] != null && yuzler[i].confidence() >= 0.3f) guvenli++;
+            return guvenli;
+        } catch (Throwable t) {
+            return 0;
+        } finally {
+            if (b != null) b.recycle();
+        }
     }
 
     /* ---------------- telefonun çözebildiği ama sayfanın çözemediği resimler (HEIC/HEIF) JPEG'e ---------------- */

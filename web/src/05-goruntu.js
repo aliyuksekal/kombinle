@@ -87,6 +87,9 @@ function fotografIsle(kaynak) {
     var analiz;
     try { analiz = analizEt(analizTuval.veri, analizTuval.w, analizTuval.h, analizTuval.alfa); }
     catch (e) { analiz = { grup: '', turlar: [], guven: 0, renk: 'siyah', renk2: '', desen: 0, sekilYok: true }; }
+    /* kaynak._tek: fotoğraf zaten tek parçaya kırpıldı (boydan fotoğraftan seçilen parça) */
+    var ek = kaynak && kaynak._tek ? { tek: true } : null;
+    if (bulutVeri) analiz._kaynakVeri = bulutVeri;
     var yz = yzVeri ? yerelCagir('etiketle', [yzVeri], 20000).then(function (d) {
       if (d.ok && Array.isArray(d.etiketler)) yapayZekaBirlestir(analiz, d.etiketler);
     }).catch(function () { }) : Promise.resolve();
@@ -97,14 +100,14 @@ function fotografIsle(kaynak) {
         if (r[0]) modelBirlestir(analiz, r[0]);
         if (!bulutVeri) return null;
         if (modelYeterli(analiz)) { analiz.bulutAtlandi = true; analiz._bulutVeri = bulutVeri; return null; }
-        return yzTani(bulutVeri).catch(function () { return null; });
+        return yzTani(bulutVeri, ek).catch(function () { return null; });
       })
-      : (bulutVeri ? yzTani(bulutVeri).catch(function () { return null; }) : Promise.resolve(null));
+      : (bulutVeri ? yzTani(bulutVeri, ek).catch(function () { return null; }) : Promise.resolve(null));
     return Promise.all([tuvaldenBlob(buyuk, 0.86), tuvaldenBlob(kucuk, 0.82), yz, bulut]).then(function (b) {
       /* bulut sonucu cihaz içi tanımadan sonra uygulanır: daha güvenilir olan kazanır */
       if (b[3]) bulutBirlestir(analiz, b[3]);
       else if (bulutVeri && !analiz.bulutAtlandi) { analiz.bulutHata = true; analiz._bulutVeri = bulutVeri; }   // yeniden denenebilir
-      return { buyuk: b[0], kucuk: b[1], analiz: analiz };
+      return { buyuk: b[0], kucuk: b[1], analiz: analiz, kaynak: kaynak };
     });
   });
 }
@@ -451,6 +454,7 @@ function modelTani(b64) {
   }).catch(function () { return null; });
 }
 function modelBirlestir(an, m) {
+  if (an && m && sayiMi(m.yuz) && m.yuz > 0) an.yuz = Math.min(3, m.yuz);   // fotoğrafta biri var: üzerindeki parçalardan seçilecek
   if (!an || !m || !Array.isArray(m.siniflar) || !m.siniflar.length) return false;
   var s = m.siniflar[0];
   if (!s || typeof s.id !== 'string' || !sayiMi(s.p) || !GRUPLAR.some(function (g) { return g.id === s.grup; })) return false;
@@ -483,6 +487,8 @@ function modelBirlestir(an, m) {
 /* Model sonucu tek başına yeterli mi? Takı olabilecek fotoğraflar her zaman buluta gider (modelde takı yok). */
 function modelYeterli(an) {
   if (!an || !an.model || an.model.p < MODEL_ESIK || an.grup !== (an.turlar[0] && TUR[an.turlar[0]] ? TUR[an.turlar[0]].g : '')) return false;
+  /* üzerinde çekilmiş (yüz ya da özçekim görünen) fotoğrafta birden çok parça olabilir: bulut parçaları ayırır */
+  if (an.yuz > 0 || (an.yzEtiket || []).some(function (e) { return e && e.t === 'Selfie' && sayiMi(e.c) && e.c >= 0.5; })) return false;
   var taki = (an.yzEtiket || []).some(function (e) { return e && typeof e.t === 'string' && TAKI_ETIKETI.test(e.t) && sayiMi(e.c) && e.c >= 0.5; });
   return !taki;
 }

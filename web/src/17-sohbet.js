@@ -7,25 +7,70 @@ function sohbetGecmisi() {
   var l = LS.al('sohbet', []);
   if (!Array.isArray(l)) return [];
   return l.filter(function (x) { return x && (x.r === 'k' || x.r === 'a') && typeof x.m === 'string'; }).slice(-40)
-    .map(function (x) { return { r: x.r, m: kirp(x.m, 900), p: Array.isArray(x.p) ? x.p.filter(function (i) { return typeof i === 'string'; }).slice(0, 6) : [] }; });
+    .map(function (x) { return { r: x.r, m: satirKirp(x.m, 900), z: sayiMi(x.z) ? x.z : 0, p: Array.isArray(x.p) ? x.p.filter(function (i) { return typeof i === 'string'; }).slice(0, 6) : [] }; });
 }
+/* satır sonlarını koruyarak kırpar (cevaplardaki listeler alt alta görünsün) */
+function satirKirp(m, n) { return String(m || '').split(/\s*\n\s*/).map(function (x) { return kirp(x, n); }).filter(Boolean).join('\n').slice(0, n); }
 function sohbetKaydet(l) { LS.yaz('sohbet', l.slice(-40)); }
+/* saate göre selam: sabah Günaydın, öğlen Selam, akşam İyi akşamlar */
+var SELAM_SOZ = { tr: ['Günaydın', 'Selam', 'İyi akşamlar', 'Merhaba'], en: ['Good morning', 'Hi', 'Good evening', 'Hi'], ru: ['Доброе утро', 'Привет', 'Добрый вечер', 'Привет'], uz: ['Xayrli tong', 'Salom', 'Xayrli kech', 'Salom'] };
+function selamSoz() {
+  var l = SELAM_SOZ[A.dil] || SELAM_SOZ.tr, s = new Date().getHours();
+  return s >= 5 && s < 11 ? l[0] : s >= 11 && s < 17 ? l[1] : s >= 17 ? l[2] : l[3];
+}
+/* yeni konuşma mı? (hiç cevap yoksa ya da son mesajın üstünden 3 saat geçtiyse selamla başlanır) */
+var SOHBET_ARA = 3 * 3600000;
+function sohbetYeniMi(gecmis) {
+  var son = gecmis.length ? gecmis[gecmis.length - 1] : null;
+  return !son || !sayiMi(son.z) || Date.now() - son.z > SOHBET_ARA || !gecmis.some(function (x) { return x.r === 'a'; });
+}
 function sesliYanitAcik() { return LS.al('sesliYanit', true) !== false; }
+var SES = { sira: 0, calan: null, url: '' };
 function sesliOku(metin) {
   if (!sesliYanitAcik()) return;
-  /* emoji ve simgeler okunmasın */
-  var m = String(metin || '').replace(/[^\p{L}\p{N}\p{P}\p{Zs}\n]/gu, ' ').replace(/\s+/g, ' ').trim();
+  /* emoji ve simgeler okunmasın; madde işaretleri ve satır sonları doğal duraklamaya döner */
+  var m = String(metin || '').replace(/[^\p{L}\p{N}\p{P}\p{Zs}\n]/gu, ' ').replace(/^[ \t]*[-•*·][ \t]*/gm, '').replace(/\s*\n+\s*/g, '. ')
+    .replace(/([.!?…:])\.(\s|$)/g, '$1$2').replace(/\s+([.,!?…])/g, '$1').replace(/\s+/g, ' ').trim();
   if (!m) return;
+  var sira = ++SES.sira;
+  /* Kombinle AI'nin doğal insan sesi; alınamazsa telefonun kendi sesi */
+  if (yzAcik() && LS.al('dogalSes', true) !== false) {
+    yzIste('/v1/ses', { metin: kirp(m, 700), dil: A.dil }, 30000).then(function (v) {
+      if (sira !== SES.sira) return;
+      if (!v || typeof v.ses !== 'string' || v.ses.length < 100) throw new Error('ses');
+      sesCal(v.ses, typeof v.tip === 'string' && /^audio\/[a-z0-9.+-]+$/.test(v.tip) ? v.tip : 'audio/wav', function () { if (sira === SES.sira) telefonSesi(m); });
+    }).catch(function () { if (sira === SES.sira) telefonSesi(m); });
+    return;
+  }
+  telefonSesi(m);
+}
+function sesCal(b64, tip, olmadi) {
+  sesBirak();
+  try {
+    SES.url = URL.createObjectURL(dataUrlBlob('data:' + tip + ';base64,' + b64));
+    var a = new Audio(SES.url); SES.calan = a;
+    a.addEventListener('ended', sesBirak);
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { sesBirak(); olmadi(); });
+  } catch (e) { sesBirak(); olmadi(); }
+}
+function sesBirak() {
+  try { if (SES.calan) SES.calan.pause(); } catch (e) { }
+  SES.calan = null;
+  if (SES.url) { try { URL.revokeObjectURL(SES.url); } catch (e) { } SES.url = ''; }
+}
+function telefonSesi(m) {
   var dil = KONUSMA_DILI[A.dil] || 'tr-TR';
   try {
     if (YEREL && typeof YEREL.konus === 'function') { YEREL.konus(m, dil); return; }
     if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
       speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(m); u.lang = dil; u.pitch = 1.1; speechSynthesis.speak(u);
+      var u = new SpeechSynthesisUtterance(m); u.lang = dil; u.rate = 0.95; speechSynthesis.speak(u);
     }
   } catch (e) { }
 }
 function sesiKes() {
+  SES.sira++; sesBirak();
   try { if (YEREL && typeof YEREL.sus === 'function') YEREL.sus(); else if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) { }
 }
 
@@ -42,7 +87,7 @@ function yerelPrenses(metin) {
     return { m: t('fbKombin', l.map(parcaAd).join(' + ')), p: l.map(function (p) { return p.id; }) };
   };
   var var_ = function (re) { return re.test(m); };
-  if (var_(/merhaba|selam|hello|\bhi\b|privet|привет|salom/)) return { m: t('fbSelam'), p: [] };
+  if (var_(/merhaba|selam|gunaydin|aksamlar|hello|\bhi\b|morning|evening|privet|привет|добр|salom|xayrli/)) return { m: selamSoz() + ' 👑 ' + t('fbSelam'), p: [] };
   if (var_(/renk|color|цвет|rang/)) return { m: t('fbRenk'), p: [] };
   if (var_(/ofis|toplanti|office|meeting|офис|работ|ish/)) return kombin() || { m: t('fbOfis'), p: [] };
   if (var_(/dugun|davet|nisan|wedding|party|свадь|празд|to'?y|bayram/)) return { m: t('fbDavet'), p: [] };
@@ -126,14 +171,15 @@ function sohbetAc() {
     if (!m || SOHBET.mesgul) return;
     girdi.value = '';
     sesiKes();
-    var k = { r: 'k', m: m, p: [] };
+    var ilk = sohbetYeniMi(gecmis);
+    var k = { r: 'k', m: m, p: [], z: Date.now() };
     gecmis.push(k); mesajEkle(k); sohbetKaydet(gecmis);
     onerileriGoster([]);
     SOHBET.mesgul = true; gonderBtn.disabled = true; yaziyor(true);
     var bitir = function (cevap, oneri) {
       yaziyor(false); SOHBET.mesgul = false; gonderBtn.disabled = false;
       if (kayit.kapandi) return;
-      var a = { r: 'a', m: cevap.m, p: cevap.p || [] };
+      var a = { r: 'a', m: cevap.m, p: cevap.p || [], z: Date.now() };
       gecmis.push(a); mesajEkle(a); sohbetKaydet(gecmis);
       onerileriGoster(oneri && oneri.length ? oneri : []);
       sesliOku(a.m);
@@ -151,12 +197,12 @@ function sohbetAc() {
     }
     var hv = null; try { hv = aktifHava(); } catch (e) { hv = null; }
     yzIste('/v1/sohbet', {
-      mesaj: m, dil: A.dil, tesettur: !!A.tesettur,
+      mesaj: m, dil: A.dil, tesettur: !!A.tesettur, ilk: ilk, saat: new Date().getHours(),
       gecmis: gecmis.slice(-11, -1).map(function (x) { return { r: x.r, m: kirp(x.m, 600) }; }),
       parcalar: yzParcaListesi(), hava: hv ? yzHava(hv) : null
     }, 45000).then(function (v) {
       var s = v.sonuc || {};
-      var cevap = kirp(typeof s.yanit === 'string' ? s.yanit.replace(/\s*\n\s*/g, '\n') : '', 900);
+      var cevap = satirKirp(typeof s.yanit === 'string' ? s.yanit : '', 900);
       if (!cevap) throw new Error('bos');
       var var_ = Object.create(null); S.parcalar.forEach(function (p) { var_[p.id] = 1; });
       var ids = Array.isArray(s.parcalar) ? s.parcalar.filter(function (i) { return typeof i === 'string' && var_[i]; }).slice(0, 6) : [];
@@ -187,7 +233,7 @@ function sohbetAc() {
   function hosgeldin() {
     govde.appendChild(h('div', { class: 'sh-hosgeldin' },
       h('span', { class: 'sh-tac' }, ikon('prenses')),
-      h('h2', { text: t('prensesMerhaba') }),
+      h('h2', { text: selamSoz() + ' 👑' }),
       h('p', { text: t('prensesTanitim') })));
     var l = t('sohbetOnerileri');
     onerileriGoster(Array.isArray(l) ? l : []);

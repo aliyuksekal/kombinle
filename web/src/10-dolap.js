@@ -17,6 +17,8 @@ function sirayaIsle(liste, i) {
     bitti = true;
     bekleme.kapat();
     setTimeout(function () {
+      /* boydan / üzerinde çekilmiş fotoğrafta önce hangi parçanın ekleneceği sorulur */
+      if (parcaSecimiGerek(sonuc)) { parcaSecici(sonuc, liste, i); return; }
       parcaDuzenle(null, { sonuc: sonuc, sira: i + 1, toplam: liste.length, devam: function () { sirayaIsle(liste, i + 1); } });
     }, 300);
   }).catch(function (e) {

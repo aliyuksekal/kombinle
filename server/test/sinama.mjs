@@ -93,6 +93,18 @@ ok(r.veri.sonuc.tur === 'etek', 'kategoriyle çelişen tür düzeltildi');
   ok(r.veri.ok && n === 2, 'yarım kalan yanıt yeniden denendi');
   globalThis.fetch = eski;
 }
+// boydan fotoğraf: parçalar ve kutular
+yzYanit = (g) => ({ gorunen: 'woman in outfit', kiyafet: true, kategori: 'ust', tur: 'kot', alternatifler: [], guven: 0.9, renk: 'mavi', renk2: '', desenli: false, mevsim: [], tarz: [], su: false, ad: 'x', kutu: [100, 200, 500, 800],
+  kisi: true, parcalar: [{ kategori: 'aks', ad: 'Siyah şapka', kutu: [10, 300, 120, 700] }, { kategori: 'alt', ad: 'Mavi kot', kutu: [500, 250, 950, 750] }, { kategori: 'ayk', ad: 'bozuk', kutu: [5, 5, 8, 8] }, { kategori: 'yok', ad: 'x', kutu: [0, 0, 500, 500] }] });
+r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot', 'Jeans', 'alt']], renkler: [['mavi', 'Mavi']] });
+let ts = yzIstekleri[yzIstekleri.length - 1].g;
+ok(r.veri.sonuc.kisi === true && r.veri.sonuc.parcalar.length === 2 && r.veri.sonuc.parcalar[0].ad === 'Siyah şapka' && JSON.stringify(r.veri.sonuc.kutu) === '[100,200,500,800]', 'fotoğraftaki parçalar kutularıyla döndü, bozuklar atıldı');
+ok(ts.generationConfig.responseJsonSchema.properties.parcalar && ts.contents[0].parts[0].text.includes('list EVERY distinct wearable item'), 'parça listesi istendi');
+r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot', 'Jeans', 'alt']], renkler: [['mavi', 'Mavi']], hedef: 'şapka"x' });
+ts = yzIstekleri[yzIstekleri.length - 1].g;
+ok(!ts.generationConfig.responseJsonSchema.properties.parcalar && ts.contents[0].parts[0].text.includes('ONLY this item from the photo: "şapkax"') && r.veri.sonuc.parcalar === undefined, 'hedef parça: yalnız o istenir, liste istenmez');
+r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot', 'Jeans', 'alt']], renkler: [['mavi', 'Mavi']], tek: true });
+ok(!yzIstekleri[yzIstekleri.length - 1].g.generationConfig.responseJsonSchema.properties.parcalar, 'kırpılmış parçada liste istenmez');
 ok((await iste('/v1/tani', { resim: Buffer.from('<svg onload=1>' + 'x'.repeat(200)).toString('base64'), turler: [['kot', 'K']], renkler: [['mavi', 'M']] })).veri.hata === 'resim', 'resim olmayan veri reddedildi');
 
 // yedek model
@@ -242,6 +254,48 @@ ok(r.veri.ok && r.veri.sonuc.yanit.includes('blazer'), 'sohbet yanıtı');
 const sy = yzIstekleri[yzIstekleri.length - 1].g;
 ok(sy.contents[0].parts[0].text.includes('русский'), 'sohbet dili Rusça istendi');
 ok((await iste('/v1/sohbet', { mesaj: '' })).veri.hata === 'bos', 'boş mesaj reddedildi');
+// selamlaşma: ilk cevapta saate göre, sonra selamsız
+yzYanit = () => ({ yanit: 'Günaydın! Bugün krem kazağın çok yakışır.', parcalar: [], oneriler: [] });
+r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 8, ilk: true });
+let syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
+ok(syz.includes('"Günaydın" ile başla') && r.veri.sonuc.yanit.startsWith('Günaydın'), 'sabah ilk cevap Günaydın ile başlar');
+r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 20, ilk: true });
+ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('"İyi akşamlar" ile başla'), 'akşam ilk cevap İyi akşamlar');
+r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 13, ilk: true });
+ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('"Selam" ile başla'), 'öğlen ilk cevap Selam');
+yzYanit = () => ({ yanit: 'Selam prenses! 💜 bence lacivert pantolon olur.', parcalar: [], oneriler: [] });
+r = await iste('/v1/sohbet', { mesaj: 'peki alta?', dil: 'tr', gecmis: [{ r: 'k', m: 'ne giysem' }, { r: 'a', m: 'Merhaba prenses! Krem kazak.' }], saat: 13, ilk: false });
+syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
+ok(r.veri.sonuc.yanit === 'Bence lacivert pantolon olur.', 'sürmekte olan konuşmada selam ve "prenses" ayıklandı: ' + r.veri.sonuc.yanit);
+ok(syz.includes('ASLA selamla') && !syz.includes('Merhaba prenses'), 'geçmişteki eski selamlar modele gitmedi');
+ok(!syz.includes('"prenses" diye hitap edebilirsin'), 'her cevapta prenses hitabı istenmiyor');
+
+// doğal ses
+{
+  const eski = globalThis.fetch; const adresler = []; let kip = 'yeni';
+  const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(200, 1)]).toString('base64');
+  const pcm = Buffer.alloc(300, 2).toString('base64');
+  globalThis.fetch = async (url, o) => {
+    adresler.push({ url, g: JSON.parse(o.body) });
+    if (url.includes('/interactions')) {
+      if (kip === 'eski') return new Response('{"error":{"message":"not found"}}', { status: 404 });
+      return new Response(JSON.stringify({ steps: [{ type: 'model_output', content: [{ type: 'audio', data: wav }] }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { mimeType: 'audio/L16;codec=pcm;rate=24000', data: pcm } }] } }] }), { status: 200 });
+  };
+  r = await iste('/v1/ses', { metin: 'Selam! 💜 Krem kazağın çok yakışır.\n- Altına kot', dil: 'tr' });
+  ok(r.veri.ok && r.veri.ses === wav && r.veri.tip === 'audio/wav', 'doğal ses (güncel model) döndü');
+  const sg = adresler[0].g;
+  ok(sg.model && sg.input[0].content[0].text === 'Selam! Krem kazağın çok yakışır. Altına kot' && sg.generation_config.speech_config[0].voice, 'emoji ve madde işaretleri okunmuyor, ses seçili: ' + sg.input[0].content[0].text);
+  kip = 'eski';
+  r = await iste('/v1/ses', { metin: 'Merhaba', dil: 'en' });
+  const b = Buffer.from(r.veri.ses, 'base64');
+  ok(r.veri.ok && b.slice(0, 4).toString() === 'RIFF' && b.slice(8, 12).toString() === 'WAVE' && b.readUInt32LE(24) === 24000 && b.readUInt32LE(50) === 300 && b.length === 354, 'eski modelin ham sesi WAV başlığıyla döndü');
+  globalThis.fetch = async () => new Response('x', { status: 500 });
+  ok((await iste('/v1/ses', { metin: 'Merhaba', dil: 'tr' })).veri.hata === 'ses_yok', 'ses alınamazsa hata (uygulama telefonun sesine döner)');
+  ok((await iste('/v1/ses', { metin: '💜💜', dil: 'tr' })).veri.hata === 'bos', 'yalnız emoji okunmaz');
+  globalThis.fetch = eski;
+}
 
 // profil ve kullanıcı adı
 r = await iste('/v1/kadi', { kadi: '@Bora.Moda' }, cihazB);

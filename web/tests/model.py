@@ -74,6 +74,11 @@ with sync_playwright() as pw:
     r = dene(o, EMIN, etiket=[{'t': 'Necklace', 'c': 0.8}]); kaydet(p)
     ok('/v1/tani' in r['api'], 'takı olabilecek fotoğraf buluta gitti')
 
+    r = dene(o, dict(EMIN, yuz=1)); kaydet(p)
+    ok('/v1/tani' in r['api'], 'fotoğrafta yüz varsa (boydan çekim) model emin olsa da bulut parçaları ayırır')
+    r = dene(o, EMIN, etiket=[{'t': 'Selfie', 'c': 0.8}]); kaydet(p)
+    ok('/v1/tani' in r['api'], 'ayna özçekiminde bulut parçaları ayırır')
+
     r = dene(o, AYAKKABI, foto='foto/spor_beyaz.jpg'); kaydet(p)
     ok('/v1/tani' not in r['api'] and any(x in r['tahmin'] for x in ('Spor', 'Babet', 'Topuklu', 'Bot', 'Loafer', 'Sandalet', 'Terlik')), 'ayakkabı: alt türü cihaz içi analizden: ' + r['tahmin'][:50])
 

@@ -49,13 +49,26 @@ function tanimaDuzeltmeEkle(tahmin, dogru) {
   var l = tanimaDuzeltmeleri().filter(function (x) { return !(x[0] === tahmin && x[1] === dogru); });
   l.push([tahmin, dogru]); LS.yaz('tanimaDuzeltme', l.slice(-12));
 }
-function yzTani(b64) {
-  return yzIste('/v1/tani', { resim: b64, turler: yzTurListesi(), renkler: yzRenkListesi(), dil: A.dil, duzeltmeler: tanimaDuzeltmeleri() }, 75000)
+function yzTani(b64, ek) {
+  var g = { resim: b64, turler: yzTurListesi(), renkler: yzRenkListesi(), dil: A.dil, duzeltmeler: tanimaDuzeltmeleri() };
+  if (ek && ek.tek) g.tek = true;
+  if (ek && ek.hedef) g.hedef = kirp(ek.hedef, 40);
+  return yzIste('/v1/tani', g, 75000)
     .then(function (v) { return v.sonuc; });
 }
 /* sunucudaki yapay zekâ kararı cihaz içi tahminin önüne geçer (cihaz içi yalnız çevrimdışı yedek) */
+function kutuGecerli(k) {
+  return Array.isArray(k) && k.length === 4 && k.every(function (x) { return sayiMi(x) && x >= 0 && x <= 1000; }) && k[2] - k[0] >= 15 && k[3] - k[1] >= 15 ? k.slice() : null;
+}
 function bulutBirlestir(an, s) {
   if (!an || !s || typeof s !== 'object') return;
+  /* boydan fotoğraf: görülen parçalar ve kutuları (kullanıcıya hangisini ekleyeceği sorulur) */
+  an.kutu = kutuGecerli(s.kutu);
+  an.kisi = s.kisi === true;
+  an.parcalar = Array.isArray(s.parcalar) ? s.parcalar.map(function (x) {
+    var k = x && kutuGecerli(x.kutu);
+    return k ? { ad: kirp(x.ad, 40), kategori: typeof x.kategori === 'string' ? x.kategori : '', kutu: k } : null;
+  }).filter(Boolean).slice(0, 8) : [];
   if (s.kiyafet === false) { an.kiyafetDegil = true; an.bulut = true; return; }
   if (!TUR[s.tur] || !sayiMi(s.guven)) return;
   var alt = Array.isArray(s.alternatifler) ? s.alternatifler.filter(function (x, i, d) { return typeof x === 'string' && TUR[x] && x !== s.tur && d.indexOf(x) === i; }) : [];

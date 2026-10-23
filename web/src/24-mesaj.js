@@ -293,6 +293,7 @@ function sikayetPaneli() {
 
 /* ---------- Metinler ---------- */
 Object.assign(DIL.tr, {
+  dogalSes: 'Doğal ses', dogalSesAlt: 'Cevaplar Kombinle AI\'nin insan gibi doğal sesiyle okunur (internet gerekir). Kapalıysa telefonun kendi sesi kullanılır.',
   dmBaslik: 'Mesajlar', dmSohbetler: 'Sohbetler', dmIstekler: 'İstekler', dmBos: 'Henüz mesajın yok. Bir profilden "Mesaj" diyerek başlayabilirsin.', dmIstekYok: 'Mesaj isteğin yok.',
   dmSen: 'Sen', dmIstekGitti: 'istek gönderildi', dmYaz: 'Mesaj yaz…', dmGonder: 'Gönder', dmGoruldu: 'Görüldü', dmMesaj: 'Mesaj',
   dmIstekMetin: function (a) { return a + ' seni takip etmiyor ve sana mesaj göndermek istiyor. Kabul edersen yazışabilirsiniz; o, sen kabul edene kadar mesajlarını okuduğunu görmez.'; },
@@ -317,6 +318,7 @@ Object.assign(DIL.tr, {
   hEpostaKodu: 'E-postadaki 6 haneli kod', hEpostaYok: 'E-postayla sıfırlama şu an kapalı; kurtarma kodunu kullan.', hEpostaHatasi: 'E-posta şu an gönderilemedi, birazdan tekrar dene.'
 });
 Object.assign(DIL.en, {
+  dogalSes: 'Natural voice', dogalSesAlt: 'Replies are read in Kombinle AI\'s natural, human-like voice (needs internet). When off, the phone\'s own voice is used.',
   dmBaslik: 'Messages', dmSohbetler: 'Chats', dmIstekler: 'Requests', dmBos: 'No messages yet. Tap "Message" on a profile to start.', dmIstekYok: 'No message requests.',
   dmSen: 'You', dmIstekGitti: 'request sent', dmYaz: 'Write a message…', dmGonder: 'Send', dmGoruldu: 'Seen', dmMesaj: 'Message',
   dmIstekMetin: function (a) { return a + " doesn't follow you and wants to send you messages. Accept to chat; they won't see that you read their messages until you accept."; },
@@ -341,6 +343,7 @@ Object.assign(DIL.en, {
   hEpostaKodu: '6-digit code from the email', hEpostaYok: 'Email reset is not available right now; use your recovery code.', hEpostaHatasi: "The email couldn't be sent right now, try again shortly."
 });
 Object.assign(DIL.ru, {
+  dogalSes: 'Естественный голос', dogalSesAlt: 'Ответы озвучиваются естественным голосом Kombinle AI (нужен интернет). Если выключено — голос телефона.',
   dmBaslik: 'Сообщения', dmSohbetler: 'Чаты', dmIstekler: 'Запросы', dmBos: 'Сообщений пока нет. Нажми «Сообщение» в профиле.', dmIstekYok: 'Запросов нет.',
   dmSen: 'Ты', dmIstekGitti: 'запрос отправлен', dmYaz: 'Напиши сообщение…', dmGonder: 'Отправить', dmGoruldu: 'Просмотрено', dmMesaj: 'Сообщение',
   dmIstekMetin: function (a) { return a + ' не подписан(а) на тебя и хочет написать. Прими запрос, чтобы переписываться.'; },
@@ -359,6 +362,7 @@ Object.assign(DIL.ru, {
   bnYeniTakip: function (a) { return a + ' подписался(-ась) на тебя'; }, bnYeni: 'У тебя новое уведомление', bnYeniMesaj: function (a) { return a + ' прислал(а) сообщение'; }
 });
 Object.assign(DIL.uz, {
+  dogalSes: 'Tabiiy ovoz', dogalSesAlt: "Javoblar Kombinle AI ning tabiiy ovozida o'qiladi (internet kerak). O'chiq bo'lsa, telefon ovozi ishlatiladi.",
   dmBaslik: 'Xabarlar', dmSohbetler: 'Suhbatlar', dmIstekler: "So'rovlar", dmBos: "Hali xabar yo'q. Profilda «Xabar» ni bosing.", dmIstekYok: "So'rov yo'q.",
   dmSen: 'Siz', dmIstekGitti: "so'rov yuborildi", dmYaz: 'Xabar yozing…', dmGonder: 'Yuborish', dmGoruldu: "Ko'rildi", dmMesaj: 'Xabar',
   dmIstekMetin: function (a) { return a + " sizni kuzatmaydi va xabar yubormoqchi. Qabul qilsangiz yozishasiz."; },
