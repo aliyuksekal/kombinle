@@ -51,7 +51,8 @@ async function commons(kat) {
   const u = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=categorymembers&gcmtype=file&gcmlimit=25&gcmtitle=' +
     encodeURIComponent('Category:' + kat) + '&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=900';
   const r = await fetch(u, { headers: { 'User-Agent': 'KombinleOlcum/1.0 (github.com/aliyuksekal/kombinle)' } });
-  if (!r.ok) return [];
+  if (!r.ok) { console.log('commons', kat, r.status); return []; }
+  await new Promise(c => setTimeout(c, 400));
   const v = await r.json().catch(() => null);
   const sayfalar = v && v.query && v.query.pages ? Object.values(v.query.pages) : [];
   return sayfalar.map(p => p.imageinfo && p.imageinfo[0]).filter(i => i && /image\/(jpeg|png)/.test(i.mime) && i.thumburl && i.width >= 300 && i.height >= 300).slice(0, KAC).map(i => i.thumburl);
@@ -84,11 +85,34 @@ async function eskiTani(b64) {
       signal: AbortSignal.timeout(40000)
     });
     const v = await r.json();
+    if (v.error) return { hata: 'api:' + v.error.status + ':' + String(v.error.message).slice(0, 80) };
     const a = v.candidates && v.candidates[0];
     const yazi = a && a.content && a.content.parts ? a.content.parts.filter(p => !p.thought && p.text).map(p => p.text).join('') : '';
     try { return JSON.parse(yazi); } catch (e) { return { hata: 'yarim:' + (a && a.finishReason) }; }
   } catch (e) { return { hata: 'ag' }; }
 }
+
+// --- teşhis: anahtar hangi modellere erişebiliyor, basit bir çağrı ne döndürüyor ---
+let teshis = '## Teşhis\n\n';
+try {
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': GEMINI } });
+  const v = await r.json().catch(() => ({}));
+  const adlar = (v.models || []).map(m => m.name.replace('models/', '')).filter(n => /flash|pro/.test(n));
+  teshis += '- Model listesi: HTTP ' + r.status + (v.error ? ' — ' + String(v.error.message).slice(0, 300) : '') + '\n- Erişilebilen flash/pro modelleri: ' + (adlar.join(', ') || 'yok') + '\n';
+} catch (e) { teshis += '- Model listesi alınamadı: ' + e + '\n'; }
+for (const model of ['gemini-3-flash-preview', 'gemini-flash-latest', 'gemini-2.5-flash']) {
+  for (const dusunme of [{ thinkingLevel: 'low' }, null]) {
+    try {
+      const gc = { maxOutputTokens: 2000 }; if (dusunme) gc.thinkingConfig = dusunme;
+      const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }], generationConfig: gc }) });
+      const t = await r.text();
+      let m = ''; try { const j = JSON.parse(t); m = j.error ? j.error.status + ': ' + j.error.message : (j.candidates && j.candidates[0] && j.candidates[0].finishReason) || 'aday yok'; } catch (e) { m = t.slice(0, 200); }
+      teshis += '- ' + model + (dusunme ? ' (thinkingLevel)' : ' (düşünme ayarsız)') + ': HTTP ' + r.status + ' — ' + String(m).slice(0, 300) + '\n';
+    } catch (e) { teshis += '- ' + model + ': ' + e + '\n'; }
+  }
+}
+console.log(teshis);
 
 const ornekler = [];
 for (const [kat, bek] of KUME) {
@@ -123,7 +147,7 @@ function puan(anahtar) {
   return { n, dogru: y(dogru), ilk3: y(ilk3), grup: y(grup), hata: y(hata) };
 }
 const Y = puan('y'), E = puan('e');
-let md = '# Kıyafet tanıma ölçümü\n\n' + new Date().toISOString() + ' — ' + sonuc.length + ' gerçek fotoğraf (Wikimedia Commons, ' + KUME.length + ' kategori)\n\n' +
+let md = '# Kıyafet tanıma ölçümü\n\n' + teshis + '\n' + new Date().toISOString() + ' — ' + sonuc.length + ' gerçek fotoğraf (Wikimedia Commons, ' + KUME.length + ' kategori)\n\n' +
   '| | Doğru tür | İlk 3 içinde | Doğru grup | Yanıt alınamadı |\n|---|---|---|---|---|\n' +
   '| **Yeni (iki aşamalı)** | ' + Y.dogru + ' | ' + Y.ilk3 + ' | ' + Y.grup + ' | ' + Y.hata + ' |\n' +
   '| Eski | ' + E.dogru + ' | ' + E.ilk3 + ' | ' + E.grup + ' | ' + E.hata + ' |\n\n' +
