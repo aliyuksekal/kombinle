@@ -608,7 +608,7 @@ function kombinKolaji(k, bilgi) {
   var c = document.createElement('canvas'); c.width = W; c.height = H;
   var x = c.getContext('2d');
   var g = x.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, '#fff7fb'); g.addColorStop(1, '#f3e8ff');
+  g.addColorStop(0, '#F7F6F8'); g.addColorStop(1, '#EFEDF1');
   x.fillStyle = g; x.fillRect(0, 0, W, H);
   return Promise.all(sol.concat(sag).map(parcaResmi)).then(function (r) {
     var rs = r.slice(0, sol.length), rg = r.slice(sol.length);
@@ -626,12 +626,12 @@ function kombinKolaji(k, bilgi) {
         /* saydam (arka planı silinmiş) parça: gölgeli, kutusuz */
         var oo = Math.min((h2.w - 20) / img.width, (h2.h - 20) / img.height);
         var w = img.width * oo, hh = img.height * oo;
-        x.save(); x.shadowColor = 'rgba(80,30,90,.22)'; x.shadowBlur = 26; x.shadowOffsetY = 12;
+        x.save(); x.shadowColor = 'rgba(31,26,35,.18)'; x.shadowBlur = 26; x.shadowOffsetY = 12;
         x.drawImage(img, h2.x + (h2.w - w) / 2, h2.y + (h2.h - hh) / 2, w, hh); x.restore();
         return;
       }
       /* fotoğraf: yuvarlak köşeli kart, kırpılarak doldurulur */
-      x.save(); x.shadowColor = 'rgba(80,30,90,.18)'; x.shadowBlur = 22; x.shadowOffsetY = 10;
+      x.save(); x.shadowColor = 'rgba(31,26,35,.12)'; x.shadowBlur = 22; x.shadowOffsetY = 10;
       x.fillStyle = '#fff'; yuvarlak(x, h2.x, h2.y, h2.w, h2.h, 28); x.fill(); x.restore();
       x.save(); yuvarlak(x, h2.x, h2.y, h2.w, h2.h, 28); x.clip();
       var o2 = Math.max(h2.w / img.width, h2.h / img.height), w2 = img.width * o2, h3 = img.height * o2;
@@ -640,9 +640,9 @@ function kombinKolaji(k, bilgi) {
     hucreler(sol, P, solG).forEach(function (h2, i) { ciz(h2, rs[i]); });
     if (sag.length) hucreler(sag, P + solG + 18, sagG).forEach(function (h2, i) { ciz(h2, rg[i]); });
     /* alt bilgi */
-    x.fillStyle = '#ec4899'; x.font = '800 40px Inter, sans-serif'; x.textAlign = 'left'; x.textBaseline = 'middle';
+    x.fillStyle = '#1F1A23'; x.font = '500 44px "Bodoni Moda", Georgia, serif'; x.textAlign = 'left'; x.textBaseline = 'middle';
     x.fillText('Kombinle', P, H - ALT / 2);
-    if (bilgi && bilgi.alt) { x.fillStyle = '#6b5b6e'; x.font = '600 26px Inter, sans-serif'; x.textAlign = 'right'; x.fillText(kirp(bilgi.alt, 40), W - P, H - ALT / 2); }
+    if (bilgi && bilgi.alt) { x.fillStyle = '#6B6470'; x.font = '500 26px Figtree, sans-serif'; x.textAlign = 'right'; x.fillText(kirp(bilgi.alt, 40), W - P, H - ALT / 2); }
     KOLAJ_ONBELLEK[anahtar] = c;
     return c;
   });

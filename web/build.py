@@ -14,6 +14,8 @@ uygulama = '(function () {\n"use strict";\n' + govde + '\n})();\n'
 open(os.path.join(DIST, 'app.full.js'), 'w', encoding='utf-8').write(uygulama)
 boot = open(os.path.join(SRC, 'boot.js'), encoding='utf-8').read().strip()
 fonts = open(os.path.join(KOK, 'fonts', 'fonts.css'), encoding='utf-8').read()
+# Atölye tasarım katmanı: diğer stillerin sonunda, onların üstüne yazar
+atolye = open(os.path.join(KOK, 'src', 'atolye.css'), encoding='utf-8').read()
 sablon = open(os.path.join(SRC, 'index.tpl.html'), encoding='utf-8').read()
 
 
@@ -60,7 +62,7 @@ def yaz(ad, app_js, boot_js):
     csp = ("default-src 'none'; script-src " + ozet(boot_js) + ' ' + ozet(app_js) +
            "; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; "
            "media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'")
-    html = (sablon.replace('{{CSP}}', csp).replace('{{FONTS}}', fonts)
+    html = (sablon.replace('{{CSP}}', csp).replace('{{FONTS}}', fonts).replace('{{ATOLYE}}', atolye)
             .replace('{{BOOT}}', boot_js).replace('{{APP}}', app_js))
     yol = os.path.join(DIST, ad)
     open(yol, 'w', encoding='utf-8').write(html)

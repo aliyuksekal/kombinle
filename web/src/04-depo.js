@@ -33,17 +33,18 @@ function ayarKaydet() { LS.yaz('ayar', A); }
 function konumGecerli(k) {
   return !!k && typeof k === 'object' && sayiMi(k.lat) && sayiMi(k.lon) && Math.abs(k.lat) <= 90 && Math.abs(k.lon) <= 180 && typeof k.ad === 'string' && k.ad.length <= 60;
 }
+/* Renk seçenekleri: zemin + tek vurgu rengi (örnek daire: yarısı zemin, yarısı vurgu) */
 var TEMALAR = [
-  ['oto', 'temaOto', 'linear-gradient(135deg,#fff5f8 50%,#0a0612 50%)'], ['pembe', 'temaPembe', 'linear-gradient(135deg,#fff5f8,#ec4899)'],
-  ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#f8f5ff,#8b5cf6)'], ['altin', 'temaAltin', 'linear-gradient(135deg,#fffbf0,#d97706)'],
-  ['mint', 'temaMint', 'linear-gradient(135deg,#f0fdf8,#10b981)'], ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#fdf6f3,#d4735a)'],
-  ['acik', 'temaAcik', 'linear-gradient(135deg,#fdfcff,#ec4899)'], ['koyu', 'temaKoyu', 'linear-gradient(135deg,#0a0612,#f472b6)'],
-  ['amoled', 'temaAmoled', 'linear-gradient(135deg,#000000,#ff4d94)']
+  ['oto', 'temaOto', 'linear-gradient(135deg,#F5F4F7 50%,#141215 50%)'], ['acik', 'temaAcik', 'linear-gradient(135deg,#F5F4F7 50%,#8C3A5E 50%)'],
+  ['koyu', 'temaKoyu', 'linear-gradient(135deg,#1C1A1E 50%,#E3A3BF 50%)'], ['amoled', 'temaAmoled', 'linear-gradient(135deg,#000 50%,#E3A3BF 50%)'],
+  ['pembe', 'temaPembe', 'linear-gradient(135deg,#F8F3F4 50%,#A8456A 50%)'], ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#F4F3F8 50%,#5D4B9A 50%)'],
+  ['altin', 'temaAltin', 'linear-gradient(135deg,#F6F4F0 50%,#86663A 50%)'], ['mint', 'temaMint', 'linear-gradient(135deg,#F2F5F3 50%,#3F6B54 50%)'],
+  ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#F7F3F1 50%,#9C5A4B 50%)']
 ];
-var TEMA_ZEMIN = { pembe: '#fff5f8', lavanta: '#f8f5ff', altin: '#fffbf0', mint: '#f0fdf8', rosegold: '#fdf6f3', acik: '#fdfcff', koyu: '#0a0612', amoled: '#000000' };
+var TEMA_ZEMIN = { pembe: '#F8F3F4', lavanta: '#F4F3F8', altin: '#F6F4F0', mint: '#F2F5F3', rosegold: '#F7F3F1', acik: '#F5F4F7', koyu: '#141215', amoled: '#000000' };
 function temaRengi(secim) {
   if (secim !== 'oto' && TEMA_ZEMIN[secim]) return secim;
-  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'koyu' : 'pembe';
+  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'koyu' : 'acik';
 }
 function temaUygula(secim) {
   if (!TEMALAR.some(function (x) { return x[0] === secim; })) secim = 'oto';

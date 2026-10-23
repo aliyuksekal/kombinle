@@ -9,6 +9,10 @@ def sunucuAdresi = (project.findProperty('sunucuUrl') ?: '').toString().trim()
 def uygulamaAnahtari = (project.findProperty('uygulamaAnahtari') ?: '').toString().trim()
 if (!(sunucuAdresi ==~ /https:\/\/[a-z0-9.-]{3,120}/)) sunucuAdresi = ''
 if (!(uygulamaAnahtari ==~ /[a-f0-9]{64}/)) uygulamaAnahtari = ''
+// Play Store yükleme anahtarı (isteğe bağlı): verilirse yalnız AAB derlemesinde kullanılır
+def yuklemeDosyasi = (project.findProperty('yuklemeDosyasi') ?: '').toString().trim()
+def yuklemeSifre = (project.findProperty('yuklemeSifre') ?: '').toString()
+def yuklemeAlias = (project.findProperty('yuklemeAlias') ?: 'kombinle').toString()
 
 android {
     namespace 'com.benim.kombinle'
@@ -38,6 +42,15 @@ android {
             keyAlias 'kombinle'
             keyPassword 'kombinle-deneme'
         }
+        if (yuklemeDosyasi) {
+            yukleme {
+                storeFile file(yuklemeDosyasi)
+                storeType 'PKCS12'
+                storePassword yuklemeSifre
+                keyAlias yuklemeAlias
+                keyPassword yuklemeSifre
+            }
+        }
     }
 
     buildTypes {
@@ -45,7 +58,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.deneme
+            signingConfig yuklemeDosyasi ? signingConfigs.yukleme : signingConfigs.deneme
         }
         debug {
             signingConfig signingConfigs.deneme

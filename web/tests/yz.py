@@ -78,7 +78,7 @@ with sync_playwright() as pw:
     ok(len(k) == 1 and k[0]['g']['hava']['saatlik'] and k[0]['g']['plan'] == 'öğleden sonra toplantım var', 'plan ve saatlik hava sunucuya gitti')
     ok(all('foto' not in json.dumps(x) for x in k[0]['g']['parcalar']), 'kombin isteğinde fotoğraf yok')
     txt = p.inner_text('#sonucAlani')
-    ok('Toplantıya güvenle' in txt and 'AI Önerisi' in txt and '%94' in txt, 'AI başlığı, rozeti, uyum puanı')
+    ok('Toplantıya güvenle' in txt and 'AI önerisi' in txt and '%94' in txt, 'AI başlığı, rozeti, uyum puanı')
     ok('yağmur bekleniyor' in txt, 'hava notu gösterildi')
     ok('İnce bir kemer' in txt, 'AI stilist ipucu')
     ok(p.locator('#sonucAlani .g-eylem .g-btn-ikon[aria-label="Başka öner"]').count() == 0, 'geçersiz kimlikli AI kombini atıldı')

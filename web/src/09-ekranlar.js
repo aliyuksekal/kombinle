@@ -43,7 +43,7 @@ function vitrinParca(ikonAd, renk, aci) {
 function cizimIllustrasyon(c, ikonAd, renk) {
   var x = c.getContext('2d'), W = c.width;
   var koyu = document.documentElement.getAttribute('data-tema') === 'koyu';
-  x.fillStyle = koyu ? '#211A47' : '#F3F0FB'; x.fillRect(0, 0, W, W);
+  x.fillStyle = koyu ? '#262328' : '#F0EEF2'; x.fillRect(0, 0, W, W);
   var yol = IK[ikonAd] || IK.ust;
   var parcalar = yol.match(/d="([^"]+)"/g) || [];
   x.save(); x.translate(W * 0.14, W * 0.14); x.scale(W * 0.72 / 24, W * 0.72 / 24);

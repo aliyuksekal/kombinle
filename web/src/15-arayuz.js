@@ -4,15 +4,18 @@
 
 /* ---------- Jeton ekonomisi ----------
    Yeni kullanıcı 15 jetonla başlar; her yapay zekâ işi 1 jeton.
-   Fiyatlar bir yapay zekâ işinin maliyeti (~0,35 ₺), KDV (%20) ve mağaza payı (%15) hesaba katılarak belirlendi.
+   Fiyatlar ABD doları tabanlıdır (Play Console'da varsayılan fiyat USD; yerel para birimine Play çevirir).
+   Hesap (Türkiye, kullanıcı başına): fiyat KDV %20 dahil → Google payı %15 → 20/B stopajı %15 → elde ~%60.
+   Bir yapay zekâ işinin maliyeti ~0,009–0,012 $; en ucuz paket bile jeton başına ~0,015 $ net bırakır.
+   Ayrıntı: magaza/FIYATLANDIRMA.md. Uygulamada gösterilen fiyat Play'den gelen yerel fiyattır; aşağıdakiler yalnız yedek.
    PRO aylık abonedir; "sınırsız" adil kullanımla: günde 25 yapay zekâ işi ve 40 sohbet mesajı. */
 var BASLANGIC_JETON = 15;
 var JETON_PAKETLERI = [
-  { id: 'jeton_50', adet: 50, fiyat: '49,99 ₺' },
-  { id: 'jeton_150', adet: 150, fiyat: '129,99 ₺', avantaj: 13 },
-  { id: 'jeton_400', adet: 400, fiyat: '299,99 ₺', avantaj: 25, populer: true }
+  { id: 'jeton_50', adet: 50, fiyat: '$1.99' },
+  { id: 'jeton_150', adet: 150, fiyat: '$4.99', avantaj: 16 },
+  { id: 'jeton_400', adet: 400, fiyat: '$9.99', avantaj: 37, populer: true }
 ];
-var PRO_FIYAT = '449,99 ₺';
+var PRO_FIYAT = '$7.99';
 var PRO_GUNLUK = 25, SOHBET_GUNLUK = { ucretsiz: 10, pro: 40 };
 var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1, renk: 1 };
 function sayacGunu() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
@@ -149,7 +152,7 @@ function havaKarti() {
   var derece = Math.round(o.elle ? o.his : (S.gun === 0 ? o.simdi : o.max));
   k.appendChild(h('div', { class: 'g-hava-ust' },
     h('div', { style: { 'min-width': '0' } }, pill,
-      h('h3', { text: derece + '°C ' + havaDurumMetni(o) }),
+      h('div', { class: 'g-derece' }, h('b', { text: derece + '°' }), h('span', { text: havaDurumMetni(o) })),
       h('button', { class: 'g-hava-yer', on: { click: sehirSec }, 'aria-label': t('sehirSec') }, yer + ' • ' + hissetSozu(o))),
     h('div', { class: 'g-hava-ikon' }, ikon(havaIkonu(o.sembol)))));
   var alt = h('div', { class: 'g-hava-alt' });

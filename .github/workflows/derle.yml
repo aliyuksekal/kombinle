@@ -93,18 +93,43 @@ jobs:
           "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs cikti/*.apk | head -n 3
           ls -la cikti
 
+      # Play Store için uygulama paketi (AAB). YUKLEME_ANAHTARI (base64 .p12) ve YUKLEME_SIFRE gizlileri
+      # varsa onunla, yoksa deneme anahtarıyla imzalanır. APK her zaman deneme anahtarıyla kalır.
+      - name: AAB derle (Play Store)
+        env:
+          SUNUCU_URL: ${{ steps.sunucu.outputs.url }}
+          YUKLEME_ANAHTARI: ${{ secrets.YUKLEME_ANAHTARI }}
+          YUKLEME_SIFRE: ${{ secrets.YUKLEME_SIFRE }}
+        run: |
+          set -o pipefail
+          EK=()
+          if [ -n "$YUKLEME_ANAHTARI" ] && [ -n "$YUKLEME_SIFRE" ]; then
+            printf '%s' "$YUKLEME_ANAHTARI" | base64 -d > "$RUNNER_TEMP/yukleme.p12"
+            EK=(-PyuklemeDosyasi="$RUNNER_TEMP/yukleme.p12" -PyuklemeSifre="$YUKLEME_SIFRE")
+            echo "AAB yükleme anahtarıyla imzalanıyor"
+          else
+            echo "Yükleme anahtarı yok: AAB deneme anahtarıyla imzalanıyor"
+          fi
+          gradle bundleRelease --no-daemon --stacktrace -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" "${EK[@]}" 2>&1 | tee -a derleme.log
+          cp app/build/outputs/bundle/release/app-release.aab "cikti/Kombinle-1.0.${{ github.run_number }}.aab"
+          rm -f "$RUNNER_TEMP/yukleme.p12"
+          jarsigner -verify cikti/*.aab | tail -n 1
+          ls -la cikti
+
       - uses: actions/upload-artifact@v4
         with:
           name: Kombinle-APK
-          path: cikti/*.apk
+          path: |
+            cikti/*.apk
+            cikti/*.aab
 
       - name: Sürüm sayfasına ekle
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "deneme-${{ github.run_number }}" cikti/*.apk \
+          gh release create "deneme-${{ github.run_number }}" cikti/*.apk cikti/*.aab \
             --title "Kombinle deneme 1.0.${{ github.run_number }}" \
-            --notes "Deneme sürümü. Telefonda açıp kurun." --prerelease
+            --notes "Deneme sürümü. Telefona .apk kurulur; .aab Play Console'a yüklenecek pakettir." --prerelease
 
       - name: APK'yı 'apk' dalına koy
         run: |

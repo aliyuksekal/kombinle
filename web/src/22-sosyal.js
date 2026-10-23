@@ -34,13 +34,14 @@ function profilSayfasi(kod, on) {
     var av = avatarDoldur(h('span', { class: 'pr-av' }), kisiAvatar(p.kod, p.av, p.takma), p.takma);
     if (benim) { av = h('button', { class: 'pr-av-btn', 'aria-label': t('avBaslik'), on: { click: function () { avatarMenusu(function () { profilYenile(); }); } } }, av); }
     var sayi = function (n, etk, fn) { return h(fn ? 'button' : 'div', { class: 'pr-sayi', on: fn ? { click: fn } : null }, h('b', { text: sayiKisa(n) }), h('small', { text: etk })); };
-    bas.appendChild(h('div', { class: 'pr-ust' }, av,
-      h('div', { class: 'pr-sayilar' },
-        sayi(p.paylasim, t('prPaylasim')),
-        sayi(p.takipci, t('prTakipci'), function () { sekmeSec('takipci'); }),
-        sayi(p.takip, t('prTakip'), function () { sekmeSec('takip'); }))));
+    /* ortalı başlık: profil resmi, ad, kullanıcı adı, tanıtım, sayılar */
+    bas.appendChild(h('div', { class: 'pr-ust' }, av));
     bas.appendChild(h('div', { class: 'pr-kim' }, h('b', { text: kirp(p.takma, 24) }), kadiEl(p.kadi)));
     if (p.bio) bas.appendChild(h('p', { class: 'pr-bio', text: kirp(p.bio, 150) }));
+    bas.appendChild(h('div', { class: 'pr-sayilar' },
+      sayi(p.paylasim, t('prPaylasim')),
+      sayi(p.takipci, t('prTakipci'), function () { sekmeSec('takipci'); }),
+      sayi(p.takip, t('prTakip'), function () { sekmeSec('takip'); })));
     var dugmeler = h('div', { class: 'pr-dugmeler' });
     if (benim) {
       dugmeler.appendChild(h('button', { class: 'btn ikincil', on: { click: function () { profilDuzenle(function () { profilYenile(); }); } } }, ikon('kalem', 'k'), t('profilDuzenle')));
