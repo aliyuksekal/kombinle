@@ -68,9 +68,12 @@ function ustBar() {
     h('div', { class: 'g-ust-sag' },
       yzKurulu() ? (function () {
         var hb = hesapBilgi();
-        var b = h('button', { class: 'g-hesap' + (hb ? ' girisli' : ''), 'aria-label': hb ? hb.ad : t('hGiris'), on: { click: function () { S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi(); } } });
+        var b = h('button', { class: 'g-hesap' + (hb ? ' girisli' : ''), 'aria-label': hb ? t('profilim') : t('hGiris'), on: { click: function () {
+          if (hesapBilgi()) { benimProfilim(); return; }
+          S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi();
+        } } });
         if (hb) avatarDoldur(b, benimAvatar(), hb.ad); else b.appendChild(ikon('kisi', 'k'));
-        return b;
+        return hb ? h('span', { class: 'g-ust-ikili' }, zilDugmesi(), b) : b;
       })() : null,
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
         ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) }))));

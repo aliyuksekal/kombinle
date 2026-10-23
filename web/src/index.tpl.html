@@ -843,6 +843,65 @@ button.hesap-av{border:0;cursor:pointer}
 .rk-resim-sec{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;aspect-ratio:1;border-radius:18px;border:2px dashed var(--cizgi);background:var(--yuzey2);color:var(--soluk);font-weight:700;overflow:hidden;padding:0;max-height:56vh}
 .rk-resim-sec[data-boyut=dikey]{aspect-ratio:4/5} .rk-resim-sec[data-boyut=hikaye]{aspect-ratio:9/16} .rk-resim-sec[data-boyut=yatay]{aspect-ratio:16/9}
 .rk-resim-sec img{width:100%;height:100%;object-fit:cover}
+/* Sosyal: profil sayfası, bildirimler, kaydet, etiket */
+.g-ust-ikili{display:inline-flex;align-items:center;gap:6px}
+.g-zil{position:relative;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--yuzey2);border:1px solid var(--cizgi);color:var(--murekkep)}
+.g-zil svg{width:18px;height:18px}
+.zil-rozet{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#e11d48;color:#fff;font-size:10px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 2px var(--yuzey);animation:zilRozet .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes zilRozet{from{transform:scale(0)}}
+.pr-sayfa{display:flex;flex-direction:column;gap:12px}
+.pr-ust{display:flex;align-items:center;gap:16px}
+.pr-av,.pr-av-btn .pr-av{width:84px;height:84px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:32px;font-weight:900;flex:none;box-shadow:0 0 0 3px var(--yuzey),0 0 0 5px color-mix(in srgb,var(--vurgu) 55%,transparent)}
+.pr-av-btn{padding:0;border-radius:50%;background:none;flex:none}
+.pr-sayilar{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.pr-sayi{display:flex;flex-direction:column;align-items:center;background:none;padding:4px 0;border-radius:12px}
+.pr-sayi b{font-size:18px;font-weight:900} .pr-sayi small{font-size:11.5px;color:var(--soluk)}
+.pr-kim{display:flex;align-items:center;gap:8px;flex-wrap:wrap} .pr-kim b{font-size:16px;font-weight:900}
+.pr-bio{margin:-4px 0 0;font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.pr-dugmeler{display:flex;gap:8px} .pr-dugmeler>*{flex:1}
+.pr-dugmeler .ikon-kare{flex:0 0 46px;padding:0}
+.g-takip.buyuk{border-radius:14px;padding:11px 14px;font-size:13px;background:var(--grad);color:#fff;font-weight:800}
+.g-takip.buyuk[aria-pressed="true"]{background:var(--yuzey2);color:var(--murekkep);border:1px solid var(--cizgi)}
+.pr-sekmeler{display:flex;border-bottom:1px solid var(--cizgi2);margin:0 -4px}
+.pr-sekmeler button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;font-size:12.5px;font-weight:800;color:var(--soluk);background:none;border-bottom:2px solid transparent}
+.pr-sekmeler button[aria-selected="true"]{color:var(--murekkep);border-bottom-color:var(--vurgu)}
+.pr-izgara{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0 -4px}
+.pr-tam{grid-column:1/-1}
+.pr-hucre{position:relative;aspect-ratio:4/5;padding:0;overflow:hidden;background:var(--yuzey2);border-radius:6px}
+.pr-hucre img{width:100%;height:100%;object-fit:cover;display:block}
+.pr-hucre-bilgi{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:3px;padding:14px 6px 5px;font-size:10.5px;font-weight:800;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.pr-hucre-bilgi svg{width:11px;height:11px} .pr-hucre-bilgi svg:nth-of-type(2){margin-left:6px}
+.pr-hucre-gor{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center}
+.pr-hucre-gor svg{width:11px;height:11px}
+.pr-akis,.pr-detay{display:flex;flex-direction:column;gap:14px}
+.tk-liste{display:flex;flex-direction:column;gap:4px}
+.tk-satir{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:14px}
+.tk-satir.yeni{background:var(--vurgu-acik)}
+.tk-ac{flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;background:none;padding:0}
+.tk-ac .g-avatar{width:44px;height:44px;flex:none;font-size:16px}
+.tk-ac>div{min-width:0} .tk-ac b{display:block;font-size:13.5px}
+.tk-satir .g-takip{width:auto;flex:none}
+.bn-metin{display:block;font-size:12px;color:var(--murekkep);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bn-metin i{font-style:normal;color:var(--soluk)}
+.bn-resim{width:46px;height:46px;border-radius:10px;overflow:hidden;padding:0;flex:none;background:var(--yuzey2)}
+.bn-resim img{width:100%;height:100%;object-fit:cover}
+.g-akis-kim{background:none;padding:0;text-align:left;display:flex;flex-direction:column;min-width:0}
+.g-kaydet{margin-left:auto;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:none;color:var(--murekkep)}
+.g-kaydet svg{width:20px;height:20px;transition:transform .2s}
+.g-kaydet[aria-pressed="true"]{color:var(--vurgu)} .g-kaydet[aria-pressed="true"] svg{fill:currentColor;transform:scale(1.1)}
+.etiket-link{background:none;padding:0;color:var(--vurgu);font-weight:700;font:inherit;font-weight:700;display:inline}
+.g-akis-etiket .etiket-link{padding:3px 9px;border-radius:99px;background:var(--vurgu-acik);font-size:11.5px}
+.kalp-patla{position:absolute;left:50%;top:50%;width:96px;height:96px;margin:-48px 0 0 -48px;color:#fff;pointer-events:none;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35));animation:kalpPatla .85s cubic-bezier(.2,1.4,.4,1) forwards}
+.kalp-patla svg{width:100%;height:100%;fill:currentColor}
+@keyframes kalpPatla{0%{transform:scale(0);opacity:0}25%{transform:scale(1.15);opacity:1}45%{transform:scale(.95)}75%{transform:scale(1);opacity:1}100%{transform:scale(1.25) translateY(-20px);opacity:0}}
+.cek-yenile{height:0;overflow:hidden;display:grid;place-items:center;color:var(--soluk);transition:height .2s,opacity .2s}
+.cek-yenile.hazir{color:var(--vurgu)}
+.cek-yenile svg{width:22px;height:22px}
+.g-jeton{white-space:nowrap}
+@media (max-width:420px){.g-marka span{display:none}.g-jeton{padding-left:10px;padding-right:10px}}
+.pr-dugmeler .btn{white-space:nowrap;font-size:13px;padding-left:10px;padding-right:10px;min-width:0}
+.tk-satir .g-takip,.g-takip.buyuk{background:var(--grad);color:#fff;border-radius:99px;padding:7px 14px;font-size:11.5px;font-weight:800;border:0}
+.tk-satir .g-takip[aria-pressed="true"]{background:var(--yuzey2);color:var(--murekkep);border:1px solid var(--cizgi)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>

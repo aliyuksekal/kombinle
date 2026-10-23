@@ -206,5 +206,13 @@ DIL.uz = {
   rkYeni: 'Yangi reklama', rkYok: "Hozircha reklama yo'q.", rkIstatistik: function (g, t2, o) { return g + " ko'rish • " + t2 + ' bosish • ' + o + '%'; }, rkBitis: function (d) { return d + ' gacha'; }, rkDurdu: "To'xtatilgan",
   rkDurdur: "To'xtatish", rkSurdur: 'Davom ettirish', rkSilSor: function (m) { return m + " reklamasi o'chirilsinmi?"; }, rkResimSec: 'Reklama rasmini tanlash', rkMarka: 'Brend / reklama beruvchi', rkBaslikEtk: 'Sarlavha', rkMetin: 'Tavsif',
   rkLink: 'Havola (https)', rkDugme: 'Tugma matni', rkGun: 'Muddat (kun)', rkBoyutEtk: "O'lcham", rkBoyut_kare: 'Kvadrat 1:1', rkBoyut_dikey: 'Tik 4:5', rkBoyut_hikaye: 'Hikoya 9:16', rkBoyut_yatay: 'Yotiq 16:9',
-  rkYayinla: 'Joylash', rkResimGerek: 'Reklama rasmini tanlang.', rkMarkaGerek: 'Brend nomini yozing.', rkLinkHata: 'Havola https:// bilan boshlanishi kerak.', rkEklendi: 'Reklama joylandi 🎉'
+  rkYayinla: 'Joylash', rkResimGerek: 'Reklama rasmini tanlang.', rkMarkaGerek: 'Brend nomini yozing.', rkLinkHata: 'Havola https:// bilan boshlanishi kerak.', rkEklendi: 'Reklama joylandi 🎉',
+  profil: 'Profil', profilim: 'Profilim', profiliGor: "Profilni ko'rish", prPaylasimlar: 'Ulashishlar', prKaydedilenler: 'Saqlanganlar', prPaylasim: 'ulashish', prTakipci: 'obunachi', prTakip: 'obuna',
+  prYok: 'Bu profil topilmadi yoki olib tashlangan.', prKayitliBos: "Yoqqan ulashishlarni saqlang — shu yerda to'planadi.", prBenimBos: "Hali ulashishingiz yo'q. Obraz yarating, garderobga qo'shing va ulashing!", prBos: "Hali ochiq ulashishlar yo'q.",
+  paylasim: 'Ulashish', prSikayet: 'Profil ustidan shikoyat', psResim: "Noo'rin profil rasmi", psSahte: 'Soxta hisob', prEngelleAlt: "Uning ulashishlari va bildirishnomalarini ko'rmaysiz",
+  prTakipEdilenler: 'Obunalar', prTakipciler: 'Obunachilar', prTakipYok: 'Hali hech kimga obuna emas.', prTakipciYok: "Hali obunachilar yo'q.",
+  bildirimler: 'Bildirishnomalar', bildirimYok: "Hali bildirishnoma yo'q. Layklar, izohlar va yangi obunachilar shu yerda chiqadi.", bildirimBuHafta: 'Shu hafta', bildirimDaha: 'Avvalroq',
+  bnBegendi: 'obrazingizni yoqtirdi', bnYorum: function (m) { return 'izoh qoldirdi: ' + m; }, bnTakip: "sizga obuna bo'ldi",
+  etiketBos: function (e) { return '#' + e + " bilan hali ulashish yo'q."; }, aciklamaDuzenle: 'Tavsifni tahrirlash',
+  prKaydet: 'Saqlash', prKaydedildi: "Saqlanganlarga qo'shildi", prKayitKaldirildi: 'Saqlanganlardan olindi', avResimHata: "Rasm o'qilmadi yoki juda katta.", sinirDoldu: 'Chegaraga yetdingiz.'
 };

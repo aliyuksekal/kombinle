@@ -114,3 +114,28 @@ CREATE TABLE IF NOT EXISTS reklam (
   tik INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS r_aktif ON reklam(aktif, bitis);
+CREATE TABLE IF NOT EXISTS bildirim (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  alici TEXT NOT NULL,
+  tur TEXT NOT NULL,
+  kimden TEXT NOT NULL,
+  paylasim TEXT NOT NULL DEFAULT '',
+  metin TEXT NOT NULL DEFAULT '',
+  zaman INTEGER NOT NULL,
+  okundu INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS b_alici ON bildirim(alici, zaman DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS b_tekil ON bildirim(alici, tur, kimden, paylasim) WHERE tur <> 'yorum';
+CREATE TABLE IF NOT EXISTS kayitli (
+  kisi TEXT NOT NULL,
+  paylasim TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  PRIMARY KEY (kisi, paylasim)
+);
+CREATE TABLE IF NOT EXISTS kisi_sikayet (
+  kod TEXT NOT NULL,
+  cihaz TEXT NOT NULL,
+  neden TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  PRIMARY KEY (kod, cihaz)
+);

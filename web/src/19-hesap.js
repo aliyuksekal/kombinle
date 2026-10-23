@@ -59,7 +59,7 @@ function hesapHataMetni(e) {
   var k = e && e.message;
   return ({ eposta: t('hEpostaHata'), sifre: t('hSifreKisa'), ad: t('hAdHata'), kayitli: t('hKayitli'), yanlis: t('hYanlis'), kilitli: t('hKilitli'),
     kota: t('hKota'), baglanti: t('baglantiYok'), oturum: t('hOturumBitti'), kadi: t('kadiGecersiz'), alinmis: t('kadiAlinmis'), ayrilmis: t('kadiAyrilmis'),
-    yetki: t('yetkiYok'), yok: t('kisiBulunamadi'), kendi: t('kendinAtayamazsin') })[k] || t('tpHata');
+    yetki: t('yetkiYok'), resim: t('avResimHata'), sinir: t('sinirDoldu'), yok: t('kisiBulunamadi'), kendi: t('kendinAtayamazsin') })[k] || t('tpHata');
 }
 
 /* Ayarlardaki "Hesap" kartının içeriği */

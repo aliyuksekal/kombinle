@@ -13,10 +13,19 @@ function resimCoz(dosya) {
   if (!dosya || typeof dosya.size !== 'number') return Promise.reject(new Error('dosya'));
   if (dosya.size <= 0 || dosya.size > EN_BUYUK_DOSYA) return Promise.reject(new Error('boyut'));
   if (dosya.type && !/^image\//i.test(dosya.type)) return Promise.reject(new Error('tur'));
-  var p;
-  if (window.createImageBitmap) {
-    p = createImageBitmap(dosya, { imageOrientation: 'from-image' }).catch(function () { return imgIleCoz(dosya); });
-  } else p = imgIleCoz(dosya);
+  var tarayici = function (d) {
+    return window.createImageBitmap ? createImageBitmap(d, { imageOrientation: 'from-image' }).catch(function () { return imgIleCoz(d); }) : imgIleCoz(d);
+  };
+  // sayfa çözemezse (ör. HEIC) telefon JPEG'e çevirir
+  var p = tarayici(dosya).catch(function (e) {
+    if (!YEREL || typeof YEREL.jpegYap !== 'function') throw e;
+    return blobDataUrl(dosya).then(function (d) {
+      return yerelCagir('jpegYap', [String(d).slice(String(d).indexOf(',') + 1)], 30000);
+    }).then(function (r) {
+      if (!r || !r.ok || typeof r.jpeg !== 'string' || r.jpeg.length < 100) throw e;
+      return tarayici(dataUrlBlob('data:image/jpeg;base64,' + r.jpeg));
+    });
+  });
   return zamanAsimi(p, 20000, 'zaman').then(function (bmp) {
     var w = bmp.width, hh = bmp.height;
     if (!(w >= 24 && hh >= 24) || w > 20000 || hh > 20000 || w * hh > 120e6) throw new Error('olcu');

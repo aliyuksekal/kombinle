@@ -1,5 +1,5 @@
 /* ---------- Keşfet reklamları (Instagram tarzı sponsorlu kartlar) ----------
-   Akışta rastgele aralıklarla (3–7 paylaşımda bir), rastgele boyutta (kare, dikey, hikâye, yatay) çıkar.
+   Akışta rastgele aralıklarla (en az 5 paylaşımda bir: 5–8), rastgele boyutta (kare, dikey, hikâye, yatay) çıkar.
    Her reklam "Geç" ile kapatılabilir; hikâye boyutunda 5 sn sayaç sonra geçilebilir.
    Kaynak: @admin'in eklediği reklam verenler + uygulamanın kendi tanıtımları. PRO üyelerde reklam yok. */
 var REKLAM = { liste: [], yuklendi: false, yukleniyor: false, plan: {}, gecilen: {}, sayilan: {}, ilk: 0 };
@@ -30,7 +30,7 @@ function reklamYukle() {
 function reklamAcik() { return !S.pro && TOPLULUK.sira !== 'benim'; }
 /* paylaşım sırası -> reklam planı (ekran yeniden çizilince aynı yerde aynı reklam kalır) */
 function reklamPlani(n) {
-  if (!REKLAM.ilk) REKLAM.ilk = rastgeleArada(2, 4);
+  if (!REKLAM.ilk) REKLAM.ilk = rastgeleArada(5, 6);
   var yer = REKLAM.ilk, plan = {};
   var havuz = REKLAM.liste.filter(function (r) { return !REKLAM.gecilen[r.id]; });
   var ev = evReklamlari().filter(function (r) { return !REKLAM.gecilen[r.id]; });
@@ -40,10 +40,10 @@ function reklamPlani(n) {
     else {
       // reklam verenler öncelikli (3'te 2), aralarda uygulamanın kendi tanıtımları
       var r = havuz.length && (Math.random() < 0.67 || !ev.length) ? havuz[(sira + rastgeleArada(0, havuz.length - 1)) % havuz.length] : ev.length ? ev[rastgeleArada(0, ev.length - 1)] : null;
-      if (r) plan[yer] = { r: r, boyut: r.ev ? REKLAM_BOYUTLAR[rastgeleArada(0, 3)] : r.boyut, ara: rastgeleArada(3, 7) };
+      if (r) plan[yer] = { r: r, boyut: r.ev ? REKLAM_BOYUTLAR[rastgeleArada(0, 3)] : r.boyut, ara: rastgeleArada(5, 8) };
     }
     sira++;
-    yer += plan[yer] ? plan[yer].ara : rastgeleArada(3, 7);
+    yer += plan[yer] ? plan[yer].ara : rastgeleArada(5, 8);
   }
   REKLAM.plan = plan;
   return plan;

@@ -203,6 +203,44 @@ public final class Kopru {
         }).start();
     }
 
+    /* ---------------- telefonun çözebildiği ama sayfanın çözemediği resimler (HEIC/HEIF) JPEG'e ---------------- */
+
+    @JavascriptInterface
+    public void jpegYap(final String req, final String b64) {
+        if (!guvenli || !istekGecerli(req)) return;
+        if (b64 == null || b64.isEmpty() || b64.length() > 24 * 1024 * 1024) {
+            gonder(req, false, "hata", "boyut");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                byte[] veri = Base64.decode(b64, Base64.DEFAULT);
+                BitmapFactory.Options o = new BitmapFactory.Options();
+                o.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (o.outWidth <= 0 || o.outHeight <= 0 || o.outWidth > 20000 || o.outHeight > 20000) {
+                    gonder(req, false, "hata", "olcu");
+                    return;
+                }
+                int ornek = 1;
+                while (Math.max(o.outWidth, o.outHeight) / ornek > 2400) ornek *= 2;
+                o.inJustDecodeBounds = false;
+                o.inSampleSize = ornek;
+                Bitmap bmp = BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (bmp == null) {
+                    gonder(req, false, "hata", "coz");
+                    return;
+                }
+                ByteArrayOutputStream cikti = new ByteArrayOutputStream();
+                bmp.compress(Bitmap.CompressFormat.JPEG, 88, cikti);
+                bmp.recycle();
+                gonder(req, true, "jpeg", Base64.encodeToString(cikti.toByteArray(), Base64.NO_WRAP));
+            } catch (Throwable t) {
+                gonder(req, false, "hata", "coz");
+            }
+        }).start();
+    }
+
     /* ---------------- arka plan silme (ML Kit konu ayırma) ---------------- */
 
     @JavascriptInterface

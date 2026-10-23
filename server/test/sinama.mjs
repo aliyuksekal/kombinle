@@ -18,7 +18,7 @@ function hazirla(sql) {
     },
     async first(kol) { const { st, arg } = nesne._calis(); const r = st.get(...arg); return r ? (kol ? r[kol] : r) : null; },
     async all() { const { st, arg } = nesne._calis(); return { results: st.all(...arg) }; },
-    async run() { const { st, arg } = nesne._calis(); if (/RETURNING/i.test(sql)) return { results: st.all(...arg) }; const r = st.run(...arg); return { meta: { changes: r.changes } }; }
+    async run() { const { st, arg } = nesne._calis(); if (/RETURNING/i.test(sql) || /^\s*SELECT/i.test(sql)) return { results: st.all(...arg) }; const r = st.run(...arg); return { meta: { changes: r.changes } }; }
   };
   return nesne;
 }
@@ -282,6 +282,53 @@ ag = await isci.fetch(new Request('https://x/v1/reklam/' + rid), env, {}); ok(ag
 await iste('/v1/reklamsil', { id: rid, durdur: true }, cihazC);
 ok((await iste('/v1/reklamlar', {}, cihazB)).veri.liste.length === 0, 'durdurulan reklam görünmüyor');
 ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v1/reklamlar', { yonetim: true }, cihazC)).veri.liste.length === 0, 'reklam silindi');
+
+// sosyal: bildirim, kaydet, profil sayfası, takip listeleri, açıklama düzenleme, profil şikâyeti
+{
+  const ben = (await iste('/v1/ben', {}, cihazB)).veri.hesap, dHesap = (await iste('/v1/ben', {}, cihazD)).veri.hesap;
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  const pid = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'Yeni ceket #sonbahar', etiketler: ['ofis'] }, cihazB)).veri.id;
+  ok(!!pid, 'sosyal testi için paylaşım');
+  await iste('/v1/oy', { id: pid, oy: 1 }, cihazD);
+  await iste('/v1/oy', { id: pid, oy: 0 }, cihazD); await iste('/v1/oy', { id: pid, oy: 1 }, cihazD);
+  await iste('/v1/yorum', { id: pid, metin: 'Çok güzel' }, cihazD);
+  await iste('/v1/takip', { kod: ben.kod }, cihazD);
+  let b = await iste('/v1/bildirim', { sadeceSay: true }, cihazB);
+  ok(b.veri.okunmamis === 3, 'beğeni, yorum, takip bildirimi (tekrar beğeni çift sayılmadı): ' + b.veri.okunmamis);
+  b = await iste('/v1/bildirim', { oku: true }, cihazB);
+  ok(b.veri.liste.length === 3 && b.veri.liste.some(x => x.tur === 'yorum' && x.metin === 'Çok güzel' && x.kod === dHesap.kod), 'bildirim listesi');
+  ok((await iste('/v1/bildirim', { sadeceSay: true }, cihazB)).veri.okunmamis === 0, 'bildirimler okundu');
+  await iste('/v1/takip', { kod: ben.kod, takip: false }, cihazD);
+  ok((await iste('/v1/bildirim', {}, cihazB)).veri.liste.length === 2, 'takipten çıkınca takip bildirimi silindi');
+  ok((await iste('/v1/bildirim', {}, cihazB, { oturumsuz: true })).veri.hata === 'giris', 'bildirimler giriş ister');
+  ok((await iste('/v1/kaydet', { id: pid }, cihazD)).veri.kayitli === true, 'paylaşım kaydedildi');
+  let a = await iste('/v1/akis', { sira: 'kayitli' }, cihazD);
+  ok(a.veri.liste.length === 1 && a.veri.liste[0].id === pid && a.veri.liste[0].kayitli === 1, 'kaydedilenler listesi');
+  a = await iste('/v1/akis', { sira: 'etiket', etiket: '#sonbahar' }, cihazC);
+  ok(a.veri.liste.some(x => x.id === pid), 'etiketle arama (açıklamadaki #etiket)');
+  ok((await iste('/v1/akis', { sira: 'etiket', etiket: 'ofis' }, cihazC)).veri.liste.some(x => x.id === pid), 'etiketle arama (etiket listesi)');
+  await iste('/v1/kaydet', { id: pid, kaydet: false }, cihazD);
+  ok((await iste('/v1/akis', { sira: 'kayitli' }, cihazD)).veri.liste.length === 0, 'kayıt kaldırıldı');
+  let pr = await iste('/v1/profilgor', { kod: ben.kod }, cihazD);
+  ok(pr.veri.profil.takma === 'Bora K' && pr.veri.profil.paylasim >= 1 && pr.veri.profil.benim === 0, 'profil sayfası: ' + JSON.stringify(pr.veri.profil));
+  ok((await iste('/v1/profilgor', { kadi: '@user' }, cihazD)).veri.profil.kod === ben.kod, 'kullanıcı adıyla profil');
+  ok((await iste('/v1/profilgor', { kod: ben.kod }, cihazB)).veri.profil.benim === 1, 'kendi profilim');
+  await iste('/v1/takip', { kod: ben.kod }, cihazC);
+  let tl = await iste('/v1/takipler', { kod: ben.kod, tur: 'takipci' }, cihazD);
+  ok(tl.veri.liste.length >= 1 && tl.veri.liste.every(x => typeof x.takma === 'string'), 'takipçi listesi');
+  ok((await iste('/v1/duzenle', { id: pid, aciklama: 'Güncel açıklama' }, cihazD)).durum === 404, 'başkasının paylaşımı düzenlenemez');
+  ok((await iste('/v1/duzenle', { id: pid, aciklama: 'ara 0532 123 45 67' }, cihazB)).veri.hata === 'baglanti', 'düzenlemede telefon engellendi');
+  ok((await iste('/v1/duzenle', { id: pid, aciklama: 'Güncel açıklama' }, cihazB)).veri.aciklama === 'Güncel açıklama', 'açıklama düzenlendi');
+  // profil resmi: denetim yanıt vermezse kabul edilir
+  yzYanit = () => { throw new Error('x'); };
+  ok((await iste('/v1/avatar', { resim: jpeg }, cihazD)).veri.ok === true, 'denetim hizmeti çökse de profil resmi kabul edildi');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  for (const c of [cihazA, cihazB, cihazC, '7'.repeat(64)]) await iste('/v1/ksikayet', { kod: dHesap.kod, neden: 'resim' }, c);
+  ok((await iste('/v1/profilgor', { kod: dHesap.kod }, cihazB)).veri.profil.av > 0, '4 şikâyette resim duruyor');
+  OTURUM['8'.repeat(64)] = (await iste('/v1/kayit', { ad: 'Fatma', eposta: 'fatma@ornek.com', sifre: 'sifre-fatma-1' }, '8'.repeat(64))).veri.oturum;
+  await iste('/v1/ksikayet', { kod: dHesap.kod, neden: 'resim' }, '8'.repeat(64));
+  ok((await iste('/v1/profilgor', { kod: dHesap.kod }, cihazB)).veri.profil.av === 0, '5 şikâyette profil resmi kaldırıldı');
+}
 
 // hesap silme
 const silinecek = (await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.length;

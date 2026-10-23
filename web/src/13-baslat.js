@@ -103,6 +103,7 @@ function baslat() {
   proDurumuDenetle();
   setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
+  bildirimZamanlayici();
   acilisKapat();
 }
 /* Açılış animasyonu en az ~2,7 sn görünür (dokununca hemen geçer), sonra yumuşakça kaybolur */

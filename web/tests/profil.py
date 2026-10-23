@@ -7,6 +7,7 @@ SAHTE = SAHTE.replace("if (yol === '/v1/akis')", """if (yol === '/v1/kadi') { co
       const h = {ad: g.ad, eposta: 'elif@ornek.com', kod: '0123456789ab', kadi: g.kadi, bio: g.bio, yonetici: g.kadi === 'admin'};
       return yanit(req, {ok: true, durum: 200, veri: {ok: true, hesap: h}});
     }
+    if (yol === '/v1/profilgor') return yanit(req, {ok: true, durum: 200, veri: {ok: true, profil: {kod: g.kod, takma: 'Zeynep', kadi: 'user', bio: 'Vintage aşığı', av: 0, takipci: 12, takip: 3, paylasim: 4, takipte: 0, benim: 0}}});
     if (yol === '/v1/ata') return yanit(req, {ok: true, durum: 200, veri: {ok: true, ad: g.ad, sahip: g.geriAl ? '' : 'Zeynep'}});
     if (yol === '/v1/kisiler') return yanit(req, {ok: true, durum: 200, veri: {ok: true, takipEdilen: 0, liste: [{kod: '0123456789ab', takma: 'Zeynep', kadi: 'user', bio: 'Vintage aşığı', takipci: 12, paylasim: 4, takipte: 0}]}});
     if (yol === '/v1/akis')""")

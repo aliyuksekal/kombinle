@@ -206,5 +206,13 @@ DIL.ru = {
   rkYeni: 'Новое объявление', rkYok: 'Объявлений пока нет.', rkIstatistik: function (g, t2, o) { return g + ' показов • ' + t2 + ' кликов • ' + o + '%'; }, rkBitis: function (d) { return 'до ' + d; }, rkDurdu: 'Приостановлено',
   rkDurdur: 'Приостановить', rkSurdur: 'Возобновить', rkSilSor: function (m) { return 'Удалить объявление ' + m + '?'; }, rkResimSec: 'Выбрать изображение', rkMarka: 'Бренд / рекламодатель', rkBaslikEtk: 'Заголовок', rkMetin: 'Описание',
   rkLink: 'Ссылка (https)', rkDugme: 'Текст кнопки', rkGun: 'Срок показа (дней)', rkBoyutEtk: 'Размер', rkBoyut_kare: 'Квадрат 1:1', rkBoyut_dikey: 'Вертик. 4:5', rkBoyut_hikaye: 'Сторис 9:16', rkBoyut_yatay: 'Гориз. 16:9',
-  rkYayinla: 'Опубликовать', rkResimGerek: 'Выберите изображение.', rkMarkaGerek: 'Укажите бренд.', rkLinkHata: 'Ссылка должна начинаться с https://', rkEklendi: 'Объявление опубликовано 🎉'
+  rkYayinla: 'Опубликовать', rkResimGerek: 'Выберите изображение.', rkMarkaGerek: 'Укажите бренд.', rkLinkHata: 'Ссылка должна начинаться с https://', rkEklendi: 'Объявление опубликовано 🎉',
+  profil: 'Профиль', profilim: 'Мой профиль', profiliGor: 'Открыть профиль', prPaylasimlar: 'Публикации', prKaydedilenler: 'Сохранённое', prPaylasim: 'публикаций', prTakipci: 'подписчиков', prTakip: 'подписок',
+  prYok: 'Профиль не найден или удалён.', prKayitliBos: 'Сохраняйте понравившиеся публикации — они соберутся здесь.', prBenimBos: 'Публикаций пока нет. Создайте образ, добавьте в гардероб и поделитесь!', prBos: 'Публичных публикаций пока нет.',
+  paylasim: 'Публикация', prSikayet: 'Пожаловаться на профиль', psResim: 'Неприемлемое фото профиля', psSahte: 'Фейковый аккаунт', prEngelleAlt: 'Вы не будете видеть его публикации и уведомления',
+  prTakipEdilenler: 'Подписки', prTakipciler: 'Подписчики', prTakipYok: 'Пока ни на кого не подписан(а).', prTakipciYok: 'Пока нет подписчиков.',
+  bildirimler: 'Уведомления', bildirimYok: 'Уведомлений пока нет. Здесь появятся лайки, комментарии и новые подписчики.', bildirimBuHafta: 'На этой неделе', bildirimDaha: 'Ранее',
+  bnBegendi: 'оценил(а) ваш образ', bnYorum: function (m) { return 'прокомментировал(а): ' + m; }, bnTakip: 'подписался(-ась) на вас',
+  etiketBos: function (e) { return 'Публикаций с #' + e + ' пока нет.'; }, aciklamaDuzenle: 'Изменить подпись',
+  prKaydet: 'Сохранить', prKaydedildi: 'Добавлено в сохранённое', prKayitKaldirildi: 'Удалено из сохранённого', avResimHata: 'Не удалось прочитать изображение или оно слишком большое.', sinirDoldu: 'Достигнут предел.'
 };
