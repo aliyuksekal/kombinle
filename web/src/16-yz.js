@@ -34,19 +34,34 @@ function yzHataMetni(e, varsayilan) {
 /* ---------- Tanıma ---------- */
 function yzTurListesi() {
   return TURLER.filter(function (x) { return /^[a-z0-9_]{1,24}$/.test(x.id); }).slice(0, 160)
-    .map(function (x) { return [x.id, kirp(turAd(x.id), 30)]; });
+    .map(function (x) { return [x.id, kirp(turAd(x.id), 30), kirp(x.en || '', 30), x.g || '']; });
 }
 function yzRenkListesi() { return RENKLER.map(function (r) { return [r[0], renkAd(r[0])]; }); }
+/* kullanıcının düzeltmeleri: yapay zekâ X dedi, kullanıcı Y olarak kaydetti (son 12) — sonraki tanımalara ipucu */
+function tanimaDuzeltmeleri() {
+  var l = LS.al('tanimaDuzeltme', []);
+  return Array.isArray(l) ? l.filter(function (x) { return Array.isArray(x) && TUR[x[0]] && TUR[x[1]] && x[0] !== x[1]; }).slice(-12) : [];
+}
+function tanimaDuzeltmeEkle(tahmin, dogru) {
+  if (!TUR[tahmin] || !TUR[dogru] || tahmin === dogru) return;
+  var l = tanimaDuzeltmeleri().filter(function (x) { return !(x[0] === tahmin && x[1] === dogru); });
+  l.push([tahmin, dogru]); LS.yaz('tanimaDuzeltme', l.slice(-12));
+}
 function yzTani(b64) {
-  return yzIste('/v1/tani', { resim: b64, turler: yzTurListesi(), renkler: yzRenkListesi(), dil: A.dil }, 30000)
+  return yzIste('/v1/tani', { resim: b64, turler: yzTurListesi(), renkler: yzRenkListesi(), dil: A.dil, duzeltmeler: tanimaDuzeltmeleri() }, 75000)
     .then(function (v) { return v.sonuc; });
 }
+/* sunucudaki yapay zekâ kararı cihaz içi tahminin önüne geçer (cihaz içi yalnız çevrimdışı yedek) */
 function bulutBirlestir(an, s) {
-  if (!an || !s || typeof s !== 'object' || s.kiyafet !== true || !TUR[s.tur] || !sayiMi(s.guven) || s.guven < 0.4) return;
+  if (!an || !s || typeof s !== 'object') return;
+  if (s.kiyafet === false) { an.kiyafetDegil = true; an.bulut = true; return; }
+  if (!TUR[s.tur] || !sayiMi(s.guven)) return;
   var alt = Array.isArray(s.alternatifler) ? s.alternatifler.filter(function (x, i, d) { return typeof x === 'string' && TUR[x] && x !== s.tur && d.indexOf(x) === i; }) : [];
   an.turlar = [s.tur].concat(alt, (an.turlar || []).filter(function (x) { return x !== s.tur && alt.indexOf(x) < 0; })).slice(0, 4);
+  an.alternatifler = alt.slice(0, 3);
   an.grup = TUR[s.tur].g;
-  an.guven = s.guven >= 0.6 ? Math.max(an.guven || 0, Math.min(1, s.guven)) : Math.min(an.guven || 0, 0.49);
+  an.guven = Math.max(0, Math.min(1, s.guven));
+  an.bulutTur = s.tur;
   if (RENK[s.renk]) an.renk = s.renk;
   an.renk2 = typeof s.renk2 === 'string' && RENK[s.renk2] && s.renk2 !== an.renk ? s.renk2 : '';
   if (typeof s.desenli === 'boolean') an.desen = s.desenli ? 1 : 0;
@@ -55,7 +70,7 @@ function bulutBirlestir(an, s) {
   if (typeof s.su === 'boolean') an.su = s.su ? 1 : 0;
   an.oneriAd = kirp(s.ad, 40);
   an.kumas = kirp(s.kumas, 30);
-  an.yz = true; an.bulut = true; an.sekilYok = false;
+  an.yz = true; an.bulut = true; an.bulutHata = false; an.sekilYok = false;
 }
 
 /* ---------- Akıllı kombin ---------- */

@@ -249,7 +249,8 @@ async function yz(env, parcalar, sema, ayar) {
     const model = modeller[mi];
     const uretim = {
       responseMimeType: 'application/json',
-      maxOutputTokens: ayar.enFazla || 2048,
+      // düşünme jetonları da çıktı sınırına sayılır: yanıt yarım kalmasın diye düşünme payı eklenir
+      maxOutputTokens: (ayar.enFazla || 2048) + ({ minimal: 512, low: 3072, medium: 6144, high: 12288 }[ayar.dusunme || 'low'] || 3072),
       thinkingConfig: { thinkingLevel: ayar.dusunme || 'low' }
     };
     if (semaAlani) uretim[semaAlani] = sema;
@@ -289,47 +290,115 @@ async function yz(env, parcalar, sema, ayar) {
     try {
       return JSON.parse(yazi.replace(/^```(?:json)?\s*|\s*```$/g, ''));
     } catch (e) {
+      // sınır yüzünden yarım kaldıysa bir kez daha, daha az düşünerek ve daha geniş sınırla dene
+      if (aday.finishReason === 'MAX_TOKENS' && !ayar.genis) { ayar = Object.assign({}, ayar, { genis: true, dusunme: 'minimal', enFazla: (ayar.enFazla || 2048) * 2 }); continue; }
+      console.warn('yz_json', model, aday.finishReason, yazi.slice(0, 200));
       throw new Hata('yz_json', 502);
     }
   }
   throw new Hata('yz_hata', 502);
 }
 
-/* --- kıyafet tanıma ------------------------------------------------- */
+/* --- kıyafet tanıma -------------------------------------------------
+   İki aşamalı: (1) model önce gördüğünü betimler ve kategoriyi seçer, sonra listeden türü seçer
+   (betimleme önce geldiği için tür seçimi daha tutarlı olur). (2) Emin değilse yalnız aday türler
+   arasında, ayırt edici ipuçlarıyla ikinci bir karar verdirilir. */
+const TUR_IPUCU = {
+  tisort: 'knit jersey tee, no collar/buttons, pull-over', bluz: 'dressy woven/chiffon/satin women top, often loose, ruffles or delicate details',
+  gomlek: 'collared button-front shirt', askili: 'sleeveless strappy top / camisole / tank', kazak: 'knitted pullover sweater, no front opening',
+  sweat: 'cotton fleece sweatshirt or hoodie, ribbed cuffs', tunik: 'long top reaching hips/thighs, worn over trousers',
+  kumas: 'tailored/woven trousers, not denim', kot: 'denim jeans', etek: 'skirt above or at knee', uzunetek: 'skirt below knee to ankle (midi/maxi)',
+  sort: 'shorts', tayt: 'tight stretchy leggings', esofman: 'sweatpants / joggers with elastic cuffs', elbise: 'one-piece dress up to knee/midi',
+  uzunelbise: 'ankle-length maxi dress or gown', tulum: 'one-piece jumpsuit/overall with trouser legs', ferace: 'long loose modest overgarment / abaya / ferace',
+  hirka: 'knitted cardigan with front opening', yelek: 'sleeveless vest / gilet', blazer: 'tailored suit-style jacket with lapels',
+  ceket: 'casual jacket (denim, leather, bomber, shirt-jacket)', tren: 'trench coat / light belted long coat', yagmurluk: 'thin waterproof raincoat / windbreaker',
+  mont: 'puffer / padded / parka winter jacket', kaban: 'heavy wool or cashmere overcoat', spor: 'sneakers / trainers', babet: 'ballet flats',
+  loafer: 'loafers / moccasins', topuklu: 'high heels / pumps / heeled sandals', bot: 'ankle boots or tall boots', sandalet: 'flat sandals with straps',
+  terlik: 'slides / flip-flops / slippers', canta: 'handbag / backpack / clutch / tote', esarp: 'large headscarf or shawl (woven, square/rectangle)',
+  atki: 'long knitted or wool scarf', bere: 'hat / beanie / cap', eldiven: 'gloves', gozluk: 'sunglasses', kemer: 'belt', kupe: 'earrings',
+  kolye: 'necklace', bileklik: 'bracelet or ring', saat: 'wristwatch', taki: 'other jewelry / brooch / hair accessory',
+  kulot: 'underwear briefs', sutyen: 'bra', corap: 'socks', kulotlu: 'tights / pantyhose'
+};
+const KATEGORI = ['ust', 'alt', 'tek', 'dis', 'ayk', 'aks', 'ic', 'yok'];
+function turSatiri(x) {
+  return x[0] + ' [' + (x[3] || '?') + '] = ' + x[1] + (x[2] ? ' / ' + x[2] : '') + (TUR_IPUCU[x[0]] ? ' — ' + TUR_IPUCU[x[0]] : '');
+}
 async function tani(env, g) {
   const resim = base64Coz(g.resim);
   const tip = resimTuru(resim);
   if (!tip || resim.length > 1.5 * 1024 * 1024) throw new Hata('resim');
-  const turler = sozluk(g.turler, 160);
+  // [kimlik, yerel ad, İngilizce ad, kategori]
+  const turler = liste(g.turler, 160).map(x => Array.isArray(x) ? [kimlik(x[0]), metin(x[1], 30), metin(x[2], 30), KATEGORI.indexOf(x[3]) >= 0 ? x[3] : ''] : null).filter(x => x && x[0]);
   const renkler = sozluk(g.renkler, 60);
   if (!turler.length || !renkler.length) throw new Hata('girdi');
   const dil = ['tr', 'en', 'ru', 'uz'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
+  const kimlikler = turler.map(x => x[0]);
+  // kullanıcının önceki düzeltmeleri (yalnız ipucu): "model X dedi, doğrusu Y"
+  const duzeltmeler = liste(g.duzeltmeler, 12).map(x => Array.isArray(x) && kimlikler.indexOf(x[0]) >= 0 && kimlikler.indexOf(x[1]) >= 0 && x[0] !== x[1] ? x[0] + '→' + x[1] : '').filter(Boolean);
   const sema = {
     type: 'object',
     properties: {
-      kiyafet: { type: 'boolean', description: 'Fotoğrafta bir giysi, ayakkabı, çanta ya da aksesuar var mı' },
-      tur: { type: 'string', enum: turler.map(x => x[0]) },
-      alternatifler: { type: 'array', items: { type: 'string', enum: turler.map(x => x[0]) }, maxItems: 3 },
+      gorunen: { type: 'string', maxLength: 220, description: 'English: what the main item is — garment category, length, sleeves, neckline, closure, fabric/texture, how it is photographed (flat-lay, hanger, worn by person)' },
+      kiyafet: { type: 'boolean' },
+      kategori: { type: 'string', enum: KATEGORI },
+      tur: { type: 'string', enum: kimlikler },
+      alternatifler: { type: 'array', items: { type: 'string', enum: kimlikler }, maxItems: 3 },
       guven: { type: 'number', minimum: 0, maximum: 1 },
       renk: { type: 'string', enum: renkler.map(x => x[0]) },
       renk2: { type: 'string', enum: [''].concat(renkler.map(x => x[0])) },
       desenli: { type: 'boolean' },
       mevsim: { type: 'array', items: { type: 'string', enum: ['i', 'y', 's', 'k'] }, maxItems: 4 },
       tarz: { type: 'array', items: { type: 'string', enum: ['g', 's', 'r', 'p'] }, maxItems: 4 },
-      su: { type: 'boolean', description: 'Yağmura dayanıklı mı' },
+      su: { type: 'boolean' },
       ad: { type: 'string', maxLength: 40 },
       kumas: { type: 'string', maxLength: 30 }
     },
-    required: ['kiyafet', 'tur', 'guven', 'renk', 'renk2', 'desenli', 'mevsim', 'tarz', 'su', 'ad']
+    required: ['gorunen', 'kiyafet', 'kategori', 'tur', 'alternatifler', 'guven', 'renk', 'renk2', 'desenli', 'mevsim', 'tarz', 'su', 'ad']
   };
   const yonerge =
-    'Fotoğraftaki ana kıyafeti tanı. Birden fazla parça varsa en büyük/en öndeki parçayı seç.\n' +
-    'Türler (kimlik=ad): ' + turler.map(x => x[0] + '=' + x[1]).join(', ') + '\n' +
-    'Renkler (kimlik=ad): ' + renkler.map(x => x[0] + '=' + x[1]).join(', ') + '\n' +
-    'mevsim: i=ilkbahar y=yaz s=sonbahar k=kış (giyilebileceği mevsimler). tarz: g=günlük s=şık r=resmi/iş p=spor.\n' +
-    'ad: kıyafetin kısa adı (ör. "Lacivert yün kaban"), şu dilde: ' + DIL_AD[dil] + '. kumas: tahmin ediyorsan kumaş adı (aynı dilde), yoksa boş.\n' +
-    'Fotoğrafta kıyafet yoksa kiyafet=false ve guven=0 ver. Emin değilsen guven değerini düşük tut.';
-  const s = await yz(env, [{ text: yonerge }, { inlineData: { mimeType: tip, data: g.resim } }], sema, { dusunme: 'low', enFazla: 600 });
+    'You are a fashion product cataloguer for a women\'s wardrobe app. Identify the MAIN clothing item in the photo.\n' +
+    'Rules:\n- If a person wears several items, pick the item that is most centered/most visible and fills the frame; ignore background, hangers, mannequins and furniture.\n' +
+    '- First write "gorunen" (a precise English description), then choose "kategori" (ust=top, alt=bottom, tek=one-piece, dis=outerwear, ayk=footwear, aks=accessory/bag, ic=underwear/hosiery, yok=no clothing), ' +
+    'then choose "tur" ONLY from the list, consistent with the category. Put the 1–3 next most likely types in "alternatifler".\n' +
+    '- Decide by construction, not by colour: denim weave → jeans/denim jacket; knitted texture → sweater/cardigan/scarf; front opening on knitwear → cardigan; lapels → blazer; ' +
+    'padding/quilting → puffer; length below knee for skirts/dresses → long skirt / maxi dress; trouser legs on a one-piece → jumpsuit.\n' +
+    '- "guven": your honest probability (0–1) that "tur" is correct. Use ≥0.85 only when unambiguous.\n' +
+    '- renk = dominant colour of the item itself (not background, not skin); renk2 = clear secondary colour or "".\n' +
+    '- mevsim: i=spring y=summer s=autumn k=winter (seasons it suits). tarz: g=casual s=dressy r=formal/office p=sport. su = water-resistant.\n' +
+    '- ad: short natural item name in ' + DIL_AD[dil] + ' (e.g. "Lacivert yün kaban"); kumas: fabric in the same language if visible, else "".\n' +
+    'TYPES (id [category] = local name / English — hint):\n' + turler.map(turSatiri).join('\n') + '\n' +
+    'COLOURS (id = name): ' + renkler.map(x => x[0] + '=' + x[1]).join(', ') +
+    (duzeltmeler.length ? '\nThis user previously corrected these predictions (model→correct), treat as a hint about their wardrobe: ' + duzeltmeler.join(', ') : '');
+  const resimParca = { inlineData: { mimeType: tip, data: g.resim } };
+  let s = await yz(env, [{ text: yonerge }, resimParca], sema, { dusunme: 'medium', enFazla: 900, zaman: 40000 });
+  if (!s || typeof s !== 'object') throw new Hata('yz_bos', 502);
+  if (kimlikler.indexOf(s.tur) < 0) s.tur = kimlikler[0];
+  s.alternatifler = Array.isArray(s.alternatifler) ? s.alternatifler.filter((x, i, d) => kimlikler.indexOf(x) >= 0 && x !== s.tur && d.indexOf(x) === i).slice(0, 3) : [];
+  const turKat = (id) => (turler.find(x => x[0] === id) || [])[3] || '';
+  // kategori ile tür çelişiyorsa aynı kategorideki alternatif öne alınır
+  if (s.kategori && s.kategori !== 'yok' && turKat(s.tur) && turKat(s.tur) !== s.kategori) {
+    const uygun = s.alternatifler.find(x => turKat(x) === s.kategori);
+    if (uygun) { s.alternatifler = [s.tur].concat(s.alternatifler.filter(x => x !== uygun)).slice(0, 3); s.tur = uygun; }
+    s.guven = Math.min(sayi(s.guven, 0, 1, 0.5), 0.6);
+  }
+  // ikinci aşama: emin değilse yalnız adaylar arasında, ipuçlarıyla yeniden karar
+  if (s.kiyafet !== false && sayi(s.guven, 0, 1, 0) < 0.7 && s.alternatifler.length) {
+    const adaylar = [s.tur].concat(s.alternatifler).slice(0, 4);
+    const sema2 = { type: 'object', properties: { neden: { type: 'string', maxLength: 240 }, tur: { type: 'string', enum: adaylar }, guven: { type: 'number', minimum: 0, maximum: 1 } }, required: ['neden', 'tur', 'guven'] };
+    const yonerge2 = 'Look closely at the main clothing item. Earlier description: "' + metin(s.gorunen, 220) + '".\n' +
+      'Choose the single correct type among these candidates. First explain in "neden" (English) which visible construction details decide it.\n' +
+      adaylar.map(id => turSatiri(turler.find(x => x[0] === id))).join('\n');
+    try {
+      const k = await yz(env, [{ text: yonerge2 }, resimParca], sema2, { dusunme: 'medium', enFazla: 500, zaman: 30000 });
+      if (k && adaylar.indexOf(k.tur) >= 0) {
+        if (k.tur !== s.tur) s.alternatifler = [s.tur].concat(s.alternatifler.filter(x => x !== k.tur)).slice(0, 3);
+        s.tur = k.tur;
+        s.guven = Math.max(sayi(k.guven, 0, 1, 0.5), sayi(s.guven, 0, 1, 0));
+        s.ikinci = 1;
+      }
+    } catch (e) { /* ilk karar geçerli kalır */ }
+  }
+  delete s.gorunen;
   return { ok: true, sonuc: s };
 }
 

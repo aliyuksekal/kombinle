@@ -214,5 +214,6 @@ DIL.ru = {
   bildirimler: 'Уведомления', bildirimYok: 'Уведомлений пока нет. Здесь появятся лайки, комментарии и новые подписчики.', bildirimBuHafta: 'На этой неделе', bildirimDaha: 'Ранее',
   bnBegendi: 'оценил(а) ваш образ', bnYorum: function (m) { return 'прокомментировал(а): ' + m; }, bnTakip: 'подписался(-ась) на вас',
   etiketBos: function (e) { return 'Публикаций с #' + e + ' пока нет.'; }, aciklamaDuzenle: 'Изменить подпись',
-  prKaydet: 'Сохранить', prKaydedildi: 'Добавлено в сохранённое', prKayitKaldirildi: 'Удалено из сохранённого', avResimHata: 'Не удалось прочитать изображение или оно слишком большое.', sinirDoldu: 'Достигнут предел.'
+  prKaydet: 'Сохранить', prKaydedildi: 'Добавлено в сохранённое', prKayitKaldirildi: 'Удалено из сохранённого', avResimHata: 'Не удалось прочитать изображение или оно слишком большое.', sinirDoldu: 'Достигнут предел.',
+  kiyafetDegil: 'На фото не видно одежды. Выберите тип ниже.', bulutHata: 'Kombinle AI сейчас не смог распознать; это догадка устройства, проверьте.', yenidenTani: 'Распознать с ИИ ещё раз', taniniyor: 'Распознаём…', digerOlasilik: 'Другие варианты:'
 };

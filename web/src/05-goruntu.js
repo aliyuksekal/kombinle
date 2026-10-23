@@ -81,7 +81,8 @@ function fotografIsle(kaynak) {
     var yzVeri = '';
     if (YEREL) { try { var yt = tuvaleCiz(bmp, 480); yzVeri = yt.toDataURL('image/jpeg', 0.85); yzVeri = yzVeri.slice(yzVeri.indexOf(',') + 1); } catch (e) { yzVeri = ''; } }
     var bulutVeri = '';
-    if (yzAcik()) { try { var bt = tuvaleCiz(bmp, 640); bulutVeri = bt.toDataURL('image/jpeg', 0.82); bulutVeri = bulutVeri.slice(bulutVeri.indexOf(',') + 1); } catch (e) { bulutVeri = ''; } }
+    /* yapay zekâya ayrıntılı (1024 px) görüntü gider: dikiş, örgü, yaka gibi ayırt edici ayrıntılar kaybolmasın */
+    if (yzAcik()) { try { var bt = tuvaleCiz(bmp, 1024); bulutVeri = bt.toDataURL('image/jpeg', 0.86); bulutVeri = bulutVeri.slice(bulutVeri.indexOf(',') + 1); } catch (e) { bulutVeri = ''; } }
     try { if (bmp.close) bmp.close(); if (bmp.kapat) bmp.kapat(); } catch (e) { }
     var analiz;
     try { analiz = analizEt(analizTuval.veri, analizTuval.w, analizTuval.h, analizTuval.alfa); }
@@ -93,6 +94,7 @@ function fotografIsle(kaynak) {
     return Promise.all([tuvaldenBlob(buyuk, 0.86), tuvaldenBlob(kucuk, 0.82), yz, bulut]).then(function (b) {
       /* bulut sonucu cihaz içi tanımadan sonra uygulanır: daha güvenilir olan kazanır */
       if (b[3]) bulutBirlestir(analiz, b[3]);
+      else if (bulutVeri) { analiz.bulutHata = true; analiz._bulutVeri = bulutVeri; }   // yeniden denenebilir
       return { buyuk: b[0], kucuk: b[1], analiz: analiz };
     });
   });

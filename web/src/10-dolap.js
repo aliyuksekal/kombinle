@@ -70,7 +70,25 @@ function parcaDuzenle(p, yeni) {
       if (an.guven >= 0.5 && an.turlar[0]) msg = t(an.bulut ? 'yzTanidi' : an.yz ? 'tanidimYz' : 'tanidim', turAd(an.turlar[0]));
       else if (an.turlar.length) msg = t('emin');
       else msg = t('turSec');
-      gov.appendChild(h('div', { class: 'tahmin' }, ikon('isilti', 'k'), h('span', { text: msg })));
+      if (an.kiyafetDegil) msg = t('kiyafetDegil');
+      var tahminKutu = h('div', { class: 'tahmin' + (an.bulutHata ? ' uyari' : '') }, ikon(an.bulutHata ? 'bilgi' : 'isilti', 'k'), h('span', { text: an.bulutHata ? t('bulutHata') : msg }));
+      if (an.bulutHata && an._bulutVeri && yzAcik()) {
+        var yenidenBtn = h('button', { class: 'tahmin-btn' }, ikon('yenile', 'k'), t('yenidenTani'));
+        yenidenBtn.addEventListener('click', function () {
+          yenidenBtn.disabled = true; temizle(yenidenBtn); yenidenBtn.appendChild(h('span', { class: 'yukleniyor' })); yenidenBtn.appendChild(document.createTextNode(t('taniniyor')));
+          yzTani(an._bulutVeri).then(function (sn) {
+            bulutBirlestir(an, sn);
+            if (an.bulut && !an.kiyafetDegil) {
+              if (an.guven >= 0.5 && an.turlar[0]) { tas.tur = an.turlar[0]; acikGrup = TUR[tas.tur].g; tas.tarz = an.tarz || TUR[tas.tur].s || ''; if (an.su === 0 || an.su === 1) tas.su = an.su; }
+              tas.renk = an.renk; tas.renk2 = an.renk2; tas.desen = an.desen; if (an.mevsim) tas.mevsim = an.mevsim; if (an.kumas) tas.kumas = an.kumas;
+              ilkTur = tas.tur; ilkRenk = tas.renk;
+            }
+            ciz2();
+          }).catch(function (e) { tost(yzHataMetni(e, t('bulutHata'))); ciz2(); });
+        });
+        tahminKutu.appendChild(yenidenBtn);
+      }
+      gov.appendChild(tahminKutu);
       if (an.bulut) gov.appendChild(h('p', { class: 'ai-not', style: { 'text-align': 'left' }, text: t('aiNot') }));
     } else {
       gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '10px' }, text: p.giy ? t('giyimBilgi', p.giy, tarihYaz(p.son)) : t('henuzGiyilmedi') }));
@@ -86,6 +104,11 @@ function parcaDuzenle(p, yeni) {
       var onr = h('div', { class: 'sarili', style: { 'margin-bottom': '10px' } });
       an.turlar.forEach(function (id) { onr.appendChild(turCip(id)); });
       turB.appendChild(onr);
+    } else if (yeni && an.bulut && an.alternatifler && an.alternatifler.length) {
+      /* emin olsa da yapay zekânın diğer olasılıkları tek dokunuşla seçilebilir */
+      var olas = h('div', { class: 'sarili olasilik', style: { 'margin-bottom': '10px' } }, h('small', { class: 'olasilik-etk', text: t('digerOlasilik') }));
+      an.alternatifler.forEach(function (id) { if (TUR[id] && id !== tas.tur) olas.appendChild(turCip(id)); });
+      if (olas.childNodes.length > 1) turB.appendChild(olas);
     }
     var grp = h('div', { class: 'cipler', style: { padding: '2px 2px 8px' } });
     GRUPLAR.forEach(function (g) {
@@ -172,6 +195,7 @@ function parcaDuzenle(p, yeni) {
     if (!tas.tur || !TUR[tas.tur] || kaydediliyor) return;
     kaydediliyor = true;
     var kayit = p || { id: yeniId(), eklendi: Date.now(), giy: 0, son: 0 };
+    if (yeni && an && an.bulutTur) tanimaDuzeltmeEkle(an.bulutTur, tas.tur);   // yapay zekâ yanıldıysa öğrenilir
     kayit.tur = tas.tur; kayit.renk = RENK[tas.renk] ? tas.renk : 'siyah'; kayit.renk2 = RENK[tas.renk2] ? tas.renk2 : '';
     kayit.desen = tas.desen ? 1 : 0; kayit.tarz = tarzTemizle(tas.tarz); kayit.su = tas.su ? 1 : 0; kayit.ad = kirp(tas.ad, 40);
     kayit.marka = kirp(tas.marka, 30); kayit.kumas = kirp(tas.kumas, 30); kayit.mevsim = mevsimTemizle(tas.mevsim); kayit.dinlen = tas.dinlen ? 1 : 0;

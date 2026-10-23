@@ -51,6 +51,16 @@ jobs:
           export UYGULAMA_ANAHTARI
           bash server/kur.sh 2>&1 | tee sunucu.log
 
+      # Gerçek fotoğraflarla tanıma ölçümü: yalnız commit mesajında [olc] varsa (yapay zekâ maliyeti)
+      - name: Kıyafet tanıma ölçümü
+        if: contains(github.event.head_commit.message, '[olc]')
+        continue-on-error: true
+        timeout-minutes: 12
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OLC_CIKTI: /tmp/TANIMA.md
+        run: node server/test/tanima-olc.mjs
+
       - name: APK derle (küçültülmüş, imzalı)
         env:
           SUNUCU_URL: ${{ steps.sunucu.outputs.url }}
@@ -92,7 +102,9 @@ jobs:
           cp /tmp/Kombinle-*.apk ./Kombinle.apk
           echo "1.0.${{ github.run_number }} $(git rev-parse --short ${{ github.sha }})" > SURUM.txt
           echo "sunucu: ${{ steps.sunucu.outputs.url || 'yok' }}" >> SURUM.txt
+          [ -f /tmp/TANIMA.md ] && cp /tmp/TANIMA.md ./TANIMA.md
           git add Kombinle.apk SURUM.txt
+          [ -f TANIMA.md ] && git add TANIMA.md
           git commit -q -m "APK 1.0.${{ github.run_number }}"
           git push -f origin apk
 

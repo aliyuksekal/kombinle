@@ -57,13 +57,40 @@ const get = await isci.fetch(new Request('https://x/v1/akis'), env, {}); ok(get.
 ok(!get.headers.get('Access-Control-Allow-Origin'), 'CORS başlığı yok');
 ok((await iste('/v1/__proto__', {})).durum === 404, 'bilinmeyen yol 404');
 
-// tanıma
-yzYanit = () => ({ kiyafet: true, tur: 'kot', guven: 0.9, renk: 'mavi', renk2: '', desenli: false, mevsim: ['i', 's'], tarz: ['g'], su: false, ad: 'Mavi kot' });
-let r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot pantolon'], ['etek', 'Etek'], ['bad id!', 'x']], renkler: [['mavi', 'Mavi']] });
-ok(r.durum === 200 && r.veri.sonuc.tur === 'kot', 'tanıma yanıtı: ' + JSON.stringify(r.veri).slice(0, 120));
+// tanıma (iki aşamalı)
+yzYanit = () => ({ gorunen: 'blue denim jeans, flat lay', kiyafet: true, kategori: 'alt', tur: 'kot', alternatifler: [], guven: 0.9, renk: 'mavi', renk2: '', desenli: false, mevsim: ['i', 's'], tarz: ['g'], su: false, ad: 'Mavi kot' });
+let say0 = yzIstekleri.length;
+let r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot pantolon', 'Jeans', 'alt'], ['etek', 'Etek', 'Skirt', 'alt'], ['bad id!', 'x']], renkler: [['mavi', 'Mavi']] });
+ok(r.durum === 200 && r.veri.sonuc.tur === 'kot' && !('gorunen' in r.veri.sonuc), 'tanıma yanıtı: ' + JSON.stringify(r.veri).slice(0, 120));
 const son = yzIstekleri[yzIstekleri.length - 1].g;
 ok(JSON.stringify(son.generationConfig.responseJsonSchema.properties.tur.enum) === '["kot","etek"]', 'geçersiz tür kimliği şemaya girmedi');
-ok(son.generationConfig.thinkingConfig.thinkingLevel === 'low', 'düşünme düzeyi düşük');
+ok(son.generationConfig.thinkingConfig.thinkingLevel === 'medium' && son.generationConfig.maxOutputTokens >= 5000, 'tanımada orta düzey düşünme ve yeterli jeton payı');
+ok(Object.keys(son.generationConfig.responseJsonSchema.properties)[0] === 'gorunen', 'önce betimleme, sonra tür');
+ok(son.contents[0].parts[0].text.includes('denim jeans') && son.contents[0].parts[0].text.includes('Jeans'), 'tür ipuçları ve İngilizce adlar yönergede');
+ok(yzIstekleri.length - say0 === 1, 'eminse tek çağrı');
+// emin değil: ikinci aşama adaylar arasında karar verir
+yzYanit = (g) => g.generationConfig.responseJsonSchema.properties.neden
+  ? { neden: 'knitted with front buttons', tur: 'hirka', guven: 0.88 }
+  : { gorunen: 'knitted top', kiyafet: true, kategori: 'ust', tur: 'kazak', alternatifler: ['hirka', 'sweat'], guven: 0.5, renk: 'mavi', renk2: '', desenli: false, mevsim: ['k'], tarz: ['g'], su: false, ad: 'Örgü' };
+say0 = yzIstekleri.length;
+const T3 = [['kazak', 'Kazak', 'Sweater', 'ust'], ['hirka', 'Hırka', 'Cardigan', 'dis'], ['sweat', 'Sweatshirt', 'Sweatshirt', 'ust']];
+r = await iste('/v1/tani', { resim: jpeg, turler: T3, renkler: [['mavi', 'Mavi']], duzeltmeler: [['kazak', 'hirka'], ['x', 'y']] });
+ok(r.veri.sonuc.tur === 'hirka' && r.veri.sonuc.alternatifler[0] === 'kazak' && r.veri.sonuc.ikinci === 1 && r.veri.sonuc.guven >= 0.85, 'emin değilken ikinci aşama düzeltti: ' + JSON.stringify(r.veri.sonuc).slice(0, 140));
+ok(yzIstekleri.length - say0 === 2 && JSON.stringify(yzIstekleri[yzIstekleri.length - 1].g.generationConfig.responseJsonSchema.properties.tur.enum) === '["kazak","hirka","sweat"]', 'ikinci aşamada yalnız adaylar');
+ok(yzIstekleri[yzIstekleri.length - 2].g.contents[0].parts[0].text.includes('kazak→hirka'), 'kullanıcı düzeltmeleri ipucu olarak gitti');
+// kategori çelişkisi
+yzYanit = (g) => g.generationConfig.responseJsonSchema.properties.neden ? { neden: 'a-line skirt', tur: 'etek', guven: 0.9 } : ({ gorunen: 'skirt', kiyafet: true, kategori: 'alt', tur: 'kazak', alternatifler: ['etek'], guven: 0.95, renk: 'mavi', renk2: '', desenli: false, mevsim: [], tarz: [], su: false, ad: 'x' });
+r = await iste('/v1/tani', { resim: jpeg, turler: [['kazak', 'Kazak', 'Sweater', 'ust'], ['etek', 'Etek', 'Skirt', 'alt']], renkler: [['mavi', 'Mavi']] });
+ok(r.veri.sonuc.tur === 'etek', 'kategoriyle çelişen tür düzeltildi');
+// yanıt jeton sınırında kesilirse bir kez daha denenir
+{
+  const eski = globalThis.fetch; let n = 0;
+  globalThis.fetch = async (url, o) => { n++; if (n === 1) return new Response(JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"gorunen":"bl' }] } }] }), { status: 200 }); return eski(url, o); };
+  yzYanit = () => ({ gorunen: 'jeans', kiyafet: true, kategori: 'alt', tur: 'kot', alternatifler: [], guven: 0.9, renk: 'mavi', renk2: '', desenli: false, mevsim: [], tarz: [], su: false, ad: 'Kot' });
+  r = await iste('/v1/tani', { resim: jpeg, turler: [['kot', 'Kot', 'Jeans', 'alt']], renkler: [['mavi', 'Mavi']] });
+  ok(r.veri.ok && n === 2, 'yarım kalan yanıt yeniden denendi');
+  globalThis.fetch = eski;
+}
 ok((await iste('/v1/tani', { resim: Buffer.from('<svg onload=1>' + 'x'.repeat(200)).toString('base64'), turler: [['kot', 'K']], renkler: [['mavi', 'M']] })).veri.hata === 'resim', 'resim olmayan veri reddedildi');
 
 // yedek model
