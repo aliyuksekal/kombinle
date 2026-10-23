@@ -177,5 +177,9 @@ DIL.uz = {
   hKurtarmaUyari: "Kod boshqa ko'rsatilmaydi. Skrinshot oling yoki yozib qo'ying.", hKaydettim: 'Saqladim',
   hSilOnay: "Hisobimni butunlay o'chirish", hSilMetin: "Hisobingiz, ulashishlar, izohlar va kuzatishlar butunlay o'chiriladi. Telefondagi garderob qoladi. Tasdiqlash uchun parolni kiriting.", hSilindi: "Hisobingiz o'chirildi.",
   paylasan: 'Ulashuvchi',
-  aboneBaslat: 'Obunani boshlash'
+  aboneBaslat: 'Obunani boshlash',
+  adEtiket2: 'Nomi', adYz: "Kombinle AI yozdi • o'zgartirish mumkin", adOto: "Avtomatik • o'zgartirish mumkin", kolajBuyut: 'Kollajni kattalashtirish', kolajAlt: 'Obraz kollaji',
+  parcalarSay: function (n) { return 'Kiyimlar (' + n + ')'; }, gardirobaEkle: "Garderobimga qo'shish", gardiropta: 'Garderobingda', gardirobaEklendi: "Obraz garderobingga qo'shildi 💜",
+  paylasSoru: 'Bu obrazni ulashmoqchimisan?', paylasKuralNot: 'Ulashishlar hamjamiyat qoidalari asosida avtomatik tekshiriladi.', paylasildiDurum: function (g) { return 'Ulashildi • ' + g; },
+  kayitliKombinler: 'Saqlangan obrazlarim', kayitliKombinSay: function (n) { return n ? 'Garderobingda ' + n + ' ta obraz' : "Yoqqan obrazlarni shu yerga qo'sh"; }
 };

@@ -40,6 +40,17 @@ function parcaDuzenle(p, yeni) {
   if (!p && tas.tur) { tas.tarz = TUR[tas.tur].s || ''; tas.su = TUR[tas.tur].su ? 1 : 0; }
   if (!p && an && an.bulut) { if (an.tarz) tas.tarz = an.tarz; if (an.su === 0 || an.su === 1) tas.su = an.su; }
   var tarzElle = false;
+  var adElle = !!(p && p.ad), ilkTur = tas.tur, ilkRenk = tas.renk;
+  /* kullanıcı yazmadıysa adı tür ve renkten üret (yapay zekâ adı, tür/renk değişmedikçe korunur) */
+  function otoAd() {
+    if (adElle || !tas.tur) return;
+    if (an && an.oneriAd && tas.tur === ilkTur && tas.renk === ilkRenk) { tas.ad = an.oneriAd; return; }
+    var tr = turAd(tas.tur), rk = renkAd(tas.renk);
+    if (TUR[tas.tur] && TUR[tas.tur].ozel) { tas.ad = kirp(rk + ' ' + tr, 40); return; }
+    var dil = A.dil === 'en' ? 'en' : A.dil === 'ru' ? 'ru' : A.dil === 'uz' ? 'uz' : 'tr';
+    var kucuk = function (x) { return x.split(' / ')[0].toLocaleLowerCase(dil === 'tr' ? 'tr' : dil); };
+    tas.ad = kirp(dil === 'ru' ? tr.split(' / ')[0] + ', ' + kucuk(rk) : rk + ' ' + kucuk(tr), 40);
+  }
   if (an && LS.al('ayikla', false)) try { console.info('analiz ' + JSON.stringify({ g: an.guven, t: an.turlar, o: an.ozellik, p: an.olasilik })); } catch (e) { }
   var acikGrup = tas.tur ? TUR[tas.tur].g : (an && an.grup) || 'ust';
   var geciciUrl = yeni ? URL.createObjectURL(yeni.sonuc.buyuk) : '';
@@ -64,6 +75,11 @@ function parcaDuzenle(p, yeni) {
     } else {
       gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '10px' }, text: p.giy ? t('giyimBilgi', p.giy, tarihYaz(p.son)) : t('henuzGiyilmedi') }));
     }
+    /* ad: tanınınca kendiliğinden yazılır, dokunup düzenlenebilir */
+    otoAd();
+    var ad = h('input', { class: 'metin ad-girdi', maxlength: '40', placeholder: t('adYer'), 'aria-label': t('adEtiket'), on: { input: function (e) { tas.ad = kirp(e.target.value, 40); adElle = !!tas.ad; } } });
+    ad.value = tas.ad;
+    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk' }, t('adEtiket2'), !adElle && tas.ad ? h('small', { class: 'oto-rozet' }, ikon('isilti', 'k'), an && an.bulut ? t('adYz') : t('adOto')) : null), ad));
     /* tür */
     var turB = h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('tur') }));
     if (yeni && an.turlar.length && an.guven < 0.5) {
@@ -104,9 +120,6 @@ function parcaDuzenle(p, yeni) {
     ayarlar.appendChild(anahtarSatir(t('dinlen'), t('dinlenAlt'), !!tas.dinlen, function (v) { tas.dinlen = v ? 1 : 0; }));
     if (tas.tur && (TUR[tas.tur].g === 'dis' || TUR[tas.tur].g === 'ayk')) ayarlar.appendChild(anahtarSatir(t('suyaDayanikli'), t('suyaDayanikliAlt'), !!tas.su, function (v) { tas.su = v ? 1 : 0; }));
     gov.appendChild(ayarlar);
-    var ad = h('input', { class: 'metin', maxlength: '40', placeholder: t('adYer'), 'aria-label': t('adEtiket'), on: { input: function (e) { tas.ad = kirp(e.target.value, 40); } } });
-    ad.value = tas.ad;
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('adEtiket') }), ad));
     /* mevsim */
     var mv = h('div', { class: 'sarili' });
     MEVSIMLER.forEach(function (m) {

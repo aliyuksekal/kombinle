@@ -177,5 +177,9 @@ DIL.ru = {
   hKurtarmaUyari: 'Код больше не будет показан. Сделай скриншот или запиши его.', hKaydettim: 'Я сохранила',
   hSilOnay: 'Удалить аккаунт навсегда', hSilMetin: 'Аккаунт, публикации, комментарии и подписки будут удалены навсегда. Гардероб на телефоне останется. Введи пароль для подтверждения.', hSilindi: 'Аккаунт удалён.',
   paylasan: 'Публикует',
-  aboneBaslat: 'Оформить подписку'
+  aboneBaslat: 'Оформить подписку',
+  adEtiket2: 'Название', adYz: 'Написал Kombinle AI • можно изменить', adOto: 'Автоматически • можно изменить', kolajBuyut: 'Увеличить коллаж', kolajAlt: 'Коллаж образа',
+  parcalarSay: function (n) { return 'Вещи (' + n + ')'; }, gardirobaEkle: 'Добавить в гардероб', gardiropta: 'В гардеробе', gardirobaEklendi: 'Образ добавлен в гардероб 💜',
+  paylasSoru: 'Поделиться этим образом?', paylasKuralNot: 'Публикации автоматически проверяются по правилам сообщества.', paylasildiDurum: function (g) { return 'Опубликовано • ' + g; },
+  kayitliKombinler: 'Мои сохранённые образы', kayitliKombinSay: function (n) { return n ? 'В гардеробе образов: ' + n : 'Добавляй сюда понравившиеся образы'; }
 };

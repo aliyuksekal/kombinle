@@ -20,7 +20,7 @@ with sync_playwright() as pw:
         print(f'{ad:20s} | {tahmin[:46]:46s} | seçili={secili} renk={renk[:1]} öneri={oneriler[:4]}')
         btn = p.locator('.sayfa.acik .alt-bar .btn.ana')
         if btn.is_disabled():
-            p.locator('.sayfa.acik .bolum').first.locator('.sarili .cip').first.click(); p.wait_for_timeout(100)
+            p.locator('.sayfa.acik .bolum:has(.cipler)').first.locator('.sarili .cip').first.click(); p.wait_for_timeout(100)
         p.locator('.sayfa.acik .alt-bar .btn.ana').click(); p.wait_for_timeout(700)
     p.wait_for_timeout(500)
     o.ekran('11_dolap_sonra')

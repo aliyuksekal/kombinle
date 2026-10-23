@@ -10,9 +10,9 @@ APKPAY = """(sahip) => { window.__sahip = sahip || []; window.__alim = [];
 def kaydet_sayfasi(p, tur=None):
     p.wait_for_selector('.sayfa.acik .buyuk-resim', timeout=15000); p.wait_for_timeout(300)
     if tur:
-        p.locator('.sayfa.acik .bolum').first.locator('.cip', has_text=tur).first.click()
+        p.locator('.sayfa.acik .bolum:has(.cipler)').first.locator('.cip', has_text=tur).first.click()
     if p.locator('.sayfa.acik .alt-bar .btn.ana').is_disabled():
-        p.locator('.sayfa.acik .bolum').first.locator('.sarili .cip').first.click()
+        p.locator('.sayfa.acik .bolum:has(.cipler)').first.locator('.sarili .cip').first.click()
     p.locator('.sayfa.acik .alt-bar .btn.ana').click(); p.wait_for_timeout(700)
 
 def kombin_iste(p, metin='günlük'):
@@ -127,7 +127,7 @@ with sync_playwright() as pw:
     p.click('#havaKarti .cip:has-text("Yağmurlu")'); p.wait_for_timeout(300)
     kombin_iste(p, 'iş yemeği')
     ok(p.locator('#sonucAlani .g-sonuc').count() == 1, 'elle seçilen havayla kombin önerildi')
-    p.click('#sonucAlani summary'); p.wait_for_timeout(200); ok('Seçtiğin havaya' in p.inner_text('#sonucAlani'), 'neden: elle seçilen hava')
+    p.click('#sonucAlani .g-neden:not(.g-parca-liste) summary'); p.wait_for_timeout(200); ok('Seçtiğin havaya' in p.inner_text('#sonucAlani'), 'neden: elle seçilen hava')
     o.kapat()
 
     print('— Konum izni yok')

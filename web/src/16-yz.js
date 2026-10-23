@@ -504,37 +504,68 @@ function resimYukle(url) {
     i.src = url;
   });
 }
-/* Kombindeki parçaların fotoğraflarından paylaşılabilir bir kolaj (yalnız telefondaki fotoğraflar; uzak görseller tuvali kirletir) */
-function kombinKolaji(k) {
-  var parcalar = kombinParcalari(k).slice(0, 6);
-  var W = 720, H = 900;
+/* Kombin kolajı: üst/elbise ve alt solda büyük, dış giyim, ayakkabı, çanta ve aksesuarlar sağda.
+   Yalnız telefondaki fotoğraflar kullanılır (uzak görseller tuvali kirletir). */
+var KOLAJ_ONBELLEK = Object.create(null);
+function parcaResmi(p) {
+  return Depo.resimAl(p.id).then(function (r) {
+    var b = r && (r.buyuk instanceof Blob ? r.buyuk : r.kucuk instanceof Blob ? r.kucuk : null);
+    if (!b) return null;
+    var u = URL.createObjectURL(b);
+    return resimYukle(u).then(function (img) { setTimeout(function () { URL.revokeObjectURL(u); }, 1500); return img ? { img: img, kesik: !!p.kesik } : null; });
+  }).catch(function () { return null; });
+}
+function yuvarlak(x, a, b, w, hh, r) {
+  x.beginPath();
+  if (x.roundRect) x.roundRect(a, b, w, hh, r);
+  else { x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + hh, r); x.arcTo(a + w, b + hh, a, b + hh, r); x.arcTo(a, b + hh, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+}
+function kombinKolaji(k, bilgi) {
+  var anahtar = kombinParcalari(k).map(function (p) { return p.id + (p.kesik ? 'k' : ''); }).join(',') + '|' + (bilgi && bilgi.alt || '');
+  if (KOLAJ_ONBELLEK[anahtar]) return Promise.resolve(KOLAJ_ONBELLEK[anahtar]);
+  var sol = (k.tek ? [k.tek] : [k.ust, k.alt]).filter(Boolean);
+  var sag = [k.dis, k.kat, k.ayk].concat(k.aks || []).filter(Boolean).slice(0, 4);
+  if (!sag.length && sol.length > 1) sag = [sol.pop()];
+  var W = 900, H = 1125, P = 36, ALT = 92;
   var c = document.createElement('canvas'); c.width = W; c.height = H;
   var x = c.getContext('2d');
-  var koyu = document.documentElement.getAttribute('data-tema') === 'koyu';
-  x.fillStyle = koyu ? '#1E1F22' : '#F8FAFC'; x.fillRect(0, 0, W, H);
-  return Promise.all(parcalar.map(function (p) {
-    return Depo.resimAl(p.id).then(function (r) {
-      var b = r && (r.buyuk instanceof Blob ? r.buyuk : r.kucuk instanceof Blob ? r.kucuk : null);
-      if (!b) return null;
-      var u = URL.createObjectURL(b);
-      return resimYukle(u).then(function (img) { setTimeout(function () { URL.revokeObjectURL(u); }, 1000); return img; });
-    }).catch(function () { return null; });
-  })).then(function (resimler) {
-    var dolu = resimler.filter(Boolean);
-    if (!dolu.length) return null;
-    var n = dolu.length, sut = n <= 1 ? 1 : n <= 4 ? 2 : 3, sat = Math.ceil(n / sut);
-    var bosluk = 18, hw = (W - bosluk * (sut + 1)) / sut, hh = (H - 70 - bosluk * (sat + 1)) / sat;
-    dolu.forEach(function (img, i) {
-      var cx = bosluk + (i % sut) * (hw + bosluk), cy = bosluk + Math.floor(i / sut) * (hh + bosluk);
-      x.fillStyle = koyu ? '#141414' : '#FFFFFF';
-      if (x.roundRect) { x.beginPath(); x.roundRect(cx, cy, hw, hh, 22); x.fill(); } else x.fillRect(cx, cy, hw, hh);
-      var o = Math.min((hw - 24) / img.width, (hh - 24) / img.height);
-      var w = img.width * o, hg = img.height * o;
-      x.drawImage(img, cx + (hw - w) / 2, cy + (hh - hg) / 2, w, hg);
-    });
-    x.fillStyle = koyu ? '#E35068' : '#F43F5E';
-    x.font = '800 30px Inter, sans-serif'; x.textAlign = 'center';
-    x.fillText('Kombinle', W / 2, H - 28);
+  var g = x.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#fff7fb'); g.addColorStop(1, '#f3e8ff');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  return Promise.all(sol.concat(sag).map(parcaResmi)).then(function (r) {
+    var rs = r.slice(0, sol.length), rg = r.slice(sol.length);
+    if (!r.some(Boolean)) return null;
+    var tamGen = W - P * 2, solG = sag.length ? Math.round(tamGen * 0.6) : tamGen, sagG = tamGen - solG - (sag.length ? 18 : 0);
+    var yuk = H - P - ALT;
+    function hucreler(liste, x0, gen) {
+      var n = liste.length, ara = 18, hh = (yuk - P - ara * (n - 1)) / Math.max(1, n);
+      return liste.map(function (_, i) { return { x: x0, y: P + i * (hh + ara), w: gen, h: hh }; });
+    }
+    function ciz(h2, o) {
+      if (!o) { x.fillStyle = 'rgba(236,72,153,.08)'; yuvarlak(x, h2.x, h2.y, h2.w, h2.h, 28); x.fill(); return; }
+      var img = o.img;
+      if (o.kesik) {
+        /* saydam (arka planı silinmiş) parça: gölgeli, kutusuz */
+        var oo = Math.min((h2.w - 20) / img.width, (h2.h - 20) / img.height);
+        var w = img.width * oo, hh = img.height * oo;
+        x.save(); x.shadowColor = 'rgba(80,30,90,.22)'; x.shadowBlur = 26; x.shadowOffsetY = 12;
+        x.drawImage(img, h2.x + (h2.w - w) / 2, h2.y + (h2.h - hh) / 2, w, hh); x.restore();
+        return;
+      }
+      /* fotoğraf: yuvarlak köşeli kart, kırpılarak doldurulur */
+      x.save(); x.shadowColor = 'rgba(80,30,90,.18)'; x.shadowBlur = 22; x.shadowOffsetY = 10;
+      x.fillStyle = '#fff'; yuvarlak(x, h2.x, h2.y, h2.w, h2.h, 28); x.fill(); x.restore();
+      x.save(); yuvarlak(x, h2.x, h2.y, h2.w, h2.h, 28); x.clip();
+      var o2 = Math.max(h2.w / img.width, h2.h / img.height), w2 = img.width * o2, h3 = img.height * o2;
+      x.drawImage(img, h2.x + (h2.w - w2) / 2, h2.y + (h2.h - h3) / 2, w2, h3); x.restore();
+    }
+    hucreler(sol, P, solG).forEach(function (h2, i) { ciz(h2, rs[i]); });
+    if (sag.length) hucreler(sag, P + solG + 18, sagG).forEach(function (h2, i) { ciz(h2, rg[i]); });
+    /* alt bilgi */
+    x.fillStyle = '#ec4899'; x.font = '800 40px Inter, sans-serif'; x.textAlign = 'left'; x.textBaseline = 'middle';
+    x.fillText('Kombinle', P, H - ALT / 2);
+    if (bilgi && bilgi.alt) { x.fillStyle = '#6b5b6e'; x.font = '600 26px Inter, sans-serif'; x.textAlign = 'right'; x.fillText(kirp(bilgi.alt, 40), W - P, H - ALT / 2); }
+    KOLAJ_ONBELLEK[anahtar] = c;
     return c;
   });
 }
