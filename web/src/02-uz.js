@@ -181,5 +181,16 @@ DIL.uz = {
   adEtiket2: 'Nomi', adYz: "Kombinle AI yozdi • o'zgartirish mumkin", adOto: "Avtomatik • o'zgartirish mumkin", kolajBuyut: 'Kollajni kattalashtirish', kolajAlt: 'Obraz kollaji',
   parcalarSay: function (n) { return 'Kiyimlar (' + n + ')'; }, gardirobaEkle: "Garderobimga qo'shish", gardiropta: 'Garderobingda', gardirobaEklendi: "Obraz garderobingga qo'shildi 💜",
   paylasSoru: 'Bu obrazni ulashmoqchimisan?', paylasKuralNot: 'Ulashishlar hamjamiyat qoidalari asosida avtomatik tekshiriladi.', paylasildiDurum: function (g) { return 'Ulashildi • ' + g; },
-  kayitliKombinler: 'Saqlangan obrazlarim', kayitliKombinSay: function (n) { return n ? 'Garderobingda ' + n + ' ta obraz' : "Yoqqan obrazlarni shu yerga qo'sh"; }
+  kayitliKombinler: 'Saqlangan obrazlarim', kayitliKombinSay: function (n) { return n ? 'Garderobingda ' + n + ' ta obraz' : "Yoqqan obrazlarni shu yerga qo'sh"; },
+  resmiHesap: 'Rasmiy hisob', kadiSecilmedi: 'Foydalanuvchi nomi tanlanmagan', profilDuzenle: 'Profilni tahrirlash', yoneticiPanel: 'Administrator paneli',
+  kadiGecersiz: "Foydalanuvchi nomi 3–20 belgi, harf bilan boshlanadi; faqat harf, raqam, nuqta va pastki chiziq.", kadiAlinmis: 'Bu nom band.', kadiAyrilmis: 'Bu nom zaxiralangan.',
+  yetkiYok: "Bu amal uchun ruxsatingiz yo'q.", kisiBulunamadi: 'Bunday nomli foydalanuvchi topilmadi.', kendinAtayamazsin: "O'zingizga tayinlay olmaysiz.",
+  kadi: 'Foydalanuvchi nomi', kadiYer: 'username', kadiKural: '3–20 belgi: harf, raqam, nuqta, pastki chiziq', kadiUygun: function (k) { return '@' + k + ' bo\'sh ✓'; }, kadiSenin: 'Hozirgi nomingiz', kadiBakiliyor: 'Tekshirilmoqda…',
+  hakkimda: "O'zim haqimda", hakkimdaYer: "Uslubingizni bir necha so'z bilan yozing (minimal, rang-barang, vintaj…)", yoneticiKodu: 'Administrator kodi', yoneticiKoduNot: 'Bu nom faqat ilova egasiga tegishli.', yoneticiKoduGerek: 'Administrator kodini kiriting.',
+  profilNot: "Ism, foydalanuvchi nomi va «O'zim haqimda» matni hamjamiyatda hammaga ko'rinadi. Matn avtomatik tekshiriladi.", profilKaydedildi: 'Profil yangilandi 💜', profilDenetim: 'Profil matni hamjamiyat qoidalariga mos emas.',
+  resmiBirak: function (k) { return '@' + k + " zaxiralangan nom. Undan voz kechsangiz, qayta ola olmaysiz. Davom etilsinmi?"; }, eminMisin: 'Ishonchingiz komilmi?', evetDevam: 'Ha, davom etish',
+  hedefKadi: 'Kimga berilsin?', hedefKadiYer: 'foydalanuvchi nomi', adiVer: 'Berish', adiGeriAl: 'Qaytarib olish', ayrilmisAd: 'Zaxiralangan nom',
+  yoneticiMetin: "@admin sizniki. Zaxiralangan nomlarni (masalan, @user) xohlagan odamga berishingiz yoki qaytarib olishingiz mumkin. Uning eski nomi bo'shaydi.",
+  adVerildi: function (a, s) { return '@' + a + ' endi ' + s + 'niki.'; }, adGeriAlindi: function (a) { return '@' + a + ' qaytarib olindi.'; },
+  adVerSor: function (a, k) { return '@' + a + ' nomi @' + k + 'ga berilsinmi? Hozirgi egasi uni yo\'qotadi.'; }, adGeriSor: function (a) { return '@' + a + ' egasidan qaytarib olinsinmi?'; }
 };

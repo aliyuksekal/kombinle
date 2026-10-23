@@ -181,5 +181,16 @@ DIL.ru = {
   adEtiket2: 'Название', adYz: 'Написал Kombinle AI • можно изменить', adOto: 'Автоматически • можно изменить', kolajBuyut: 'Увеличить коллаж', kolajAlt: 'Коллаж образа',
   parcalarSay: function (n) { return 'Вещи (' + n + ')'; }, gardirobaEkle: 'Добавить в гардероб', gardiropta: 'В гардеробе', gardirobaEklendi: 'Образ добавлен в гардероб 💜',
   paylasSoru: 'Поделиться этим образом?', paylasKuralNot: 'Публикации автоматически проверяются по правилам сообщества.', paylasildiDurum: function (g) { return 'Опубликовано • ' + g; },
-  kayitliKombinler: 'Мои сохранённые образы', kayitliKombinSay: function (n) { return n ? 'В гардеробе образов: ' + n : 'Добавляй сюда понравившиеся образы'; }
+  kayitliKombinler: 'Мои сохранённые образы', kayitliKombinSay: function (n) { return n ? 'В гардеробе образов: ' + n : 'Добавляй сюда понравившиеся образы'; },
+  resmiHesap: 'Официальный аккаунт', kadiSecilmedi: 'Имя пользователя не выбрано', profilDuzenle: 'Редактировать профиль', yoneticiPanel: 'Панель администратора',
+  kadiGecersiz: 'Имя пользователя: 3–20 символов, начинается с буквы; только латинские буквы, цифры, точка и подчёркивание.', kadiAlinmis: 'Это имя уже занято.', kadiAyrilmis: 'Это имя зарезервировано.',
+  yetkiYok: 'Нет прав для этого действия.', kisiBulunamadi: 'Пользователь с таким именем не найден.', kendinAtayamazsin: 'Нельзя назначить себе.',
+  kadi: 'Имя пользователя', kadiYer: 'username', kadiKural: '3–20 символов: буквы, цифры, точка, подчёркивание', kadiUygun: function (k) { return '@' + k + ' свободно ✓'; }, kadiSenin: 'Ваше текущее имя', kadiBakiliyor: 'Проверяем…',
+  hakkimda: 'О себе', hakkimdaYer: 'Опишите свой стиль в двух словах (минимализм, яркие цвета, винтаж…)', yoneticiKodu: 'Код администратора', yoneticiKoduNot: 'Это имя принадлежит только владельцу приложения.', yoneticiKoduGerek: 'Введите код администратора.',
+  profilNot: 'Имя, имя пользователя и текст «О себе» видны всем в сообществе. Текст проверяется автоматически.', profilKaydedildi: 'Профиль обновлён 💜', profilDenetim: 'Текст профиля не соответствует правилам сообщества.',
+  resmiBirak: function (k) { return '@' + k + ' — зарезервированное имя. Если откажетесь, вернуть его сами не сможете. Продолжить?'; }, eminMisin: 'Вы уверены?', evetDevam: 'Да, продолжить',
+  hedefKadi: 'Кому выдать?', hedefKadiYer: 'имя пользователя', adiVer: 'Выдать', adiGeriAl: 'Забрать', ayrilmisAd: 'Зарезервированное имя',
+  yoneticiMetin: '@admin принадлежит вам. Вы можете выдавать зарезервированные имена (например, @user) кому угодно или забирать их. Старое имя пользователя освобождается.',
+  adVerildi: function (a, s) { return '@' + a + ' теперь у пользователя ' + s + '.'; }, adGeriAlindi: function (a) { return '@' + a + ' отозвано.'; },
+  adVerSor: function (a, k) { return 'Выдать @' + a + ' пользователю @' + k + '? Текущий владелец его потеряет.'; }, adGeriSor: function (a) { return 'Забрать @' + a + ' у владельца?'; }
 };

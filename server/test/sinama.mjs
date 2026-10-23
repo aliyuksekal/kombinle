@@ -212,6 +212,46 @@ const sy = yzIstekleri[yzIstekleri.length - 1].g;
 ok(sy.contents[0].parts[0].text.includes('русский'), 'sohbet dili Rusça istendi');
 ok((await iste('/v1/sohbet', { mesaj: '' })).veri.hata === 'bos', 'boş mesaj reddedildi');
 
+// profil ve kullanıcı adı
+r = await iste('/v1/kadi', { kadi: '@Bora.Moda' }, cihazB);
+ok(r.veri.kadi === 'bora.moda' && r.veri.durum === 'bos', 'kullanıcı adı boş: ' + JSON.stringify(r.veri));
+ok((await iste('/v1/kadi', { kadi: 'admin' }, cihazB)).veri.durum === 'ayrilmis', '@admin ayrılmış');
+ok((await iste('/v1/kadi', { kadi: '1ab' }, cihazB)).veri.durum === 'gecersiz', 'rakamla başlayan geçersiz');
+ok((await iste('/v1/kadi', { kadi: 'a..b' }, cihazB)).veri.durum === 'gecersiz', 'çift nokta geçersiz');
+r = await iste('/v1/profil', { kadi: 'Bora.Moda', ad: 'Bora K', bio: 'Minimal tarz sever' }, cihazB);
+ok(r.veri.ok && r.veri.hesap.kadi === 'bora.moda' && r.veri.hesap.ad === 'Bora K' && r.veri.hesap.bio === 'Minimal tarz sever', 'profil güncellendi');
+ok((await iste('/v1/kadi', { kadi: 'bora.moda' }, cihazC)).veri.durum === 'alinmis', 'alınmış ad başkasına görünüyor');
+ok((await iste('/v1/kadi', { kadi: 'bora.moda' }, cihazB)).veri.durum === 'senin', 'kendi adı');
+ok((await iste('/v1/profil', { kadi: 'BORA.MODA' }, cihazC)).veri.hata === 'alinmis', 'aynı kullanıcı adı ikinci kez alınamaz');
+ok((await iste('/v1/profil', { kadi: 'user' }, cihazC)).veri.hata === 'ayrilmis', '@user kendiliğinden alınamaz');
+ok((await iste('/v1/profil', { kadi: 'admin', yoneticiKodu: 'AAAA-BBBB-CCCC-DDDD' }, cihazC)).veri.hata === 'ayrilmis', 'yanlış yönetici koduyla @admin alınamaz');
+ok((await iste('/v1/profil', { bio: 'beni ara 0532 123 45 67' }, cihazC)).veri.hata === 'baglanti', 'profilde telefon engellendi');
+yzYanit = () => ({ uygun: false });
+r = await iste('/v1/profil', { bio: 'kaba bir yazı' }, cihazC); ok(r.veri.hata === 'denetim', 'uygunsuz profil yazısı reddedildi');
+yzYanit = () => ({ uygun: true, neden: 'uygun' });
+r = await iste('/v1/kayit', { ad: 'Ece', eposta: 'ece@ornek.com', sifre: 'sifre-ece-123', kadi: 'bora.moda' }, '7'.repeat(64)); ok(r.veri.hata === 'alinmis', 'kayıtta alınmış ad reddedildi');
+ok((await iste('/v1/kayit', { ad: 'Ece', eposta: 'ece@ornek.com', sifre: 'sifre-ece-123', kadi: 'admin' }, '7'.repeat(64))).veri.hata === 'ayrilmis', 'kayıtta @admin alınamaz');
+r = await iste('/v1/kayit', { ad: 'Ece', eposta: 'ece@ornek.com', sifre: 'sifre-ece-123', kadi: 'Ece_Şık' }, '7'.repeat(64));
+ok(r.veri.ok && r.veri.hesap.kadi === 'ece_sik', 'kayıtta kullanıcı adı (Türkçe harf çevrildi)');
+const ECE = '7'.repeat(64); OTURUM[ECE] = r.veri.oturum;
+r = await iste('/v1/kisiler', { ara: '@bora' }, cihazC);
+ok(r.veri.liste.length === 1 && r.veri.liste[0].kadi === 'bora.moda' && r.veri.liste[0].bio === 'Minimal tarz sever', 'kullanıcı adıyla kişi arama');
+ok((await iste('/v1/ata', { ad: 'user', hedef: 'ece_sik' }, cihazB)).durum === 403, 'yönetici olmayan ad atayamaz');
+// yönetici (uygulama sahibi) kodu: test için ortamdan
+const KOD = 'TEST-KODU-ABCD-2345';
+env.YONETICI_OZET = createHash('sha256').update('kombinle-yonetici:' + KOD.replace(/-/g, '')).digest('hex');
+r = await iste('/v1/profil', { kadi: '@admin', yoneticiKodu: KOD.toLowerCase() }, cihazC);
+ok(r.veri.ok && r.veri.hesap.kadi === 'admin' && r.veri.hesap.yonetici === true, 'doğru kodla @admin alındı');
+ok((await iste('/v1/profil', { kadi: 'admin', yoneticiKodu: KOD }, cihazD)).veri.hata === 'alinmis', '@admin ikinci kişiye verilemez');
+r = await iste('/v1/ata', { ad: 'user', hedef: '@ece_sik' }, cihazC);
+ok(r.veri.ok && r.veri.sahip === 'Ece', '@admin, @user adını atadı');
+ok((await iste('/v1/ben', {}, ECE)).veri.hesap.kadi === 'user', 'Ece artık @user');
+ok((await iste('/v1/ata', { ad: 'admin', hedef: 'bora.moda' }, cihazC)).veri.hata === 'girdi', '@admin devredilemez');
+ok((await iste('/v1/ata', { ad: 'user', hedef: 'yokboyle' }, cihazC)).durum === 404, 'olmayan kişiye atanamaz');
+ok((await iste('/v1/ata', { ad: 'user', geriAl: true }, cihazC)).veri.ok && !(await iste('/v1/ben', {}, ECE)).veri.hesap.kadi, '@user geri alındı');
+await iste('/v1/ata', { ad: 'user', hedef: 'bora.moda' }, cihazC);
+ok((await iste('/v1/ben', {}, cihazB)).veri.hesap.kadi === 'user', '@user başka kişiye verildi');
+
 // hesap silme
 const silinecek = (await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.length;
 ok(silinecek === 3, 'silmeden önce 3 paylaşım');

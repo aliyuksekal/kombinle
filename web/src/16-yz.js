@@ -258,10 +258,10 @@ function kisilerKarti() {
       var l = Array.isArray(v.liste) ? v.liste.filter(function (k) { return k && /^[a-f0-9]{12}$/.test(k.kod) && typeof k.takma === 'string'; }) : [];
       if (!l.length) { sira.appendChild(h('p', { class: 'alt-yazi', text: kirp(ara.value, 24) ? t('kisiYok') : t('kisiYokHenuz') })); return; }
       l.forEach(function (k) {
-        var ad = kirp(k.takma, 24);
+        var ad = kirp(k.takma, 24), kd = typeof k.kadi === 'string' ? k.kadi : '', bio = typeof k.bio === 'string' ? kirp(k.bio, 150) : '';
         sira.appendChild(h('div', { class: 'g-kisi' },
-          h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad); } } },
-            h('span', { class: 'uav', text: (ad.charAt(0) || '?').toLocaleUpperCase('tr') }), h('b', { text: ad }),
+          h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad, kd, bio); } } },
+            h('span', { class: 'uav', text: (ad.charAt(0) || '?').toLocaleUpperCase('tr') }), h('b', { text: ad }), kadiEl(kd),
             h('small', { text: t('takipciSay', k.takipci | 0) + ' • ' + t('paylasimSay', k.paylasim | 0) })),
           takipDugmesi(k.kod, !!k.takipte)));
       });
@@ -271,11 +271,12 @@ function kisilerKarti() {
   setTimeout(yukle, 0);
   return kap;
 }
-function kisiSayfasi(kod, takma) {
+function kisiSayfasi(kod, takma, kadi, bio) {
   var gov = h('div', { class: 'g-kisi-sayfa' });
   var s = sayfaAc({ baslik: takma, icerik: gov });
-  gov.appendChild(h('div', { class: 'g-akis-bas', style: { 'margin-bottom': '12px' } },
-    h('span', { class: 'g-avatar', text: (takma.charAt(0) || '?').toLocaleUpperCase('tr') }), h('div', null, h('b', { text: takma })), takipDugmesi(kod, TOPLULUK.liste.some(function (x) { return x.yazar === kod && x.takipte; }))));
+  gov.appendChild(h('div', { class: 'g-akis-bas', style: { 'margin-bottom': bio ? '6px' : '12px' } },
+    h('span', { class: 'g-avatar', text: (takma.charAt(0) || '?').toLocaleUpperCase('tr') }), h('div', null, h('b', { text: takma }), kadiEl(kadi)), takipDugmesi(kod, TOPLULUK.liste.some(function (x) { return x.yazar === kod && x.takipte; }))));
+  if (bio) gov.appendChild(h('p', { class: 'hesap-bio', style: { 'margin-bottom': '12px' }, text: bio }));
   var alan = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   gov.appendChild(alan);
   yzIste('/v1/akis', { sira: 'kisi', kisi: kod, engelli: engelliler() }, 20000).then(function (v) {
@@ -443,8 +444,8 @@ function paylasimKarti(x, adres) {
   var yorumAlani = null;
   var kart = h('div', { class: 'g-akis' + (x.gizli ? ' gizli' : '') },
     h('div', { class: 'g-akis-bas' },
-      h('button', { class: 'g-avatar', 'aria-label': ad, text: (ad.charAt(0) || '?').toLocaleUpperCase(A.dil === 'en' ? 'en' : 'tr'), on: { click: function () { if (!x.benim) kisiSayfasi(x.yazar, ad); } } }),
-      h('div', null, h('b', { text: ad }), h('small', null, zamanOnce(x.zaman), gor)),
+      h('button', { class: 'g-avatar', 'aria-label': ad, text: (ad.charAt(0) || '?').toLocaleUpperCase(A.dil === 'en' ? 'en' : 'tr'), on: { click: function () { if (!x.benim) kisiSayfasi(x.yazar, ad, x.kadi); } } }),
+      h('div', null, h('b', null, ad, kadiEl(x.kadi, 'yan')), h('small', null, zamanOnce(x.zaman), gor)),
       !x.benim ? takipDugmesi(x.yazar, !!x.takipte) : null,
       h('button', { class: 'ikon-btn g-akis-menu', 'aria-label': t('secenekler'), on: { click: function () { paylasimMenusu(x, kart); } } }, ikon('nokta'))),
     x.gizli ? h('p', { class: 'g-gizli-not', text: t('tpGizli') }) : null,
