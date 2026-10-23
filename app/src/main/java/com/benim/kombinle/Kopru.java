@@ -29,6 +29,9 @@ public final class Kopru {
     private static final int EN_FAZLA_RESIM = 4 * 1024 * 1024;   // etiketleme için base64 sınırı
     private static final int EN_FAZLA_DOSYA = 150 * 1024 * 1024; // yedek dosyası sınırı
 
+    /* aynı anda en fazla 4 ağ isteği: sayfa ne kadar çağırırsa çağırsın telefon yorulmaz */
+    private static final java.util.concurrent.ExecutorService AG = java.util.concurrent.Executors.newFixedThreadPool(4);
+
     private final AnaEkran ekran;
     private final Odeme odeme;
     private ImageLabeler etiketleyici;
@@ -182,6 +185,40 @@ public final class Kopru {
                 gonder(req, false, "hata", "coz");
             }
         }).start();
+    }
+
+    /* ---------------- Kombinle sunucusu (yapay zekâ, topluluk) ---------------- */
+
+    @JavascriptInterface
+    public boolean yzVar() {
+        return guvenli && Sunucu.hazir();
+    }
+
+    /** Yalnızca paylaşım görsellerini göstermek için; anahtar içermez. */
+    @JavascriptInterface
+    public String sunucu() {
+        return guvenli && Sunucu.hazir() ? Sunucu.ADRES : "";
+    }
+
+    @JavascriptInterface
+    public void api(final String req, final String yol, final String govde) {
+        if (!guvenli || !istekGecerli(req)) return;
+        if (!Sunucu.hazir()) { gonder(req, false, "hata", "kurulu-degil"); return; }
+        if (!Sunucu.yolGecerli(yol) || !Sunucu.govdeGecerli(govde)) { gonder(req, false, "hata", "girdi"); return; }
+        AG.execute(() -> {
+            try {
+                JSONObject s = Sunucu.gonder(ekran.getApplicationContext(), yol, govde);
+                int durum = s.optInt("durum");
+                JSONObject o = new JSONObject();
+                o.put("req", req);
+                o.put("ok", durum >= 200 && durum < 300);
+                o.put("durum", durum);
+                o.put("veri", s.optJSONObject("veri"));
+                gonder(o);
+            } catch (Throwable t) {
+                gonder(req, false, "hata", "ag");
+            }
+        });
     }
 
     /* ---------------- dosya kaydetme ---------------- */

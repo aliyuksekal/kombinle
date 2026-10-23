@@ -55,6 +55,12 @@ function temizle(el) { while (el && el.firstChild) el.removeChild(el.firstChild)
 
 /* ---------- İkonlar (sabit SVG) ---------- */
 var IK = {
+  paylas: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
+  yukari: '<path d="M7 10v11H3V10zM7 10l4-8c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.3l-1.4 8a2 2 0 0 1-2 1.7H7"/>',
+  asagi: '<path d="M17 14V3h4v11zM17 14l-4 8c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.3l1.4-8a2 2 0 0 1 2-1.7H17"/>',
+  nokta: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  bayrak: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  grafik: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   pusula: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
   ampul: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',

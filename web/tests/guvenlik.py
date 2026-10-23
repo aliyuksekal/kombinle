@@ -42,7 +42,7 @@ with sync_playwright() as pw:
     p.click('#jetonHap'); p.wait_for_timeout(500)
     o.ekran('30_magaza')
     p.locator('.sayfa.acik .g-fiyat').first.click(); p.wait_for_timeout(400)
-    ok("Google Play" in p.inner_text('#tost'), 'köprü yokken satın alma uyarısı')
+    ok("Play Store" in p.inner_text('#tost'), 'köprü yokken satın alma uyarısı')
     p.evaluate("localStorage.setItem('kb_jeton', '0')")
     p.go_back(); p.wait_for_timeout(400)
     p.evaluate(APKPAY, [])

@@ -1,0 +1,18 @@
+# Kombinle sunucusu (Cloudflare Workers). GitHub Actions kurar; elle değiştirmeye gerek yok.
+name = "kombinle-api"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+[vars]
+# Yapay zekâ modeli. Kapatılırsa ya da bulunamazsa YEDEK kullanılır.
+MODEL = "gemini-3-flash-preview"
+MODEL_YEDEK = "gemini-flash-latest"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kombinle"
+database_id = "__D1_ID__"

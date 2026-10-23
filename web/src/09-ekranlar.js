@@ -119,14 +119,16 @@ function kombinIste() {
   c.tarzMod = tm;
   S.mesgul = true;
   var btn = $('#onerBtn'); if (btn) { btn.disabled = true; temizle(btn); btn.appendChild(h('span', { class: 'yukleniyor' })); btn.appendChild(document.createTextNode(t('hazirlaniyor'))); }
-  setTimeout(function () {
-    var sonuc;
+  function yerel() {
+    var sonuc = null;
     try {
-      sonuc = null;
       if (A.kendiMod) { var kl = kendiKombinlerdenOner(c); if (kl.length) sonuc = { kombinler: kl }; else tost(t('kendiYok')); }
       if (!sonuc) sonuc = kombinOner(oneriParcalari(), c);
     }
     catch (e) { hataYakala(e); sonuc = { kombinler: [] }; }
+    return sonuc;
+  }
+  function bitir(sonuc, havaNotu) {
     S.mesgul = false;
     if (!sonuc.kombinler.length) {
       S.sonuc = null; ciz();
@@ -135,11 +137,23 @@ function kombinIste() {
     }
     var ornekMi = sonuc.kombinler[0] && kombinParcalari(sonuc.kombinler[0]).every(function (p) { return p.ornek; });
     if (!ornekMi) ozKullan('kombin');
-    S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now() };
+    S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now(), havaNotu: havaNotu || '' };
     S.sonucNo = 0; S.kayitli = {};
     ciz();
     var alan = $('#sonucAlani'); if (alan) alan.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 260);
+  }
+  /* Kombinle AI: gerçek dolapta en az 3 parça varsa önce yapay zekâ denenir; olmazsa cihaz içi stilist */
+  if (yzAcik() && !A.kendiMod && gercek.length >= 3) {
+    if (btn) { temizle(btn); btn.appendChild(h('span', { class: 'yukleniyor' })); btn.appendChild(document.createTextNode(t('yzDusunuyor'))); }
+    yzKombin(c, cumle, hv).then(function (r) {
+      if (r) { bitir({ kombinler: r.kombinler }, r.havaNotu); return; }
+      tost(t('yzYedek')); bitir(yerel());
+    }).catch(function (e) {
+      tost(yzHataMetni(e, t('yzYedek'))); bitir(yerel());
+    });
+    return;
+  }
+  setTimeout(function () { bitir(yerel()); }, 260);
 }
 function kombinParcalari(k) { return [k.dis, k.kat, k.tek, k.ust, k.alt, k.ayk].concat(k.aks || []).filter(Boolean); }
 

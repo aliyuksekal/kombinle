@@ -7,3 +7,4 @@ local.properties
 web/dist/
 web/tests/ekran/
 __pycache__/
+server/node_modules/

@@ -28,10 +28,37 @@ jobs:
         with:
           gradle-version: 8.11.1
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Yapay zekâ anahtarı yalnızca sunucuya gider; APK'ya yalnızca sunucu adresi ve
+      # anahtardan tek yönlü türetilmiş uygulama imza anahtarı girer.
+      - name: Kombinle sunucusunu kur
+        id: sunucu
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$GEMINI_API_KEY" ]; then
+            echo "Sunucu gizli anahtarları yok; APK yapay zekâsız derlenecek."
+            exit 0
+          fi
+          UYGULAMA_ANAHTARI=$(printf '%s' "kombinle-uygulama:$GEMINI_API_KEY" | sha256sum | cut -d' ' -f1)
+          echo "::add-mask::$UYGULAMA_ANAHTARI"
+          echo "UYGULAMA_ANAHTARI=$UYGULAMA_ANAHTARI" >> "$GITHUB_ENV"
+          export UYGULAMA_ANAHTARI
+          bash server/kur.sh 2>&1 | tee sunucu.log
+
       - name: APK derle (küçültülmüş, imzalı)
+        env:
+          SUNUCU_URL: ${{ steps.sunucu.outputs.url }}
         run: |
           set -o pipefail
-          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee derleme.log
+          ( cat sunucu.log 2>/dev/null; gradle assembleRelease --no-daemon --stacktrace \
+              -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" 2>&1 ) | tee derleme.log
+          echo "Sunucu: ${SUNUCU_URL:-yok}"
 
       - name: APK'yı hazırla
         run: |
@@ -64,6 +91,7 @@ jobs:
           rm -rf ./* .github 2>/dev/null || true
           cp /tmp/Kombinle-*.apk ./Kombinle.apk
           echo "1.0.${{ github.run_number }} $(git rev-parse --short ${{ github.sha }})" > SURUM.txt
+          echo "sunucu: ${{ steps.sunucu.outputs.url || 'yok' }}" >> SURUM.txt
           git add Kombinle.apk SURUM.txt
           git commit -q -m "APK 1.0.${{ github.run_number }}"
           git push -f origin apk
@@ -73,7 +101,8 @@ jobs:
         run: |
           git config user.name "Kombinle Derleme"
           git config user.email "kombinle@users.noreply.github.com"
-          cp derleme.log /tmp/derleme.log 2>/dev/null || echo "günlük yok" > /tmp/derleme.log
+          cat sunucu.log derleme.log > /tmp/derleme.log 2>/dev/null || true
+          [ -s /tmp/derleme.log ] || echo "günlük yok" > /tmp/derleme.log
           git checkout --orphan gunluk
           git rm -rf . -q || true
           rm -rf ./* .github 2>/dev/null || true

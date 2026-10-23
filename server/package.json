@@ -1,0 +1,8 @@
+{
+  "name": "kombinle-api",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "4.20.0"
+  }
+}

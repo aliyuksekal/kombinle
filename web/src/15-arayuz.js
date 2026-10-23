@@ -1,5 +1,5 @@
 /* =========================================================
-   Kombinle arayüzü (Gemini Canvas tasarımı) — gerçek veriyle
+   Kombinle arayüzü (yeni tasarım) — gerçek veriyle
    ========================================================= */
 
 /* ---------- Jeton ekonomisi ----------
@@ -11,7 +11,7 @@ var JETON_PAKETLERI = [
   { id: 'jeton_300', adet: 300, fiyat: '89,99 ₺' },
   { id: 'jeton_500', adet: 500, fiyat: '129,99 ₺', populer: true }
 ];
-var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1 };
+var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1 };
 function jeton() {
   var j = LS.al('jeton', null);
   if (j === null) { LS.yaz('jeton', BASLANGIC_JETON); return BASLANGIC_JETON; }
@@ -86,7 +86,7 @@ function bugunEkrani() {
 }
 function hissetSozu(o) {
   var his = o.kisisel, s;
-  s = his < 5 ? t('hsSoguk') : his < 13 ? t('hsSerin') : his < 22 ? t('hsIlik') : his < 28 ? t('hsSicak') : t('hsCokSicak');
+  s = his < 8 ? t('hsSoguk') : his < 17 ? t('hsSerin') : his < 24 ? t('hsIlik') : his < 29 ? t('hsSicak') : t('hsCokSicak');
   var r = o.ruzgar >= 8.5 ? t('hsRuzgarli') : o.ruzgar >= 4 ? t('hsHafifRuzgar') : t('hsRuzgarsiz');
   return s + ' & ' + r;
 }
@@ -197,12 +197,14 @@ function sonucCiz(alan) {
   var s = S.sonuc, k = s.liste[S.sonucNo];
   if (!k) return;
   var kart = h('div', { class: 'g-kart g-sonuc' });
+  var yz = k.yz || null;
   kart.appendChild(h('div', { class: 'g-sonuc-bas' },
-    h('div', null, h('h4', { text: t('onerimiz') }),
-      h('p', { text: ortamAd(s.c.oid) + ' • ' + t(TARZ_ETK[s.c.tarzMod] || 'tmOto') })),
-    h('span', { class: 'g-uyum', text: t('uyumlu', uyumPuani(k, s.c)) })));
+    h('div', null, h('h4', { text: yz && yz.baslik ? yz.baslik : t('onerimiz') }),
+      h('p', null, yz ? h('span', { class: 'g-yz-rozet' }, ikon('isilti', 'k'), t('yzRozet')) : null, ortamAd(s.c.oid) + ' • ' + t(TARZ_ETK[s.c.tarzMod] || 'tmOto'))),
+    h('span', { class: 'g-uyum', text: t('uyumlu', yz && yz.uyum ? yz.uyum : uyumPuani(k, s.c)) })));
+  if (s.havaNotu) kart.appendChild(h('div', { class: 'g-hava-not' }, ikon('semsiye', 'k'), h('div', null, h('b', { text: t('havaNotu') }), h('p', { text: s.havaNotu }))));
   kart.appendChild(h('div', { class: 'g-ipucu' },
-    h('div', null, ikon('ampul', 'k'), t('stilistIpucu')), h('p', { text: stilistIpucu(k, s.c) })));
+    h('div', null, ikon('ampul', 'k'), t('stilistIpucu')), h('p', { text: yz && yz.ipucu ? yz.ipucu : stilistIpucu(k, s.c) })));
   var izgara = h('div', { class: 'g-parcalar' });
   kombinParcalari(k).forEach(function (p) {
     izgara.appendChild(h('button', { class: 'g-parca' + (p.kesik ? ' kesik' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
@@ -225,7 +227,8 @@ function sonucCiz(alan) {
   kart.appendChild(h('div', { class: 'g-eylem' },
     h('button', { class: 'g-btn-ana', disabled: kayit && kayit.giyildi ? true : null, on: { click: function () { kombinKaydet(k, true); } } }, ikon('tik', 'k'), kayit && kayit.giyildi ? t('kaydedildi') : t('bunuGiy')),
     s.liste.length > 1 ? h('button', { class: 'g-btn-ikon', 'aria-label': t('baskaOner'), on: { click: function () { S.sonucNo = (S.sonucNo + 1) % s.liste.length; if (S.sonucNo === 0) tost(t('hepsiniGordun')); ciz(); var a = $('#sonucAlani'); if (a) a.scrollIntoView({ block: 'start' }); } } }, ikon('yenile', 'k')) : null,
-    h('button', { class: 'g-btn-ikon', 'aria-label': t('favori'), 'aria-pressed': kayit && kayit.fav ? 'true' : 'false', on: { click: function () { kombinKaydet(k, false); } } }, ikon('kalp', 'k'))));
+    h('button', { class: 'g-btn-ikon', 'aria-label': t('favori'), 'aria-pressed': kayit && kayit.fav ? 'true' : 'false', on: { click: function () { kombinKaydet(k, false); } } }, ikon('kalp', 'k')),
+    yzKurulu() && !kombinParcalari(k).every(function (p) { return p.ornek; }) ? h('button', { class: 'g-btn-ikon', 'aria-label': t('paylas'), on: { click: function () { paylasSayfasi(k, { ortam: s.cumle.ortam, hv: s.hv }); } } }, ikon('paylas', 'k')) : null));
   alan.appendChild(kart);
 }
 function araclarBolumu() {
@@ -235,6 +238,10 @@ function araclarBolumu() {
   };
   return h('section', null,
     h('h2', { class: 'g-baslik2', text: t('dahaFazla') }),
+    yzKurulu() ? h('button', { class: 'g-analiz-kart', on: { click: analizSayfasi } },
+      h('span', { class: 'g-arac-ikon' }, ikon('grafik')),
+      h('div', null, h('b', { text: t('analizBaslik') }), h('small', { text: t('analizAlt') + (!S.pro ? ' • ' + t('birJeton') : '') })),
+      ikon('sag', 'k')) : null,
     h('div', { class: 'g-araclar' },
       kutu('kalp', t('sKombin'), t('kombinlerimKisa'), '', function () { S.sekme = 'kombin'; ciz(); window.scrollTo(0, 0); }),
       kutu('aks', t('bavulBaslik'), t('bavulAlt'), 'bavul', bavulAc),
@@ -348,8 +355,20 @@ var ILHAM_SECKI = [
 ];
 function kesfetEkrani() {
   var bol = h('section', { class: 'g-bolum' });
-  bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('kesfetBaslik') }), h('p', { text: t('kesfetAlt') })),
-    h('button', { class: 'g-ekle', on: { click: ilhamPanosu } }, ikon('galeri', 'k'), t('ilhamBaslik'))));
+  if (!S.kesfetSekme) S.kesfetSekme = yzKurulu() ? 'topluluk' : 'secki';
+  var seg = h('div', { class: 'seg g-kesfet-seg' });
+  [['topluluk', 'sTopluluk'], ['secki', 'sSecki']].forEach(function (x) {
+    seg.appendChild(h('button', { 'aria-pressed': S.kesfetSekme === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { if (S.kesfetSekme !== x[0]) { S.kesfetSekme = x[0]; ciz(); } } } }));
+  });
+  if (S.kesfetSekme === 'topluluk') {
+    bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sTopluluk') }), h('p', { text: t('kural1') })),
+      h('button', { class: 'g-ekle', on: { click: function () { paylasSayfasi(null, null); } } }, ikon('paylas', 'k'), t('paylas'))));
+    bol.appendChild(seg);
+    bol.appendChild(toplulukBolumu());
+    return bol;
+  }
+  bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('kesfetBaslik') }), h('p', { text: t('kesfetAlt') }))));
+  bol.appendChild(seg);
   var kayitli = LS.al('kesfetFav', []); if (!Array.isArray(kayitli)) kayitli = [];
   ILHAM_SECKI.forEach(function (x) {
     var img = h('img', { class: 'g-akis-resim', src: x.url, alt: A.dil === 'en' ? x.en : x.tr, loading: 'lazy', referrerpolicy: 'no-referrer' });

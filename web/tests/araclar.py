@@ -105,7 +105,7 @@ with sync_playwright() as pw:
 
     print('— İlham')
     p.click('nav.alt-menu button:nth-child(3)'); p.wait_for_timeout(400)
-    p.click('.g-ekle:has-text("İlham")'); p.wait_for_timeout(400)
+    p.locator('.g-ekle').last.click(); p.wait_for_timeout(400)
     with p.expect_file_chooser() as fc:
         p.click('.sayfa.acik button:has-text("Fotoğraf ekle")')
     fc.value.set_files('foto/tisort_kirmizi.jpg'); p.wait_for_timeout(1500)

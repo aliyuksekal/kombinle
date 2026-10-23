@@ -3,6 +3,12 @@ plugins {
 }
 
 def surumKodu = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+// Kombinle sunucusu: GitHub Actions kurduktan sonra adresi ve uygulama anahtarını verir.
+// Boşsa uygulama yapay zekâsız (cihaz içi) çalışır.
+def sunucuAdresi = (project.findProperty('sunucuUrl') ?: '').toString().trim()
+def uygulamaAnahtari = (project.findProperty('uygulamaAnahtari') ?: '').toString().trim()
+if (!(sunucuAdresi ==~ /https:\/\/[a-z0-9.-]{3,120}/)) sunucuAdresi = ''
+if (!(uygulamaAnahtari ==~ /[a-f0-9]{64}/)) uygulamaAnahtari = ''
 
 android {
     namespace 'com.benim.kombinle'
@@ -16,7 +22,11 @@ android {
         versionName '1.0.' + surumKodu
         // Gerçek telefon işlemcileri; emülatör kütüphaneleri APK'yı gereksiz büyütüyor
         ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
+        buildConfigField 'String', 'SUNUCU', '"' + sunucuAdresi + '"'
+        buildConfigField 'String', 'UYGULAMA_ANAHTARI', '"' + uygulamaAnahtari + '"'
     }
+
+    buildFeatures { buildConfig true }
 
     signingConfigs {
         // Test sürümleri için sabit anahtar: yeni APK eskisinin üstüne kurulur.

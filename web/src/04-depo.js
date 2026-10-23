@@ -20,6 +20,7 @@ function ayarYukle() {
     karsilandi: x.karsilandi === true,
     pro: x.pro === true,
     kendiMod: x.kendiMod === true,
+    yz: x.yz !== false,
     ozelTur: Array.isArray(x.ozelTur) ? x.ozelTur.filter(function (o) { return o && /^oz[a-z0-9]{4,20}$/.test(o.id) && typeof o.ad === 'string' && typeof o.g === 'string'; }).slice(0, 40).map(function (o) { return { id: o.id, g: o.g, ad: kirp(o.ad, 24) }; }) : []
   };
   ozelTurKaydet(A.ozelTur);

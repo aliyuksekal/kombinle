@@ -31,6 +31,7 @@ function ayarlarSayfasi() {
         satir('konum', t('konum'), A.konum ? A.konum.ad : t('otomatikKonum'), sehirSec),
         h('div', { class: 'satir', style: { 'flex-wrap': 'wrap' } }, h('span', { class: 'sol' }, ikon('termometre'), h('div', null, t('isiHissi'), h('small', { text: t('isiHissiAlt') }))), isiSeg),
         anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; ciz(); }, 'esarp'),
+        (yzKurulu() ? anahtarSatir(t('yzAc'), t('yzAcAlt'), A.yz, function (v) { A.yz = v; ayarKaydet(); S.sonuc = null; }, 'isilti') : null),
         anahtarSatir(t('kendiMod'), t('kendiModAlt'), A.kendiMod, function (v) { A.kendiMod = v; ayarKaydet(); S.sonuc = null; }, 'kalp'),
         satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi))));
     /* pro ve destek */
@@ -256,7 +257,7 @@ function hepsiniSil() {
 function gizlilikSayfasi() {
   var b = function (baslik, metin) { return [h('h3', { text: baslik }), h('p', { text: metin })]; };
   var icerik = h('div', { class: 'yazi-blok' },
-    b(t('gz1b'), t('gz1')), b(t('gz2b'), t('gz2')), b(t('gz3b'), t('gz3')), b(t('gz4b'), t('gz4')), b(t('gz5b'), t('gz5')),
+    b(t('gz1b'), t('gz1')), b(t('gz2b'), t('gz2')), b(t('gz3b'), t('gz3')), b(t('gz4b'), t('gz4')), b(t('gz6b'), t('gz6')), b(t('gz5b'), t('gz5')),
     h('p', null, h('a', { href: GIZLILIK_ADRES, target: '_blank', rel: 'noopener noreferrer', style: { color: 'var(--vurgu)' }, text: t('gzTam') })));
   sayfaAc({ baslik: t('gizlilik'), icerik: icerik });
 }

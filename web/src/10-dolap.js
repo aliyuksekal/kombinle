@@ -34,10 +34,11 @@ function parcaDuzenle(p, yeni) {
   var an = yeni ? yeni.sonuc.analiz : null;
   var tas = p ? { tur: p.tur, renk: p.renk, renk2: p.renk2 || '', desen: p.desen ? 1 : 0, tarz: p.tarz || '', su: p.su ? 1 : 0, ad: p.ad || '',
       marka: p.marka || '', fiyat: p.fiyat ? String(p.fiyat) : '', kumas: p.kumas || '', mevsim: p.mevsim || '', dinlen: p.dinlen ? 1 : 0 }
-    : { tur: an && an.guven >= 0.5 && an.turlar[0] ? an.turlar[0] : '', renk: an ? an.renk : 'siyah', renk2: an ? an.renk2 : '', desen: an ? an.desen : 0, tarz: '', su: 0, ad: '',
-      marka: '', fiyat: '', kumas: '', mevsim: '', dinlen: 0 };
+    : { tur: an && an.guven >= 0.5 && an.turlar[0] ? an.turlar[0] : '', renk: an ? an.renk : 'siyah', renk2: an ? an.renk2 : '', desen: an ? an.desen : 0, tarz: '', su: 0, ad: an && an.oneriAd || '',
+      marka: '', fiyat: '', kumas: an && an.kumas || '', mevsim: an && an.mevsim || '', dinlen: 0 };
   var yeniResim = yeni ? { buyuk: yeni.sonuc.buyuk, kucuk: yeni.sonuc.kucuk, kesik: 0 } : null;
   if (!p && tas.tur) { tas.tarz = TUR[tas.tur].s || ''; tas.su = TUR[tas.tur].su ? 1 : 0; }
+  if (!p && an && an.bulut) { if (an.tarz) tas.tarz = an.tarz; if (an.su === 0 || an.su === 1) tas.su = an.su; }
   var tarzElle = false;
   if (an && LS.al('ayikla', false)) try { console.info('analiz ' + JSON.stringify({ g: an.guven, t: an.turlar, o: an.ozellik, p: an.olasilik })); } catch (e) { }
   var acikGrup = tas.tur ? TUR[tas.tur].g : (an && an.grup) || 'ust';
@@ -54,7 +55,7 @@ function parcaDuzenle(p, yeni) {
     if (araclar.childNodes.length) gov.appendChild(araclar);
     if (yeni) {
       var msg;
-      if (an.guven >= 0.5 && an.turlar[0]) msg = t(an.yz ? 'tanidimYz' : 'tanidim', turAd(an.turlar[0]));
+      if (an.guven >= 0.5 && an.turlar[0]) msg = t(an.bulut ? 'yzTanidi' : an.yz ? 'tanidimYz' : 'tanidim', turAd(an.turlar[0]));
       else if (an.turlar.length) msg = t('emin');
       else msg = t('turSec');
       gov.appendChild(h('div', { class: 'tahmin' }, ikon('isilti', 'k'), h('span', { text: msg })));

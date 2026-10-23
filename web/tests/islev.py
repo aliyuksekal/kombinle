@@ -74,7 +74,7 @@ with sync_playwright() as pw:
     o.kapat()
     o = Oturum(pw, hava=met_yanit(taban=12, yagmur=True)); p = o.ac()
     p.click('text=Örnek dolapla dene'); p.wait_for_selector('#istek', timeout=8000); p.wait_for_timeout(800)
-    ok('Yağmur' in p.inner_text('#havaKarti'), 'hava kartında yağmur etiketi')
+    ok('yağ' in p.inner_text('#havaKarti').lower(), 'hava kartında yağmur etiketi')
     parca, neden = kombin(p, 'alışverişe çıkacağım')
     print('   ', parca)
     ok(bool(iceren(parca, 'Yağmurluk', 'Mont', 'Trençkot')), 'yağmurda suya dayanıklı dış giyim')
