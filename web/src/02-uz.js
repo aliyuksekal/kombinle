@@ -13,7 +13,7 @@ DIL.uz = {
   etUsur: "Sovqotishingni hisobga oldim", etSicaklar: "Issiqqa sezgirligingni hisobga oldim",
   enDusukYuksek: function (a, b) { return 'bugun ' + a + '° dan ' + b + '° gacha'; },
   hvFirtina: 'Momaqaldiroq', hvKar: 'Qor', hvSaganak: "Kuchli yomg'ir", hvYagmur: "Yomg'ir", hvHafifYagmur: "Yengil yomg'ir", hvSis: 'Tuman', hvAcik: 'Quyoshli', hvAcikGece: 'Ochiq', hvParcali: 'Qisman bulutli', hvBulutlu: 'Bulutli',
-  kaynakMet: 'Ob-havo: MET Norway', kaynakMetUzun: "Ob-havo ma'lumotlari: MET Norway (CC BY 4.0).", eskiVeri: "Oxirgi saqlangan ma'lumot.",
+  kaynakMet: 'Ob-havo: MET Norway', kaynakMetUzun: "Ob-havo ma'lumotlari: MET Norway (CC BY 4.0).", kaynakModel: "Kiyimni tanish modeli Fashionpedia ma'lumotlarida o'qitilgan (CC BY 4.0).", eskiVeri: "Oxirgi saqlangan ma'lumot.",
   istekBaslik: 'Bugun qayerga borasan?', istekEtiket: 'Rejang', istekYer: 'Masalan: tushdan keyin uchrashuvim bor', sesleSoyle: 'Ovoz bilan aytish', ortamSec: 'Vaziyatni tanla',
   kombinOner: 'Kun obrazini yaratish', hazirlaniyor: 'Obraz tayyorlanmoqda…', havaGerek: "Avval ob-havoni yukla yoki o'zing tanla.",
   kombinYok: "Mos obraz topilmadi. Yana bir nechta kiyim qo'shib ko'r.", onerimiz: 'Kun obrazi', kacinci: function (a, b) { return a + ' / ' + b; },

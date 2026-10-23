@@ -75,7 +75,7 @@ function ayarIcerik(gov) {
         satir('yukle', t('yedekYukle'), t('yedekYukleAlt'), function () { $('#yedekSec').click(); }),
         satir('kalkan', t('gizlilik'), t('gizlilikAlt'), gizlilikSayfasi),
         satir('cop', t('hepsiniSil'), t('hepsiniSilAlt'), hepsiniSil))));
-    gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '18px', 'font-size': '12px', 'text-align': 'center', 'white-space': 'pre-line' }, text: t('hakkinda') + '\n' + 'Kombinle ' + (YEREL && YEREL.surum ? kirp(YEREL.surum(), 20) : SURUM) + ', matali. ' + t('kaynakMetUzun') }));
+    gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '18px', 'font-size': '12px', 'text-align': 'center', 'white-space': 'pre-line' }, text: t('hakkinda') + '\n' + 'Kombinle ' + (YEREL && YEREL.surum ? kirp(YEREL.surum(), 20) : SURUM) + ', matali. ' + t('kaynakMetUzun') + (modelVar() ? ' ' + t('kaynakModel') : '') }));
   }
   ciz3();
 }

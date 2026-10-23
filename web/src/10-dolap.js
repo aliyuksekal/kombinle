@@ -72,7 +72,7 @@ function parcaDuzenle(p, yeni) {
       else msg = t('turSec');
       if (an.kiyafetDegil) msg = t('kiyafetDegil');
       var tahminKutu = h('div', { class: 'tahmin' + (an.bulutHata ? ' uyari' : '') }, ikon(an.bulutHata ? 'bilgi' : 'isilti', 'k'), h('span', { text: an.bulutHata ? t('bulutHata') : msg }));
-      if (an.bulutHata && an._bulutVeri && yzAcik()) {
+      if ((an.bulutHata || an.bulutAtlandi) && an._bulutVeri && yzAcik()) {
         var yenidenBtn = h('button', { class: 'tahmin-btn' }, ikon('yenile', 'k'), t('yenidenTani'));
         yenidenBtn.addEventListener('click', function () {
           yenidenBtn.disabled = true; temizle(yenidenBtn); yenidenBtn.appendChild(h('span', { class: 'yukleniyor' })); yenidenBtn.appendChild(document.createTextNode(t('taniniyor')));

@@ -34,11 +34,14 @@ public final class Kopru {
 
     /* aynı anda en fazla 4 ağ isteği: sayfa ne kadar çağırırsa çağırsın telefon yorulmaz */
     private static final java.util.concurrent.ExecutorService AG = java.util.concurrent.Executors.newFixedThreadPool(4);
+    /* Kombinle modeli tek sırada çalışır: aynı anda birden çok fotoğraf belleği şişirmez */
+    private static final java.util.concurrent.ExecutorService MODEL_SIRA = java.util.concurrent.Executors.newSingleThreadExecutor();
 
     private final AnaEkran ekran;
     private final Odeme odeme;
     private ImageLabeler etiketleyici;
     private SubjectSegmenter ayirici;
+    private KombinleModeli model;
     volatile boolean guvenli = false;
     volatile long sonGeriYanit = 0;
 
@@ -201,6 +204,56 @@ public final class Kopru {
                 gonder(req, false, "hata", "coz");
             }
         }).start();
+    }
+
+    /* ---------------- Kombinle modeli (kendi kıyafet tanıma modelimiz, cihaz içi) ---------------- */
+
+    /** APK'da eğitilmiş model var mı. */
+    @JavascriptInterface
+    public boolean modelVar() {
+        return guvenli && KombinleModeli.dosyaVar(ekran.getApplicationContext());
+    }
+
+    @JavascriptInterface
+    public void modelTani(final String req, final String b64) {
+        if (!guvenli || !istekGecerli(req)) return;
+        if (b64 == null || b64.isEmpty() || b64.length() > EN_FAZLA_RESIM) {
+            gonder(req, false, "hata", "boyut");
+            return;
+        }
+        MODEL_SIRA.execute(() -> {
+            try {
+                synchronized (this) {
+                    if (model == null) model = new KombinleModeli(ekran.getApplicationContext());
+                }
+                if (!model.hazirla()) {
+                    gonder(req, false, "hata", "model-yok");
+                    return;
+                }
+                byte[] veri = Base64.decode(b64, Base64.DEFAULT);
+                BitmapFactory.Options o = new BitmapFactory.Options();
+                o.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (o.outWidth <= 0 || o.outHeight <= 0 || o.outWidth > 4096 || o.outHeight > 4096) {
+                    gonder(req, false, "hata", "olcu");
+                    return;
+                }
+                int ornek = 1;
+                while (Math.max(o.outWidth, o.outHeight) / (ornek * 2) >= 448) ornek *= 2;
+                o.inJustDecodeBounds = false;
+                o.inSampleSize = ornek;
+                Bitmap bmp = BitmapFactory.decodeByteArray(veri, 0, veri.length, o);
+                if (bmp == null) {
+                    gonder(req, false, "hata", "coz");
+                    return;
+                }
+                JSONObject sonuc = model.tani(bmp);
+                bmp.recycle();
+                gonder(req, true, "sonuc", sonuc);
+            } catch (Throwable t) {
+                gonder(req, false, "hata", "model");
+            }
+        });
     }
 
     /* ---------------- telefonun çözebildiği ama sayfanın çözemediği resimler (HEIC/HEIF) JPEG'e ---------------- */
@@ -438,5 +491,7 @@ public final class Kopru {
             if (ayirici != null) ayirici.close();
         } catch (Throwable ignored) {
         }
+        final KombinleModeli m = model;
+        if (m != null) MODEL_SIRA.execute(m::kapat);
     }
 }

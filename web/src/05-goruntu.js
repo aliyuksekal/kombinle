@@ -89,12 +89,21 @@ function fotografIsle(kaynak) {
     catch (e) { analiz = { grup: '', turlar: [], guven: 0, renk: 'siyah', renk2: '', desen: 0, sekilYok: true }; }
     var yz = yzVeri ? yerelCagir('etiketle', [yzVeri], 20000).then(function (d) {
       if (d.ok && Array.isArray(d.etiketler)) yapayZekaBirlestir(analiz, d.etiketler);
-    }) : Promise.resolve();
-    var bulut = bulutVeri ? yzTani(bulutVeri).catch(function () { return null; }) : Promise.resolve(null);
+    }).catch(function () { }) : Promise.resolve();
+    /* Kombinle modeli emin olursa fotoğraf buluta hiç gitmez; emin değilse ya da takı olabilirse bulut karar verir */
+    var modelSonuc = modelVar() ? modelTani(yzVeri) : Promise.resolve(null);
+    var bulut = modelVar()
+      ? Promise.all([modelSonuc, yz]).then(function (r) {
+        if (r[0]) modelBirlestir(analiz, r[0]);
+        if (!bulutVeri) return null;
+        if (modelYeterli(analiz)) { analiz.bulutAtlandi = true; analiz._bulutVeri = bulutVeri; return null; }
+        return yzTani(bulutVeri).catch(function () { return null; });
+      })
+      : (bulutVeri ? yzTani(bulutVeri).catch(function () { return null; }) : Promise.resolve(null));
     return Promise.all([tuvaldenBlob(buyuk, 0.86), tuvaldenBlob(kucuk, 0.82), yz, bulut]).then(function (b) {
       /* bulut sonucu cihaz içi tanımadan sonra uygulanır: daha güvenilir olan kazanır */
       if (b[3]) bulutBirlestir(analiz, b[3]);
-      else if (bulutVeri) { analiz.bulutHata = true; analiz._bulutVeri = bulutVeri; }   // yeniden denenebilir
+      else if (bulutVeri && !analiz.bulutAtlandi) { analiz.bulutHata = true; analiz._bulutVeri = bulutVeri; }   // yeniden denenebilir
       return { buyuk: b[0], kucuk: b[1], analiz: analiz };
     });
   });
@@ -406,6 +415,7 @@ function yapayZekaBirlestir(an, etiketler) {
   });
   an.yzEtiket = etiketler.slice(0, 8);
   if (!en) return;
+  if (en.tur) { an.yzTur = en.tur; an.yzTurC = en.c; }
   var liste = an.turlar.slice();
   if (en.tur) {
     liste = [en.tur].concat(liste.filter(function (x) { return x !== en.tur; }));
@@ -418,6 +428,63 @@ function yapayZekaBirlestir(an, etiketler) {
   if (!en.tur && an.grup === en.grup && an.turlar[0] && TUR[an.turlar[0]].g === en.grup) an.guven = Math.max(an.guven, Math.min(0.75, (an.guven + en.c) / 2 + 0.2));
   an.yz = true;
   an.sekilYok = false;
+}
+
+/* ---------- Kombinle modeli (kendi eğitilmiş modelimiz, telefonda, internetsiz) ----------
+   egitim/kombinle_model_egitimi.ipynb ile eğitilir; APK'da model yoksa bu bölüm hiç çalışmaz.
+   Model eminse (≥ MODEL_ESIK) sonuç buluta sorulmadan kullanılır: hızlı ve maliyetsiz. */
+var MODEL_ESIK = 0.75;
+var TAKI_ETIKETI = /^(Necklace|Bracelet|Bangle|Jewellery|Jewelry|Earring|Earrings|Ring|Chain|Pendant|Brooch|Locket)$/;
+var DESEN_TURLERI = ['duz', 'cizgili', 'kareli', 'cicekli', 'puantiyeli', 'hayvan', 'diger'];
+var modelDurum = null;
+function modelVar() {
+  if (modelDurum === null) {
+    try { modelDurum = !!(YEREL && typeof YEREL.modelVar === 'function' && YEREL.modelVar()); } catch (e) { modelDurum = false; }
+  }
+  return modelDurum;
+}
+function modelTani(b64) {
+  if (!b64 || !modelVar()) return Promise.resolve(null);
+  return yerelCagir('modelTani', [b64], 15000).then(function (d) {
+    if (d && d.hata === 'model-yok') modelDurum = false;   // bozuk/uyumsuz model: bir daha denenmez
+    return d && d.ok && d.sonuc && typeof d.sonuc === 'object' ? d.sonuc : null;
+  }).catch(function () { return null; });
+}
+function modelBirlestir(an, m) {
+  if (!an || !m || !Array.isArray(m.siniflar) || !m.siniflar.length) return false;
+  var s = m.siniflar[0];
+  if (!s || typeof s.id !== 'string' || !sayiMi(s.p) || !GRUPLAR.some(function (g) { return g.id === s.grup; })) return false;
+  var p = Math.max(0, Math.min(1, s.p));
+  /* desen: model bir yöne açıkça eğilimliyse cihaz içi tahminin yerine geçer */
+  if (m.desen && typeof m.desen === 'object' && sayiMi(m.desen.duz)) {
+    if (Math.abs(m.desen.duz - 0.5) >= 0.15) an.desen = m.desen.duz < 0.5 ? 1 : 0;
+    var enDesen = '', enP = -1;
+    DESEN_TURLERI.forEach(function (d) { if (sayiMi(m.desen[d]) && m.desen[d] > enP) { enP = m.desen[d]; enDesen = d; } });
+    if (enDesen) an.desenTur = enDesen;
+  }
+  an.model = { sinif: kirp(s.id, 24), p: p };
+  if (p < 0.5) return false;
+  var adaylar = (Array.isArray(s.turlar) ? s.turlar : []).filter(function (x, i, d) { return typeof x === 'string' && TUR[x] && TUR[x].g === s.grup && d.indexOf(x) === i; });
+  /* alt türünü bilmediği sınıflarda (ör. ayakkabı) cihaz içi analizin sırası korunur */
+  var ayni = (an.turlar || []).filter(function (x) { return TUR[x] && TUR[x].g === s.grup && adaylar.indexOf(x) < 0; });
+  var liste = adaylar.concat(ayni);
+  if (!liste.length) liste = TURLER.filter(function (x) { return x.g === s.grup; }).map(function (x) { return x.id; }).slice(0, 3);
+  /* ML Kit aynı grupta kesin bir tür gördüyse (ör. Jeans) o öne geçer */
+  if (an.yzTur && TUR[an.yzTur] && TUR[an.yzTur].g === s.grup && an.yzTurC >= 0.75) {
+    liste = [an.yzTur].concat(liste.filter(function (x) { return x !== an.yzTur; }));
+  }
+  an.turlar = liste.slice(0, 4);
+  an.grup = s.grup;
+  an.guven = p;
+  an.yz = true;
+  an.sekilYok = false;
+  return true;
+}
+/* Model sonucu tek başına yeterli mi? Takı olabilecek fotoğraflar her zaman buluta gider (modelde takı yok). */
+function modelYeterli(an) {
+  if (!an || !an.model || an.model.p < MODEL_ESIK || an.grup !== (an.turlar[0] && TUR[an.turlar[0]] ? TUR[an.turlar[0]].g : '')) return false;
+  var taki = (an.yzEtiket || []).some(function (e) { return e && typeof e.t === 'string' && TAKI_ETIKETI.test(e.t) && sayiMi(e.c) && e.c >= 0.5; });
+  return !taki;
 }
 
 /* ---------- Arka plan silme ----------

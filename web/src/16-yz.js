@@ -72,7 +72,7 @@ function bulutBirlestir(an, s) {
   if (typeof s.su === 'boolean') an.su = s.su ? 1 : 0;
   an.oneriAd = kirp(s.ad, 40);
   an.kumas = kirp(s.kumas, 30);
-  an.yz = true; an.bulut = true; an.bulutHata = false; an.sekilYok = false;
+  an.yz = true; an.bulut = true; an.bulutHata = false; an.bulutAtlandi = false; an.sekilYok = false;
 }
 
 /* ---------- Akıllı kombin ---------- */
