@@ -209,7 +209,7 @@ function paylasimGecerli(x) {
 }
 function toplulukYukle(sifirla) {
   if (TOPLULUK.yukleniyor) return;
-  if (sifirla) { TOPLULUK.liste = []; TOPLULUK.sayfa = 0; TOPLULUK.devam = false; }
+  if (sifirla) { TOPLULUK.liste = []; TOPLULUK.sayfa = 0; TOPLULUK.devam = false; REKLAM.plan = {}; REKLAM.ilk = 0; }
   TOPLULUK.yukleniyor = true; TOPLULUK.hata = false;
   toplulukCizYenile();
   yzIste('/v1/akis', { sira: TOPLULUK.sira, sayfa: TOPLULUK.sayfa, engelli: engelliler() }, 20000).then(function (v) {
@@ -260,8 +260,8 @@ function kisilerKarti() {
       l.forEach(function (k) {
         var ad = kirp(k.takma, 24), kd = typeof k.kadi === 'string' ? k.kadi : '', bio = typeof k.bio === 'string' ? kirp(k.bio, 150) : '';
         sira.appendChild(h('div', { class: 'g-kisi' },
-          h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad, kd, bio); } } },
-            h('span', { class: 'uav', text: (ad.charAt(0) || '?').toLocaleUpperCase('tr') }), h('b', { text: ad }), kadiEl(kd),
+          h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad, kd, bio, k.av); } } },
+            avatarDoldur(h('span', { class: 'uav' }), kisiAvatar(k.kod, k.av, ad), ad), h('b', { text: ad }), kadiEl(kd),
             h('small', { text: t('takipciSay', k.takipci | 0) + ' • ' + t('paylasimSay', k.paylasim | 0) })),
           takipDugmesi(k.kod, !!k.takipte)));
       });
@@ -271,11 +271,11 @@ function kisilerKarti() {
   setTimeout(yukle, 0);
   return kap;
 }
-function kisiSayfasi(kod, takma, kadi, bio) {
+function kisiSayfasi(kod, takma, kadi, bio, av) {
   var gov = h('div', { class: 'g-kisi-sayfa' });
   var s = sayfaAc({ baslik: takma, icerik: gov });
   gov.appendChild(h('div', { class: 'g-akis-bas', style: { 'margin-bottom': bio ? '6px' : '12px' } },
-    h('span', { class: 'g-avatar', text: (takma.charAt(0) || '?').toLocaleUpperCase('tr') }), h('div', null, h('b', { text: takma }), kadiEl(kadi)), takipDugmesi(kod, TOPLULUK.liste.some(function (x) { return x.yazar === kod && x.takipte; }))));
+    avatarDoldur(h('span', { class: 'g-avatar' }), kisiAvatar(kod, av, takma), takma), h('div', null, h('b', { text: takma }), kadiEl(kadi)), takipDugmesi(kod, TOPLULUK.liste.some(function (x) { return x.yazar === kod && x.takipte; }))));
   if (bio) gov.appendChild(h('p', { class: 'hesap-bio', style: { 'margin-bottom': '12px' }, text: bio }));
   var alan = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   gov.appendChild(alan);
@@ -314,7 +314,12 @@ function toplulukDoldur(alan) {
   var adres = sunucuAdres();
   var eng = engelliler();
   var liste = TOPLULUK.liste.filter(function (x) { return eng.indexOf(x.yazar) < 0; });
-  liste.forEach(function (x) { alan.appendChild(paylasimKarti(x, adres)); });
+  var plan = reklamAcik() ? reklamPlani(liste.length) : {};
+  liste.forEach(function (x, i) {
+    alan.appendChild(paylasimKarti(x, adres));
+    if (plan[i + 1]) alan.appendChild(reklamKarti(plan[i + 1]));
+  });
+  if (reklamAcik()) reklamYukle();
   if (TOPLULUK.yukleniyor) alan.appendChild(h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   else if (TOPLULUK.hata) alan.appendChild(h('div', { class: 'g-bos-not' }, h('span', { text: t('tpHata') }), h('button', { class: 'g-btn-cizgi kucuk', text: t('tekrarDene'), on: { click: function () { toplulukYukle(!TOPLULUK.liste.length); } } })));
   else if (!liste.length && TOPLULUK.yuklendi) alan.appendChild(h('div', { class: 'g-bos-not' }, ikon('isilti', 'k'), h('span', { text: TOPLULUK.sira === 'benim' ? t('tpBenimBos') : TOPLULUK.sira === 'takip' ? t('tpTakipBos') : t('tpBos') })));
@@ -444,7 +449,7 @@ function paylasimKarti(x, adres) {
   var yorumAlani = null;
   var kart = h('div', { class: 'g-akis' + (x.gizli ? ' gizli' : '') },
     h('div', { class: 'g-akis-bas' },
-      h('button', { class: 'g-avatar', 'aria-label': ad, text: (ad.charAt(0) || '?').toLocaleUpperCase(A.dil === 'en' ? 'en' : 'tr'), on: { click: function () { if (!x.benim) kisiSayfasi(x.yazar, ad, x.kadi); } } }),
+      avatarDoldur(h('button', { class: 'g-avatar', 'aria-label': ad, on: { click: function () { if (!x.benim) kisiSayfasi(x.yazar, ad, x.kadi, '', x.av); } } }), kisiAvatar(x.yazar, x.av, ad), ad, A.dil === 'en' ? 'en' : 'tr'),
       h('div', null, h('b', null, ad, kadiEl(x.kadi, 'yan')), h('small', null, zamanOnce(x.zaman), gor)),
       !x.benim ? takipDugmesi(x.yazar, !!x.takipte) : null,
       h('button', { class: 'ikon-btn g-akis-menu', 'aria-label': t('secenekler'), on: { click: function () { paylasimMenusu(x, kart); } } }, ikon('nokta'))),

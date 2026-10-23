@@ -252,6 +252,37 @@ ok((await iste('/v1/ata', { ad: 'user', geriAl: true }, cihazC)).veri.ok && !(aw
 await iste('/v1/ata', { ad: 'user', hedef: 'bora.moda' }, cihazC);
 ok((await iste('/v1/ben', {}, cihazB)).veri.hesap.kadi === 'user', '@user başka kişiye verildi');
 
+// profil resmi
+ok((await iste('/v1/avatar', { resim: jpeg }, cihazD, { oturumsuz: true })).veri.hata === 'giris', 'profil resmi giriş ister');
+yzYanit = () => ({ uygun: false, neden: 'ciplaklik' });
+ok((await iste('/v1/avatar', { resim: jpeg }, cihazD)).veri.hata === 'denetim', 'uygunsuz profil resmi reddedildi');
+yzYanit = () => ({ uygun: true, neden: 'uygun' });
+r = await iste('/v1/avatar', { resim: jpeg }, cihazD);
+ok(r.veri.ok && r.veri.av > 0, 'profil resmi kaydedildi');
+const dKod = (await iste('/v1/ben', {}, cihazD)).veri.hesap;
+ok(dKod.av === r.veri.av, 'hesap bilgisinde profil resmi sürümü');
+let ag = await isci.fetch(new Request('https://x/v1/avatar/' + dKod.kod), env, {});
+ok(ag.status === 200 && ag.headers.get('Content-Type') === 'image/jpeg', 'profil resmi sunuldu');
+ok((await iste('/v1/kisiler', { ara: 'Deniz' }, cihazC)).veri.liste[0].av === r.veri.av, 'kişi listesinde profil resmi');
+ok((await iste('/v1/avatar', { resim: Buffer.alloc(100 * 1024, 1).toString('base64') }, cihazD)).veri.hata === 'resim', 'büyük/bozuk profil resmi reddedildi');
+ok((await iste('/v1/avatar', { sil: true }, cihazD)).veri.av === 0, 'profil resmi kaldırıldı');
+ag = await isci.fetch(new Request('https://x/v1/avatar/' + dKod.kod), env, {}); ok(ag.status === 404, 'kaldırılan resim sunulmuyor');
+// reklamlar (yalnız @admin = cihazC)
+ok((await iste('/v1/reklamekle', { resim: jpeg, marka: 'Butik' }, cihazB)).durum === 403, 'yönetici olmayan reklam ekleyemez');
+ok((await iste('/v1/reklamekle', { resim: jpeg, marka: 'Butik', link: 'javascript:alert(1)' }, cihazC)).veri.hata === 'link', 'güvensiz reklam bağlantısı reddedildi');
+r = await iste('/v1/reklamekle', { resim: jpeg, marka: 'Butik Lale', baslik: 'Sonbahar indirimi', metin: '%30 indirim', link: 'https://ornek.com/indirim', boyut: 'hikaye', gun: 7 }, cihazC);
+ok(r.veri.ok && /^[a-z0-9]{20}$/.test(r.veri.id), 'reklam eklendi');
+const rid = r.veri.id;
+r = await iste('/v1/reklamlar', {}, cihazB);
+ok(r.veri.liste.length === 1 && r.veri.liste[0].boyut === 'hikaye' && !('gosterim' in r.veri.liste[0]), 'herkes etkin reklamı görüyor (istatistiksiz)');
+await iste('/v1/reklamsay', { id: rid }, cihazB); await iste('/v1/reklamsay', { id: rid, tur: 'tik' }, cihazB);
+r = await iste('/v1/reklamlar', { yonetim: true }, cihazC);
+ok(r.veri.liste[0].gosterim === 1 && r.veri.liste[0].tik === 1, 'gösterim ve tıklama sayıldı');
+ag = await isci.fetch(new Request('https://x/v1/reklam/' + rid), env, {}); ok(ag.status === 200, 'reklam görseli sunuldu');
+await iste('/v1/reklamsil', { id: rid, durdur: true }, cihazC);
+ok((await iste('/v1/reklamlar', {}, cihazB)).veri.liste.length === 0, 'durdurulan reklam görünmüyor');
+ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v1/reklamlar', { yonetim: true }, cihazC)).veri.liste.length === 0, 'reklam silindi');
+
 // hesap silme
 const silinecek = (await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.length;
 ok(silinecek === 3, 'silmeden önce 3 paylaşım');

@@ -15,7 +15,7 @@ with sync_playwright() as pw:
     print('— Açılış ekranı')
     o = Oturum(pw); p = o.p; p.goto(SAYFA); p.wait_for_timeout(300)
     ok(p.locator('#acilis img.amblem').count() == 1, 'açılış ekranı ilk karede görünüyor')
-    p.wait_for_timeout(3200)
+    p.wait_for_timeout(3900)
     ok(p.locator('#acilis').count() == 0, 'açılış ekranı kendiliğinden kapandı')
     o.kapat()
 

@@ -19,6 +19,8 @@ const KOTA = {
   tani_cihaz: 60,   // kişi başına günlük kıyafet tanıma
   yz_ip: 250,       // IP başına günlük yapay zekâ isteği
   giris_ip: 60,     // IP başına günlük giriş/kayıt denemesi
+  avatar_cihaz: 10,  // günlük profil resmi değişikliği
+  reklam_cihaz: 400, // reklam gösterim/tık sayımı
   profil_cihaz: 20, // günlük profil / kullanıcı adı değişikliği
   ata_cihaz: 30,    // @admin'in günlük ad atama işlemi
   paylas_cihaz: 8,
@@ -84,6 +86,10 @@ async function yonlendir(istek, env, ctx) {
   // Paylaşım görselleri: herkese açık, salt okunur, değişmez
   const rm = /^\/v1\/resim\/([a-z0-9]{20})$/.exec(yol);
   if (rm && istek.method === 'GET') return resimVer(env, rm[1]);
+  const av = /^\/v1\/avatar\/([a-f0-9]{12})$/.exec(yol);
+  if (av && istek.method === 'GET') return avatarVer(env, av[1]);
+  const rk = /^\/v1\/reklam\/([a-z0-9]{20})$/.exec(yol);
+  if (rk && istek.method === 'GET') return reklamResmi(env, rk[1]);
 
   if (istek.method !== 'POST') throw new Hata('yontem', 405);
   const islem = /^\/v1\/([a-z]{2,10})$/.exec(yol);
@@ -123,6 +129,11 @@ async function yonlendir(istek, env, ctx) {
     case 'yorumsil': hesapGerek(); return json(await yorumSil(env, govde, cihaz));
     case 'ysikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); hesapGerek(); return json(await yorumSikayet(env, govde, cihaz));
     case 'takip': await kotaDus(env, ['takip_cihaz:' + cihaz]); hesapGerek(); return json(await takipEt(env, govde, cihaz));
+    case 'avatar': hesapGerek(); await kotaDus(env, ['avatar_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await avatarYaz(env, govde, hesap));
+    case 'reklamlar': await kotaDus(env, ['akis_ip:' + ip]); return json(await reklamlar(env, govde, hesap));
+    case 'reklamsay': await kotaDus(env, ['reklam_cihaz:' + cihaz]); return json(await reklamSay(env, govde, cihaz));
+    case 'reklamekle': hesapGerek(); return json(await reklamEkle(env, govde, hesap));
+    case 'reklamsil': hesapGerek(); return json(await reklamSil(env, govde, hesap));
     case 'kisiler': await kotaDus(env, ['kisi_ip:' + ip]); return json(await kisiler(env, govde, cihaz));
     default: throw new Hata('yok', 404);
   }
@@ -493,7 +504,7 @@ function profilYaz(env, cihaz, takma, kadi, bio) {
     .bind(yazarKodu(cihaz), takma, Date.now(), kadi || '', bio || '');
 }
 const ALANLAR = 'id, yazar, takma, aciklama, etiket, begeni, begenmeme, zaman, gizli, gorunurluk, yorum_sayisi';
-const KADI_ALAN = ", (SELECT pr.kadi FROM profil pr WHERE pr.kod = substr(p.yazar, 1, 12)) AS kadi";
+const KADI_ALAN = ", (SELECT pr.kadi FROM profil pr WHERE pr.kod = substr(p.yazar, 1, 12)) AS kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = substr(p.yazar, 1, 12)) AS av";
 // görünürlük: herkes / yalnız takipçiler / yalnız sahibi
 const GORUNUR = "(p.yazar = ?1 OR p.gorunurluk = 'herkes' OR (p.gorunurluk = 'takip' AND EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?2 AND t.takip = substr(p.yazar, 1, 12))))";
 
@@ -539,6 +550,7 @@ async function akis(env, g, cihaz) {
       id: r.id,
       takma: r.takma,
       kadi: r.kadi || '',
+      av: r.av || 0,
       aciklama: r.aciklama,
       etiketler: (() => { try { const e = JSON.parse(r.etiket); return Array.isArray(e) ? e.slice(0, 6) : []; } catch (e) { return []; } })(),
       begeni: r.begeni,
@@ -697,7 +709,7 @@ async function kisiler(env, g, cihaz) {
   const kod = yazarKodu(cihaz);
   const ara = metin(g.ara, 24).replace(/^@/, '').replace(/[%_\\]/g, '');
   const engelli = liste(g.engelli, 200).filter(x => typeof x === 'string' && /^[a-f0-9]{12}$/.test(x));
-  const sql = 'SELECT pr.kod, pr.takma, pr.kadi, pr.bio, (SELECT COUNT(*) FROM takip t WHERE t.takip = pr.kod) AS takipci, ' +
+  const sql = 'SELECT pr.kod, pr.takma, pr.kadi, pr.bio, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, (SELECT COUNT(*) FROM takip t WHERE t.takip = pr.kod) AS takipci, ' +
     '(SELECT COUNT(*) FROM paylasim p WHERE substr(p.yazar, 1, 12) = pr.kod AND p.gizli = 0 AND p.gorunurluk = \'herkes\') AS paylasim, ' +
     'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = pr.kod) AS takipte FROM profil pr WHERE pr.kod <> ?1 ' +
     'AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ' +
@@ -708,7 +720,7 @@ async function kisiler(env, g, cihaz) {
   return {
     ok: true,
     takipEdilen: takipEdilen ? takipEdilen.n : 0,
-    liste: (results || []).filter(r => engelli.indexOf(r.kod) < 0).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0 }))
+    liste: (results || []).filter(r => engelli.indexOf(r.kod) < 0).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', av: r.av || 0, takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0 }))
   };
 }
 
@@ -778,7 +790,7 @@ async function sifreOzeti(env, sifre, tuz) {
   return hex(bit);
 }
 async function hesapKimlik(env, id) { return (await sha256('hesap:' + env.UYGULAMA_ANAHTARI + ':' + id)).slice(0, 40); }
-function hesapOzet(h) { return { ad: h.ad, eposta: h.eposta, kod: h.kimlik.slice(0, 12), kadi: h.kadi || '', bio: h.bio || '', yonetici: h.kadi === 'admin' }; }
+function hesapOzet(h) { return { ad: h.ad, eposta: h.eposta, kod: h.kimlik.slice(0, 12), kadi: h.kadi || '', bio: h.bio || '', yonetici: h.kadi === 'admin', av: h.av || 0 }; }
 async function oturumAc(env, hesapId) {
   const belirtec = rastgeleHex(32);
   await env.DB.batch([
@@ -793,6 +805,8 @@ async function oturumBul(env, belirtec) {
   const h = await env.DB.prepare('SELECT h.id, h.ad, h.eposta, h.kadi, h.bio FROM oturum o JOIN hesap h ON h.id = o.hesap WHERE o.ozet = ?').bind(await sha256('oturum:' + belirtec)).first();
   if (!h) return null;
   h.kimlik = await hesapKimlik(env, h.id);
+  const a = await env.DB.prepare('SELECT zaman FROM avatar WHERE kod = ?').bind(h.kimlik.slice(0, 12)).first();
+  h.av = a ? a.zaman : 0;
   return h;
 }
 function sifreGecerli(s) { return typeof s === 'string' && s.length >= 8 && s.length <= 128; }
@@ -974,6 +988,87 @@ async function adAta(env, g, hesap) {
   return { ok: true, ad, sahip: hedef.ad, eskiAd: hedefAd };
 }
 
+/* --- Profil resmi ------------------------------------------------------- */
+const EN_FAZLA_AVATAR = 80 * 1024;
+async function avatarYaz(env, g, hesap) {
+  const kod = hesap.kimlik.slice(0, 12);
+  if (g.sil === true) { await env.DB.prepare('DELETE FROM avatar WHERE kod = ?').bind(kod).run(); return { ok: true, av: 0 }; }
+  const resim = base64Coz(g.resim);
+  const tip = resimTuru(resim);
+  if (!tip || resim.length > EN_FAZLA_AVATAR) throw new Hata('resim');
+  const sema = { type: 'object', properties: { uygun: { type: 'boolean' }, neden: { type: 'string', enum: ['uygun', 'ciplaklik', 'cinsel', 'siddet', 'nefret', 'kisisel_bilgi', 'spam'] } }, required: ['uygun', 'neden'] };
+  const d = await yz(env, [{ text: 'Bir moda uygulamasında profil resmi olarak yüklenen görseli denetle. UYGUN: yüz/selfie, kıyafet, manzara, çizim, hayvan, nesne, logo. ' +
+    'UYGUN DEĞİL: çıplaklık/müstehcenlik (ciplaklik/cinsel), şiddet, silah, kan (siddet), nefret sembolü veya hakaret (nefret), telefon/adres/kart gibi kişisel bilgi (kisisel_bilgi), reklam/QR/link (spam).' },
+    { inlineData: { mimeType: tip, data: g.resim } }], sema, { dusunme: 'minimal', enFazla: 80 });
+  if (!d || d.uygun !== true || d.neden !== 'uygun') return { ok: false, hata: 'denetim', neden: d && typeof d.neden === 'string' ? d.neden : 'uygun_degil' };
+  const zaman = Date.now();
+  await env.DB.prepare('INSERT INTO avatar (kod, resim, tip, zaman) VALUES (?, ?, ?, ?) ON CONFLICT(kod) DO UPDATE SET resim = excluded.resim, tip = excluded.tip, zaman = excluded.zaman')
+    .bind(kod, resim, tip, zaman).run();
+  return { ok: true, av: zaman };
+}
+async function avatarVer(env, kod) {
+  const r = await env.DB.prepare('SELECT resim, tip FROM avatar WHERE kod = ? AND kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli)').bind(kod).first();
+  if (!r) return new Response('', { status: 404, headers: GUVENLIK_BASLIKLARI });
+  return new Response(r.resim instanceof ArrayBuffer ? r.resim : new Uint8Array(r.resim), {
+    headers: Object.assign({}, GUVENLIK_BASLIKLARI, { 'Content-Type': ['image/jpeg', 'image/webp', 'image/png'].indexOf(r.tip) >= 0 ? r.tip : 'application/octet-stream', 'Cache-Control': 'public, max-age=86400', 'Content-Disposition': 'inline' })
+  });
+}
+
+/* --- Reklamlar -----------------------------------------------------------
+   Keşfet akışına serpiştirilen sponsorlu kartlar. Yalnız @admin ekler/siler; herkes etkin olanları görür.
+   Gösterim ve tıklama sayıları reklam verene rapor için tutulur (kişisel veri tutulmaz). */
+const REKLAM_BOYUT = ['kare', 'dikey', 'hikaye', 'yatay'];
+function reklamOzet(r, yonetim) {
+  const o = { id: r.id, marka: r.marka, baslik: r.baslik, metin: r.metin, link: r.link, dugme: r.dugme, boyut: r.boyut, zaman: r.zaman };
+  if (yonetim) { o.gosterim = r.gosterim; o.tik = r.tik; o.bitis = r.bitis; o.aktif = r.aktif && r.bitis > Date.now() ? 1 : 0; }
+  return o;
+}
+async function reklamlar(env, g, hesap) {
+  const yonetim = g.yonetim === true && hesap && hesap.kadi === 'admin';
+  const { results } = yonetim
+    ? await env.DB.prepare('SELECT id, marka, baslik, metin, link, dugme, boyut, zaman, gosterim, tik, bitis, aktif FROM reklam ORDER BY zaman DESC LIMIT 50').all()
+    : await env.DB.prepare('SELECT id, marka, baslik, metin, link, dugme, boyut, zaman FROM reklam WHERE aktif = 1 AND bitis > ? ORDER BY RANDOM() LIMIT 12').bind(Date.now()).all();
+  return { ok: true, liste: (results || []).map(r => reklamOzet(r, yonetim)) };
+}
+async function reklamSay(env, g, cihaz) {
+  const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
+  if (!id) throw new Hata('girdi');
+  const alan = g.tur === 'tik' ? 'tik' : 'gosterim';
+  await env.DB.prepare('UPDATE reklam SET ' + alan + ' = ' + alan + ' + 1 WHERE id = ?').bind(id).run();
+  return { ok: true };
+}
+async function reklamEkle(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  const resim = base64Coz(g.resim);
+  const tip = resimTuru(resim);
+  if (!tip || resim.length > EN_FAZLA_RESIM) throw new Hata('resim');
+  const marka = metin(g.marka, 30), baslik = metin(g.baslik, 60), aciklama = metin(g.metin, 200), dugme = metin(g.dugme, 20) || 'Daha fazla bilgi';
+  const link = typeof g.link === 'string' ? g.link.trim().slice(0, 300) : '';
+  if (marka.length < 2) throw new Hata('marka');
+  if (link && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(link)) throw new Hata('link');
+  const boyut = REKLAM_BOYUT.indexOf(g.boyut) >= 0 ? g.boyut : 'kare';
+  const gun = Math.round(sayi(g.gun, 1, 365, 30));
+  const id = yeniKimlik(), zaman = Date.now();
+  await env.DB.prepare('INSERT INTO reklam (id, marka, baslik, metin, link, dugme, boyut, resim, tip, zaman, bitis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, marka, baslik, aciklama, link, dugme, boyut, resim, tip, zaman, zaman + gun * 86400000).run();
+  return { ok: true, id };
+}
+async function reklamSil(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
+  if (!id) throw new Hata('girdi');
+  if (g.durdur === true || g.durdur === false) await env.DB.prepare('UPDATE reklam SET aktif = ? WHERE id = ?').bind(g.durdur ? 0 : 1, id).run();
+  else await env.DB.prepare('DELETE FROM reklam WHERE id = ?').bind(id).run();
+  return { ok: true };
+}
+async function reklamResmi(env, id) {
+  const r = await env.DB.prepare('SELECT resim, tip FROM reklam WHERE id = ?').bind(id).first();
+  if (!r) return new Response('', { status: 404, headers: GUVENLIK_BASLIKLARI });
+  return new Response(r.resim instanceof ArrayBuffer ? r.resim : new Uint8Array(r.resim), {
+    headers: Object.assign({}, GUVENLIK_BASLIKLARI, { 'Content-Type': ['image/jpeg', 'image/webp', 'image/png'].indexOf(r.tip) >= 0 ? r.tip : 'application/octet-stream', 'Cache-Control': 'public, max-age=86400', 'Content-Disposition': 'inline' })
+  });
+}
+
 /* Hesap ve ona bağlı tüm topluluk verileri silinir (Play Store hesap silme şartı) */
 async function hesapSil(env, g, hesap) {
   const h = await env.DB.prepare('SELECT tuz, ozet FROM hesap WHERE id = ?').bind(hesap.id).first();
@@ -988,6 +1083,7 @@ async function hesapSil(env, g, hesap) {
     env.DB.prepare('DELETE FROM oy WHERE cihaz = ?').bind(k),
     env.DB.prepare('DELETE FROM takip WHERE takipci = ?1 OR takip = ?1').bind(kod),
     env.DB.prepare('DELETE FROM profil WHERE kod = ?').bind(kod),
+    env.DB.prepare('DELETE FROM avatar WHERE kod = ?').bind(kod),
     env.DB.prepare('DELETE FROM oturum WHERE hesap = ?').bind(hesap.id),
     env.DB.prepare('DELETE FROM hesap WHERE id = ?').bind(hesap.id)
   ]);

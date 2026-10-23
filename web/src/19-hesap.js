@@ -7,7 +7,7 @@ function hesapBilgi() {
   if (!h || typeof h !== 'object' || typeof h.ad !== 'string' || typeof h.eposta !== 'string') return null;
   try { if (YEREL && typeof YEREL.oturumVar === 'function' && !YEREL.oturumVar()) { LS.sil('hesap'); return null; } } catch (e) { }
   return { ad: kirp(h.ad, 24), eposta: kirp(h.eposta, 254), kod: typeof h.kod === 'string' && /^[a-f0-9]{12}$/.test(h.kod) ? h.kod : '',
-    kadi: typeof h.kadi === 'string' && kadiGecerli(h.kadi) ? h.kadi : '', bio: typeof h.bio === 'string' ? kirp(h.bio, 150) : '', yonetici: h.yonetici === true && h.kadi === 'admin' };
+    kadi: typeof h.kadi === 'string' && kadiGecerli(h.kadi) ? h.kadi : '', bio: typeof h.bio === 'string' ? kirp(h.bio, 150) : '', yonetici: h.yonetici === true && h.kadi === 'admin', av: sayiMi(h.av) ? h.av : 0 };
 }
 /* Kullanıcı adı kuralları sunucuyla aynı: 3–20 karakter, harfle başlar, küçük harf/rakam/nokta/alt çizgi */
 var KADI_TR = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'î': 'i', 'û': 'u' };
@@ -27,16 +27,24 @@ function hesapKaydet(v) {
   try { if (YEREL && typeof YEREL.oturumAyarla === 'function') YEREL.oturumAyarla(v.oturum); } catch (e) { return false; }
   hesapYaz(v.hesap);
   TOPLULUK.yuklendi = false;
+  // giriş öncesi seçilmiş profil resmi hesapta yoksa hesaba da yüklenir (denetimden geçmezse telefonda kalır)
+  var yerelAv = avatarYerel();
+  if (yerelAv && !(v.hesap.av > 0)) setTimeout(function () {
+    yzIste('/v1/avatar', { resim: yerelAv.slice(yerelAv.indexOf(',') + 1) }, 30000).then(function (r) {
+      var hb = LS.al('hesap', null); if (hb && typeof hb === 'object' && sayiMi(r.av)) { hb.av = r.av; LS.yaz('hesap', hb); }
+    }).catch(function () { });
+  }, 600);
+  else if (v.hesap.av > 0) LS.sil('avatar');   // hesaptaki resim geçerli olur
   return true;
 }
 function hesapYaz(x) {
   LS.yaz('hesap', { ad: kirp(x.ad, 24), eposta: kirp(x.eposta, 254), kod: typeof x.kod === 'string' ? x.kod : '',
-    kadi: typeof x.kadi === 'string' ? x.kadi : '', bio: typeof x.bio === 'string' ? kirp(x.bio, 150) : '', yonetici: x.yonetici === true });
+    kadi: typeof x.kadi === 'string' ? x.kadi : '', bio: typeof x.bio === 'string' ? kirp(x.bio, 150) : '', yonetici: x.yonetici === true, av: sayiMi(x.av) ? x.av : 0 });
   LS.yaz('takma', kirp(x.ad, 24));
 }
 function hesapTemizle() {
   try { if (YEREL && typeof YEREL.oturumAyarla === 'function') YEREL.oturumAyarla(''); } catch (e) { }
-  LS.sil('hesap');
+  LS.sil('hesap'); LS.sil('avatar');
   TOPLULUK.yuklendi = false;
 }
 /* Topluluk eylemleri hesap ister */
@@ -61,7 +69,7 @@ function hesapBolumu(yenile) {
   if (!yzKurulu()) { kap.appendChild(h('p', { class: 'ayar-not', text: t('hSunucuYok') })); return kap; }
   if (hb) {
     kap.appendChild(h('div', { class: 'hesap-kart' },
-      h('span', { class: 'hesap-av', text: (hb.ad.charAt(0) || '?').toLocaleUpperCase('tr') }),
+      avatarDoldur(h('button', { class: 'hesap-av benim', 'aria-label': t('avBaslik'), on: { click: function () { avatarMenusu(yenile); } } }), benimAvatar(), hb.ad),
       h('div', null, h('b', { text: hb.ad }), hb.kadi ? kadiEl(hb.kadi) : h('span', { class: 'kadi bos', text: t('kadiSecilmedi') }), h('small', { text: hb.eposta }))));
     if (hb.bio) kap.appendChild(h('p', { class: 'hesap-bio', text: hb.bio }));
     kap.appendChild(h('button', { class: 'btn ana profil-duzenle-btn', style: { width: '100%' }, on: { click: function () { profilDuzenle(yenile); } } }, ikon('kalem', 'k'), t('profilDuzenle')));
@@ -197,15 +205,19 @@ function profilDuzenle(yenile) {
   bio.value = hb.bio || '';
   var say = h('small', { class: 'sayac', text: bio.value.length + '/150' });
   bio.addEventListener('input', function () { say.textContent = bio.value.length + '/150'; });
-  var av = h('span', { class: 'hesap-av buyuk', text: (hb.ad.charAt(0) || '?').toLocaleUpperCase('tr') });
-  ad.addEventListener('input', function () { av.textContent = (kirp(ad.value, 24).charAt(0) || '?').toLocaleUpperCase('tr'); });
+  var av = avatarDoldur(h('button', { class: 'hesap-av buyuk benim', 'aria-label': t('avBaslik') }), benimAvatar(), hb.ad);
+  var avYenile = function () { avatarDoldur(av, benimAvatar(), kirp(ad.value, 24) || hb.ad); };
+  av.addEventListener('click', function () { avatarMenusu(avYenile); });
+  ad.addEventListener('input', function () { if (!benimAvatar()) avYenile(); });
   // @admin: yalnız uygulama sahibi, yönetici koduyla alır
   var kodGirdi = h('input', { class: 'metin', type: 'password', maxlength: '24', autocomplete: 'off', 'aria-label': t('yoneticiKodu'), placeholder: 'XXXX-XXXX-XXXX-XXXX' });
   var kodSar = h('label', { class: 'hesap-alan gizli' }, h('span', { text: t('yoneticiKodu') }), kodGirdi, h('small', { class: 'kadi-durum', text: t('yoneticiKoduNot') }));
   kd.dinle(function (d, k) { kodSar.classList.toggle('gizli', !(k === 'admin' && d === 'ayrilmis')); });
   var btn = h('button', { class: 'btn ana' }, ikon('tik', 'k'), t('kaydet'));
   var s = sayfaAc({ baslik: t('profilDuzenle'), icerik: h('div', { class: 'profil-duzen' },
-    h('div', { class: 'profil-ust' }, av, h('div', null, h('b', { text: hb.ad }), hb.kadi ? kadiEl(hb.kadi) : h('small', { text: t('kadiSecilmedi') }))),
+    h('div', { class: 'profil-ust' }, h('div', { class: 'av-sar' }, av, h('span', { class: 'av-kalem', 'aria-hidden': 'true' }, ikon('kamera', 'k'))),
+      h('div', null, h('b', { text: hb.ad }), hb.kadi ? kadiEl(hb.kadi) : h('small', { text: t('kadiSecilmedi') }),
+        h('button', { class: 'hesap-link', style: { padding: '4px 0 0', 'text-align': 'left' }, text: t('avDegistirKisa'), on: { click: function () { avatarMenusu(avYenile); } } }))),
     h('label', { class: 'hesap-alan' }, h('span', { text: t('hAd') }), ad),
     kd.sar, kodSar,
     h('label', { class: 'hesap-alan' }, h('span', null, t('hakkimda'), say), bio),
@@ -264,7 +276,9 @@ function yoneticiPaneli() {
     h('p', { class: 'alt-yazi', text: t('yoneticiMetin') }),
     h('div', { class: 'hesap-alan' }, h('span', { text: t('ayrilmisAd') }), adlar),
     h('label', { class: 'hesap-alan' }, h('span', { text: t('hedefKadi') }), h('div', { class: 'kadi-kutu' }, h('i', { text: '@' }), hedef)),
-    h('div', { class: 'sarili', style: { gap: '10px' } }, ata, geri), sonuc) });
+    h('div', { class: 'sarili', style: { gap: '10px' } }, ata, geri), sonuc,
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('rkYonetim') }),
+    h('button', { class: 'satir', on: { click: reklamYonetimi } }, ikon('grafik'), h('span', { text: t('rkYonetimAc') }))) });
   var calis = function (govde, btn) {
     btn.disabled = true;
     yzIste('/v1/ata', govde, 20000).then(function (v) {

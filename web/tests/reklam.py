@@ -1,0 +1,68 @@
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ortak import *
+KOK = os.path.dirname(os.path.abspath(__file__))
+SAHTE = open(os.path.join(KOK, 'yz.py')).read().split('SAHTE = r"""')[1].split('"""')[0]
+SAHTE = SAHTE.replace("if (yol === '/v1/akis') return yanit(req, {ok: true, durum: 200, veri: {ok: true, devam: false, liste: AKIS}});", """if (yol === '/v1/akis') return yanit(req, {ok: true, durum: 200, veri: {ok: true, devam: false, liste: Array.from({length: 14}, (_, i) => ({id: String.fromCharCode(97 + i).repeat(20), takma: 'Kişi ' + i, kadi: 'kisi' + i, av: i === 0 ? 123 : 0, aciklama: 'Kombin ' + i, etiketler: [], begeni: i, begenmeme: 0, zaman: Date.now() - i * 60000, benim: false, gizli: 0, yazar: (i.toString(16) + '0123456789ab').slice(0, 12), oy: 0}))}});
+    if (yol === '/v1/reklamlar') return yanit(req, {ok: true, durum: 200, veri: {ok: true, liste: [{id: 'r'.repeat(20), marka: 'Butik Lale', baslik: 'Sonbahar indirimi', metin: '%30 indirim', link: 'https://ornek.com/indirim', dugme: 'Alışverişe başla', boyut: 'hikaye'}, {id: 'k'.repeat(20), marka: 'Kötü', boyut: 'kare', link: 'javascript:alert(1)'}]}});
+    if (yol === '/v1/reklamsay') return yanit(req, {ok: true, durum: 200, veri: {ok: true}});
+    if (yol === '/v1/avatar') return yanit(req, {ok: true, durum: 200, veri: g.sil ? {ok: true, av: 0} : window.__mod.avRed ? {ok: false, hata: 'denetim', neden: 'ciplaklik'} : {ok: true, av: 777}});""")
+SAHTE = SAHTE.replace("window.KombinleNative = {", "window.__acilan = [];\nwindow.KombinleNative = {\n  ac: u => window.__acilan.push(u),")
+JPG = open(os.path.join(KOK, 'foto', 'kazak_krem.jpg'), 'rb').read()
+with sync_playwright() as pw:
+    o = Oturum(pw, hava=met_yanit(taban=14)); o.ctx.add_init_script(SAHTE)
+    o.ctx.route('https://kombinle-api.ornek.workers.dev/**', lambda r: r.fulfill(status=200, body=JPG, headers={'Content-Type': 'image/jpeg'}))
+    p = o.ac()
+    p.click('text=Örnek dolapla dene'); p.wait_for_timeout(1000)
+    print('— Profil resmi')
+    ok(p.locator('.g-marka .g-logo-kap:not(.kullanici) img.g-logo').count() == 1, 'resim yokken sol üstte uygulama simgesi')
+    p.click('.g-marka .g-logo-kap'); p.wait_for_timeout(400)
+    with p.expect_file_chooser() as fc:
+        p.click('.sayfa.acik button.satir:has-text("Fotoğraf seç")')
+    fc.value.set_files(os.path.join(KOK, 'foto', 'elbise_yesil.jpg')); p.wait_for_timeout(900)
+    ok(p.locator('.sayfa.acik canvas.av-kirp').count() == 1, 'kırpma ekranı açıldı')
+    kut = p.locator('.sayfa.acik canvas.av-kirp').bounding_box()
+    p.mouse.move(kut['x'] + 100, kut['y'] + 100); p.mouse.down(); p.mouse.move(kut['x'] + 60, kut['y'] + 140, steps=5); p.mouse.up()
+    p.fill('.sayfa.acik .av-yakin', '160'); p.dispatch_event('.sayfa.acik .av-yakin', 'input')
+    o.ekran('97_avatar_kirp')
+    p.evaluate("window.__mod.avRed = true")
+    p.click('.sayfa.acik .alt-bar .btn.ana'); p.wait_for_timeout(600)
+    ok('kurallarına uymuyor' in p.inner_text('#tost') and p.locator('.g-logo-kap.kullanici').count() == 0, 'denetimden geçmeyen resim kullanılmadı')
+    p.evaluate("window.__mod.avRed = false")
+    p.click('.sayfa.acik .alt-bar .btn.ana'); p.wait_for_timeout(800)
+    av = [a for a in p.evaluate('window.__api') if a['yol'] == '/v1/avatar'][-1]['g']
+    ok(len(av['resim']) * 0.75 < 80 * 1024 and av['resim'].startswith('/9j/'), 'profil resmi küçük JPEG olarak yüklendi')
+    ok(p.locator('.g-marka .g-logo-kap.kullanici img').get_attribute('src').startswith('data:image/jpeg'), 'sol üstteki simge profil resmiyle değişti')
+    ok(p.locator('.g-hesap.resimli img').count() == 1, 'hesap düğmesinde de profil resmi')
+    o.ekran('98_avatar_ust')
+    print('— Keşfet reklamları')
+    p.click('nav.alt-menu button[data-sekme="kesfet"]'); p.wait_for_timeout(1500)
+    rk = p.locator('.g-reklam')
+    ok(rk.count() >= 2, 'akışta reklamlar var: %d' % rk.count())
+    ok(p.locator('.g-reklam[data-reklam="kkkkkkkkkkkkkkkkkkkk"]').count() == 0, 'güvensiz bağlantılı reklam elendi')
+    ok(all('Sponsorlu' in rk.nth(i).inner_text() for i in range(rk.count())), 'hepsinde "Sponsorlu" etiketi')
+    boyutlar = set(p.evaluate("[...document.querySelectorAll('.g-reklam')].map(e => [...e.classList].find(c => c.startsWith('boyut-')))"))
+    ok(len(boyutlar) >= 1, 'boyutlar: ' + ','.join(sorted(boyutlar)))
+    ok(p.locator('.g-akis:not(.g-reklam) .g-avatar.resimli img').count() >= 1, 'paylaşımda yazarın profil resmi')
+    hik = p.locator('.g-reklam[data-reklam="rrrrrrrrrrrrrrrrrrrr"]')
+    if hik.count():
+        hik.first.scroll_into_view_if_needed(); p.wait_for_timeout(400)
+        ok(hik.first.locator('.g-reklam-gec').is_disabled() and '(' in hik.first.locator('.g-reklam-gec').inner_text(), 'hikâye reklamı: geri sayım varken geçilemiyor')
+        o.ekran('99_reklam_hikaye')
+        p.wait_for_timeout(5600)
+        ok(not hik.first.locator('.g-reklam-gec').is_disabled(), '5 sn sonra geçilebilir')
+        hik.first.locator('.g-reklam-cta').click(); p.wait_for_timeout(300)
+        ok(p.evaluate('window.__acilan') == ['https://ornek.com/indirim'], 'düğme reklam bağlantısını açtı')
+        sayim = [a['g'] for a in p.evaluate('window.__api') if a['yol'] == '/v1/reklamsay']
+        ok({'id': 'r' * 20, 'tur': 'g'} in sayim and {'id': 'r' * 20, 'tur': 'tik'} in sayim, 'gösterim ve tık sayıldı')
+    else:
+        ok(True, 'hikâye reklamı bu dizilimde yok (rastgele)')
+    n = p.locator('.g-reklam').count()
+    ilk = p.locator('.g-reklam').first
+    ilk.scroll_into_view_if_needed(); p.wait_for_timeout(300)
+    if ilk.locator('.g-reklam-gec').is_disabled(): p.wait_for_timeout(5600)
+    ilk.locator('.g-reklam-gec').click(); p.wait_for_timeout(600)
+    ok(p.locator('.g-reklam').count() == n - 1, 'reklam "Geç" ile kapandı')
+    o.ekran('99_reklamlar', tam=True)
+    ok(not [h for h in o.hatalar if 'pageerror' in h], 'sayfa hatası yok: ' + str(o.hatalar[:2]))
+    o.kapat()
+ozet()

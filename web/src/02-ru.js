@@ -192,5 +192,19 @@ DIL.ru = {
   hedefKadi: 'Кому выдать?', hedefKadiYer: 'имя пользователя', adiVer: 'Выдать', adiGeriAl: 'Забрать', ayrilmisAd: 'Зарезервированное имя',
   yoneticiMetin: '@admin принадлежит вам. Вы можете выдавать зарезервированные имена (например, @user) кому угодно или забирать их. Старое имя пользователя освобождается.',
   adVerildi: function (a, s) { return '@' + a + ' теперь у пользователя ' + s + '.'; }, adGeriAlindi: function (a) { return '@' + a + ' отозвано.'; },
-  adVerSor: function (a, k) { return 'Выдать @' + a + ' пользователю @' + k + '? Текущий владелец его потеряет.'; }, adGeriSor: function (a) { return 'Забрать @' + a + ' у владельца?'; }
+  adVerSor: function (a, k) { return 'Выдать @' + a + ' пользователю @' + k + '? Текущий владелец его потеряет.'; }, adGeriSor: function (a) { return 'Забрать @' + a + ' у владельца?'; },
+  avBaslik: 'Фото профиля', avSec: 'Выбрать фото', avDegistir: 'Сменить фото', avDegistirKisa: 'Сменить фото', avKaldir: 'Удалить фото', avKirp: 'Настроить фото', avYakinlas: 'Масштаб', avKullan: 'Использовать',
+  avKirpNot: 'Перетащите, чтобы выбрать область; ползунок — масштаб.', avKaydedildi: 'Фото профиля обновлено 💜', avKaldirildi: 'Фото профиля удалено.', avDenetim: 'Фото не соответствует правилам сообщества. Попробуйте другое.',
+  avNotGirisli: 'Фото видно слева вверху и в сообществе. Загрузки проверяются автоматически.', avNotYerel: 'Фото видно слева вверху. Войдите, чтобы его видели и в сообществе.',
+  proS6: 'Без рекламы в «Интересном»',
+  rkSponsorlu: 'Реклама', rkGec: 'Пропустить', rkGecSay: function (n) { return 'Пропустить (' + n + ')'; }, rkDahaFazla: 'Подробнее',
+  rkPrensesB: 'Что надеть? Просто спросите', rkPrensesM: 'AI Принцесса посмотрит ваш гардероб и подберёт образ.', rkPrensesD: 'Начать чат',
+  rkAnalizB: 'Стиль-отчёт гардероба', rkAnalizM: 'Узнайте, что вы редко носите и чего не хватает.', rkAnalizD: 'Открыть анализ',
+  rkJetonB: 'Пополните жетоны', rkJetonM: 'Пакеты жетонов для образов, анализа и распознавания.', rkJetonD: 'В магазин',
+  rkProB: 'Образы каждый день, без рекламы', rkProM: function (f) { return 'Kombinle PRO: ежедневные AI-образы и «Интересное» без рекламы за ' + f + '/мес.'; }, rkProD: 'Попробовать PRO',
+  rkYonetim: 'Реклама', rkYonetimAc: 'Управление рекламой', rkYonetimMetin: 'Показывается в ленте «Интересное» со случайным интервалом и пометкой «Реклама». Здесь — показы и клики.',
+  rkYeni: 'Новое объявление', rkYok: 'Объявлений пока нет.', rkIstatistik: function (g, t2, o) { return g + ' показов • ' + t2 + ' кликов • ' + o + '%'; }, rkBitis: function (d) { return 'до ' + d; }, rkDurdu: 'Приостановлено',
+  rkDurdur: 'Приостановить', rkSurdur: 'Возобновить', rkSilSor: function (m) { return 'Удалить объявление ' + m + '?'; }, rkResimSec: 'Выбрать изображение', rkMarka: 'Бренд / рекламодатель', rkBaslikEtk: 'Заголовок', rkMetin: 'Описание',
+  rkLink: 'Ссылка (https)', rkDugme: 'Текст кнопки', rkGun: 'Срок показа (дней)', rkBoyutEtk: 'Размер', rkBoyut_kare: 'Квадрат 1:1', rkBoyut_dikey: 'Вертик. 4:5', rkBoyut_hikaye: 'Сторис 9:16', rkBoyut_yatay: 'Гориз. 16:9',
+  rkYayinla: 'Опубликовать', rkResimGerek: 'Выберите изображение.', rkMarkaGerek: 'Укажите бренд.', rkLinkHata: 'Ссылка должна начинаться с https://', rkEklendi: 'Объявление опубликовано 🎉'
 };

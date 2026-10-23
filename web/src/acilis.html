@@ -1,61 +1,47 @@
 <div id="acilis" aria-hidden="true">
 <style>
-#acilis{position:fixed;inset:0;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(120% 80% at 70% 0%,#4a1d8f 0%,rgba(74,29,143,0) 55%),radial-gradient(110% 70% at 10% 100%,#3b1478 0%,rgba(59,20,120,0) 60%),linear-gradient(170deg,#24104f 0%,#170a3a 55%,#0f0628 100%);
-  transition:opacity .55s ease,visibility .55s;contain:strict}
+/* Açılış: sade koyu zemin, yavaş akan aurora, cam karo içinde amblem, çizilen halka, ışık geçişi, kelime işareti, ilerleme çizgisi */
+#acilis{position:fixed;inset:0;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0c0720;
+  transition:opacity .6s ease .1s,visibility .7s;contain:strict;--e:cubic-bezier(.22,1,.36,1)}
 #acilis.bitti{opacity:0;visibility:hidden;pointer-events:none}
-#acilis .bk{position:absolute;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(236,210,255,.42),rgba(176,130,245,.16) 55%,rgba(176,130,245,0) 71%);
-  filter:blur(2.5px);opacity:.4;animation:akBk 2.4s cubic-bezier(.2,.7,.2,1) both,akSuz 9s ease-in-out infinite alternate}
-@keyframes akBk{from{opacity:0;transform:scale(.6)}}
-@keyframes akSuz{to{translate:0 -18px}}
-#acilis .zemin-isik{position:absolute;left:-10%;right:-10%;bottom:6%;height:16%;background:radial-gradient(50% 50% at 50% 50%,rgba(220,190,255,.30),rgba(220,190,255,0) 70%);filter:blur(8px);animation:akBk 2.6s .6s ease both}
-#acilis svg.serit{position:absolute;left:0;top:50%;width:100%;height:46%;transform:translateY(-62%);overflow:visible;
-  animation:akSeritSol 1.4s 1.5s ease forwards}
-@keyframes akSeritSol{to{opacity:.0}}
-#acilis .serit path{fill:none;stroke-linecap:round;stroke-dasharray:1200;stroke-dashoffset:0;animation:akCiz 1.5s cubic-bezier(.45,.05,.2,1) both}
-#acilis .serit path:nth-child(2){animation-delay:.12s}
-#acilis .serit path:nth-child(3){animation-delay:.24s}
-#acilis .serit path:nth-child(4){animation-delay:.05s}
-@keyframes akCiz{from{stroke-dashoffset:1200;opacity:.2}}
-#acilis .toz{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px 1px rgba(230,210,255,.9);
-  animation:akToz 2.2s ease both,akPar 2.8s ease-in-out infinite alternate}
-@keyframes akToz{from{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
-@keyframes akPar{to{opacity:.25}}
-#acilis .orta{position:relative;display:flex;flex-direction:column;align-items:center;width:min(78vw,340px)}
-#acilis .amblem{width:62%;height:auto;display:block;filter:drop-shadow(0 10px 30px rgba(170,110,255,.45));
-  animation:akAmb 1.25s .55s cubic-bezier(.2,.8,.2,1) both}
-@keyframes akAmb{from{opacity:0;transform:scale(.82) translateY(10px);filter:blur(14px) drop-shadow(0 0 0 rgba(0,0,0,0))}}
-#acilis .yildiz{position:absolute;left:73%;top:22%;width:9%;aspect-ratio:1;background:radial-gradient(circle,#fff 0 18%,rgba(255,230,190,.7) 30%,rgba(255,230,190,0) 68%);
-  animation:akYld 1.6s 1.4s ease-in-out both}
-@keyframes akYld{0%{opacity:0;transform:scale(0) rotate(0)}55%{opacity:1;transform:scale(1.8) rotate(45deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
-#acilis .ad{width:100%;height:auto;margin-top:6%;display:block;filter:drop-shadow(0 6px 22px rgba(200,160,255,.35));
-  animation:akAd 1.1s 1.05s cubic-bezier(.3,.7,.2,1) both}
-@keyframes akAd{from{opacity:.0;clip-path:inset(0 100% 0 0);transform:translateY(6px)}}
-#acilis .slogan{width:86%;height:auto;margin-top:4.5%;display:block;animation:akSlg .9s 1.65s ease both}
-@keyframes akSlg{from{opacity:0;transform:translateY(8px);letter-spacing:.4em}}
-#acilis .parilti{position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,0) 40%,rgba(255,255,255,.18) 50%,rgba(255,255,255,0) 60%);
-  transform:translateX(-120%);animation:akPrl 1.3s 2.05s ease-in-out both;mix-blend-mode:screen;pointer-events:none}
-@keyframes akPrl{to{transform:translateX(120%)}}
-@media (prefers-reduced-motion:reduce){#acilis *{animation:none!important}#acilis svg.serit{opacity:0}}
+#acilis.bitti .orta{transform:scale(1.06);opacity:0;filter:blur(6px);transition:transform .6s var(--e),opacity .45s ease,filter .5s ease}
+#acilis .au{position:absolute;border-radius:50%;filter:blur(60px);opacity:0;animation:akAuGir 1.6s ease forwards,akAuAk 14s ease-in-out infinite alternate;will-change:transform}
+#acilis .au.a1{width:78vmax;height:78vmax;left:-30vmax;top:-34vmax;background:radial-gradient(circle,#6d28d9 0%,rgba(109,40,217,0) 65%)}
+#acilis .au.a2{width:70vmax;height:70vmax;right:-32vmax;bottom:-30vmax;background:radial-gradient(circle,#db2777 0%,rgba(219,39,119,0) 62%);animation-delay:.15s,0s;animation-duration:1.6s,17s}
+#acilis .au.a3{width:46vmax;height:46vmax;left:50%;top:44%;margin:-23vmax 0 0 -23vmax;background:radial-gradient(circle,rgba(167,139,250,.9) 0%,rgba(167,139,250,0) 60%);animation-delay:.35s,0s;animation-duration:1.8s,11s}
+@keyframes akAuGir{to{opacity:.55}}
+@keyframes akAuAk{to{transform:translate(6vmax,4vmax) scale(1.12)}}
+#acilis .tane{position:absolute;inset:0;opacity:.07;background-image:radial-gradient(rgba(255,255,255,.9) .6px,transparent .7px);background-size:3px 3px;mix-blend-mode:overlay}
+#acilis .orta{position:relative;display:flex;flex-direction:column;align-items:center;width:min(74vw,320px)}
+#acilis .kap{position:relative;width:46%;aspect-ratio:1}
+#acilis .karo{position:relative;width:100%;aspect-ratio:1;border-radius:30%;display:grid;place-items:center;
+  background:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 30px 60px -20px rgba(80,20,160,.7),inset 0 1px 0 rgba(255,255,255,.25);backdrop-filter:blur(10px);
+  animation:akKaro 1.1s .15s var(--e) both;overflow:hidden}
+@keyframes akKaro{0%{opacity:0;transform:scale(.55) translateY(14px);filter:blur(10px)}60%{filter:blur(0)}100%{opacity:1;transform:none}}
+#acilis .amblem{width:74%;height:auto;display:block;filter:drop-shadow(0 8px 18px rgba(170,110,255,.5));animation:akAmb 1s .4s var(--e) both}
+@keyframes akAmb{from{opacity:0;transform:scale(.8) rotate(-6deg)}}
+#acilis .isik{position:absolute;inset:-20%;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.55) 50%,transparent 62%);transform:translateX(-110%);animation:akIsik 1.1s 1.15s ease-in-out both}
+@keyframes akIsik{to{transform:translateX(110%)}}
+#acilis svg.halka{position:absolute;inset:-9%;width:118%;height:118%;overflow:visible;pointer-events:none}
+#acilis .halka rect{fill:none;stroke:url(#akHg);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:420;stroke-dashoffset:420;animation:akHalka 1.4s .55s var(--e) forwards,akHalkaSon .8s 2s ease forwards}
+@keyframes akHalka{to{stroke-dashoffset:0}}
+@keyframes akHalkaSon{to{opacity:.25}}
+#acilis .ad{width:78%;height:auto;margin-top:12%;display:block;animation:akAd 1s 1.05s var(--e) both}
+@keyframes akAd{from{opacity:0;transform:translateY(18px);clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+#acilis .slogan{width:66%;height:auto;margin-top:5%;display:block;opacity:.85;animation:akSlg 1s 1.45s var(--e) both}
+@keyframes akSlg{from{opacity:0;letter-spacing:.3em;transform:translateY(8px)}}
+#acilis .alt{position:absolute;left:50%;bottom:calc(9vh + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(36vw,140px);height:2px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;animation:akSlg .6s .5s ease both}
+#acilis .alt i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#c084fc,#f472b6);animation:akYuk 2.3s .4s cubic-bezier(.4,.1,.2,1) forwards}
+@keyframes akYuk{to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){#acilis *{animation-duration:.01s!important;animation-delay:0s!important}}
 </style>
-{{BOKEH}}
-<div class="zemin-isik"></div>
-<svg class="serit" viewBox="0 0 400 200" preserveAspectRatio="none">
-<defs>
-<linearGradient id="akG1" x1="0" x2="1"><stop offset="0" stop-color="#ff7ad9" stop-opacity="0"/><stop offset=".35" stop-color="#ff7ad9"/><stop offset=".7" stop-color="#b38cff"/><stop offset="1" stop-color="#8ec5ff" stop-opacity="0"/></linearGradient>
-<linearGradient id="akG2" x1="0" x2="1"><stop offset="0" stop-color="#c79bff" stop-opacity="0"/><stop offset=".5" stop-color="#e9d5ff"/><stop offset="1" stop-color="#f0abfc" stop-opacity="0"/></linearGradient>
-<filter id="akParla" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<path d="M-20 120 C 80 40, 170 170, 260 100 S 380 60, 430 110" stroke="url(#akG1)" stroke-width="3.2" filter="url(#akParla)"/>
-<path d="M-20 140 C 90 70, 190 190, 280 120 S 390 90, 430 130" stroke="url(#akG2)" stroke-width="1.6" filter="url(#akParla)" opacity=".85"/>
-<path d="M-20 100 C 70 150, 160 40, 250 90 S 370 140, 430 80" stroke="url(#akG1)" stroke-width="1.2" opacity=".7"/>
-<path d="M-20 160 C 110 110, 210 200, 300 140 S 400 120, 430 150" stroke="url(#akG2)" stroke-width="5" opacity=".25" filter="url(#akParla)"/>
-</svg>
-{{TOZ}}
+<span class="au a1"></span><span class="au a2"></span><span class="au a3"></span><span class="tane"></span>
 <div class="orta">
-<img class="amblem" alt="" src="{{AMBLEM}}">
-<span class="yildiz"></span>
+<div class="kap"><svg class="halka" viewBox="0 0 100 100"><defs><linearGradient id="akHg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0abfc"/><stop offset=".5" stop-color="#a78bfa" stop-opacity=".6"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="30"/></svg>
+<div class="karo"><img class="amblem" alt="" src="{{AMBLEM}}"><span class="isik"></span></div></div>
 <img class="ad" alt="Kombinle" src="{{AD}}">
 <img class="slogan" alt="" src="{{SLOGAN}}">
 </div>
+<div class="alt"><i></i></div>
 </div>

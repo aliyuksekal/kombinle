@@ -63,13 +63,14 @@ function jetonHapGuncelle() { var e = $('#jetonHap span'); if (e) e.textContent 
 /* ---------- Üst bar ve alt menü ---------- */
 function ustBar() {
   return h('header', { class: 'g-ust' },
-    h('div', { class: 'g-marka' }, h('img', { class: 'g-logo', src: LOGO_ROZET, alt: '' }),
+    h('div', { class: 'g-marka' }, logoDoldur(h('button', { class: 'g-logo-kap', 'aria-label': t('avBaslik'), on: { click: function () { avatarMenusu(); } } })),
       h('div', null, h('h1', { text: 'Kombinle' }), h('span', { text: t('altBaslik') }))),
     h('div', { class: 'g-ust-sag' },
       yzKurulu() ? (function () {
         var hb = hesapBilgi();
-        return h('button', { class: 'g-hesap' + (hb ? ' girisli' : ''), 'aria-label': hb ? hb.ad : t('hGiris'), on: { click: function () { S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi(); } } },
-          hb ? (hb.ad.charAt(0) || '?').toLocaleUpperCase('tr') : ikon('kisi', 'k'));
+        var b = h('button', { class: 'g-hesap' + (hb ? ' girisli' : ''), 'aria-label': hb ? hb.ad : t('hGiris'), on: { click: function () { S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi(); } } });
+        if (hb) avatarDoldur(b, benimAvatar(), hb.ad); else b.appendChild(ikon('kisi', 'k'));
+        return b;
       })() : null,
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
         ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
@@ -528,7 +529,7 @@ function magazaSayfasi(oz) {
   gov.appendChild(h('div', { class: 'g-pro' },
     h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), h('h4', { text: t('proAylikBaslik') })), proFiyat),
     h('p', { class: 'g-pro-kiyas', text: t('proKiyas', PRO_GUNLUK * 30) }),
-    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS3'), t('proS5')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
+    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
     proBtn,
     h('p', { class: 'g-pro-not', text: t('aboneNot') })));
   gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('jetonPaketleri') }));

@@ -354,6 +354,15 @@ public final class Kopru {
         ekran.ui.post(() -> ekran.disariAc(u));
     }
 
+    /* Reklam ve bağlantılar: yalnız https adresleri tarayıcıda açılır */
+    @JavascriptInterface
+    public void ac(final String adres) {
+        if (!guvenli || adres == null || adres.length() > 300) return;
+        if (!adres.matches("^https://[A-Za-z0-9.-]+\\.[A-Za-z]{2,}(/[^\\s\"'<>]*)?$")) return;
+        final android.net.Uri u = android.net.Uri.parse(adres);
+        ekran.ui.post(() -> ekran.disariAc(u));
+    }
+
     @JavascriptInterface
     public void odemeGeriYukle(final String req) {
         if (!guvenli || !istekGecerli(req)) return;

@@ -112,6 +112,6 @@ function acilisKapat() {
   a.addEventListener('click', bitir);
   var azalt = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var gecen = (window.performance && performance.now) ? performance.now() : 0;
-  setTimeout(bitir, Math.max(0, (azalt ? 900 : 2700) - gecen));
+  setTimeout(bitir, Math.max(0, (azalt ? 900 : 2900) - gecen));
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', baslat); else baslat();

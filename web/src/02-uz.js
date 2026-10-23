@@ -192,5 +192,19 @@ DIL.uz = {
   hedefKadi: 'Kimga berilsin?', hedefKadiYer: 'foydalanuvchi nomi', adiVer: 'Berish', adiGeriAl: 'Qaytarib olish', ayrilmisAd: 'Zaxiralangan nom',
   yoneticiMetin: "@admin sizniki. Zaxiralangan nomlarni (masalan, @user) xohlagan odamga berishingiz yoki qaytarib olishingiz mumkin. Uning eski nomi bo'shaydi.",
   adVerildi: function (a, s) { return '@' + a + ' endi ' + s + 'niki.'; }, adGeriAlindi: function (a) { return '@' + a + ' qaytarib olindi.'; },
-  adVerSor: function (a, k) { return '@' + a + ' nomi @' + k + 'ga berilsinmi? Hozirgi egasi uni yo\'qotadi.'; }, adGeriSor: function (a) { return '@' + a + ' egasidan qaytarib olinsinmi?'; }
+  adVerSor: function (a, k) { return '@' + a + ' nomi @' + k + 'ga berilsinmi? Hozirgi egasi uni yo\'qotadi.'; }, adGeriSor: function (a) { return '@' + a + ' egasidan qaytarib olinsinmi?'; },
+  avBaslik: 'Profil rasmi', avSec: 'Rasm tanlash', avDegistir: "Rasmni o'zgartirish", avDegistirKisa: "Rasmni o'zgartirish", avKaldir: "Rasmni o'chirish", avKirp: 'Rasmni sozlash', avYakinlas: 'Kattalashtirish', avKullan: 'Shu rasmni ishlatish',
+  avKirpNot: "Surib joylashtiring, slayder bilan kattalashtiring.", avKaydedildi: 'Profil rasmi yangilandi 💜', avKaldirildi: "Profil rasmi o'chirildi.", avDenetim: "Bu rasm hamjamiyat qoidalariga mos emas. Boshqasini sinab ko'ring.",
+  avNotGirisli: "Rasm chap yuqorida va hamjamiyatda ko'rinadi. Yuklanganlar avtomatik tekshiriladi.", avNotYerel: "Rasm chap yuqorida ko'rinadi. Kirsangiz, hamjamiyatda ham ko'rinadi.",
+  proS6: "Kashf etishda reklama yo'q",
+  rkSponsorlu: 'Reklama', rkGec: "O'tkazish", rkGecSay: function (n) { return "O'tkazish (" + n + ')'; }, rkDahaFazla: 'Batafsil',
+  rkPrensesB: "Nima kiysam? So'rang", rkPrensesM: 'AI Malika garderobingizga qarab obraz tavsiya qiladi.', rkPrensesD: 'Suhbatni boshlash',
+  rkAnalizB: 'Garderob uslub hisoboti', rkAnalizM: "Kam kiyadigan va yetishmayotgan kiyimlarni bilib oling.", rkAnalizD: 'Tahlilni ochish',
+  rkJetonB: "Jetonlarni to'ldiring", rkJetonM: 'Obraz, tahlil va tanish uchun jeton paketlari.', rkJetonD: "Do'konga o'tish",
+  rkProB: "Har kuni obraz, reklamasiz", rkProM: function (f) { return 'Kombinle PRO: har kuni AI obrazlar va reklamasiz Kashf etish — ' + f + '/oy'; }, rkProD: "PRO'ni sinash",
+  rkYonetim: 'Reklamalar', rkYonetimAc: 'Reklamalarni boshqarish', rkYonetimMetin: "Kashf etish lentasida tasodifiy oraliqda «Reklama» belgisi bilan ko'rinadi. Ko'rishlar va bosishlar shu yerda.",
+  rkYeni: 'Yangi reklama', rkYok: "Hozircha reklama yo'q.", rkIstatistik: function (g, t2, o) { return g + " ko'rish • " + t2 + ' bosish • ' + o + '%'; }, rkBitis: function (d) { return d + ' gacha'; }, rkDurdu: "To'xtatilgan",
+  rkDurdur: "To'xtatish", rkSurdur: 'Davom ettirish', rkSilSor: function (m) { return m + " reklamasi o'chirilsinmi?"; }, rkResimSec: 'Reklama rasmini tanlash', rkMarka: 'Brend / reklama beruvchi', rkBaslikEtk: 'Sarlavha', rkMetin: 'Tavsif',
+  rkLink: 'Havola (https)', rkDugme: 'Tugma matni', rkGun: 'Muddat (kun)', rkBoyutEtk: "O'lcham", rkBoyut_kare: 'Kvadrat 1:1', rkBoyut_dikey: 'Tik 4:5', rkBoyut_hikaye: 'Hikoya 9:16', rkBoyut_yatay: 'Yotiq 16:9',
+  rkYayinla: 'Joylash', rkResimGerek: 'Reklama rasmini tanlang.', rkMarkaGerek: 'Brend nomini yozing.', rkLinkHata: 'Havola https:// bilan boshlanishi kerak.', rkEklendi: 'Reklama joylandi 🎉'
 };
