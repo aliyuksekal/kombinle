@@ -363,6 +363,112 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   ok((await iste('/v1/profilgor', { kod: dHesap.kod }, cihazB)).veri.profil.av === 0, '5 şikâyette profil resmi kaldırıldı');
 }
 
+// kişi arama: kişi kendini ve hesapsız eski cihaz profillerini görmez; takip bildirimi özeti
+{
+  const kB = (await iste('/v1/ben', {}, cihazB)).veri.hesap.kod;
+  const kD = (await iste('/v1/ben', {}, cihazD)).veri.hesap.kod;
+  const eskiB = createHash('sha256').update('cihaz:' + ANAHTAR + ':' + cihazB).digest('hex').slice(0, 12);
+  db.prepare("INSERT OR REPLACE INTO profil (kod, takma, zaman, hesapli) VALUES (?, 'Bora eski', 1, 0)").run(eskiB);
+  db.prepare("INSERT OR REPLACE INTO profil (kod, takma, zaman, hesapli) VALUES ('ffffffffffff', 'Hayalet', 1, 0)").run();
+  const l = (await iste('/v1/kisiler', {}, cihazB)).veri.liste.map(x => x.kod);
+  ok(l.indexOf(kB) < 0 && l.indexOf(eskiB) < 0, 'kişi kendini (eski cihaz profili dahil) görmüyor');
+  ok(l.indexOf('ffffffffffff') < 0 && l.indexOf(kD) >= 0, 'hesapsız eski profiller listelenmiyor');
+  ok((await iste('/v1/kisiler', { ara: 'Bora' }, cihazB)).veri.liste.every(x => x.kod !== kB), 'aramada da kendini görmüyor');
+  ok((await iste('/v1/takip', { kod: 'ffffffffffff' }, cihazB)).durum === 404, 'hesapsız profil takip edilemez');
+  await iste('/v1/takip', { kod: kD, takip: false }, cihazB);
+  await iste('/v1/takip', { kod: kD }, cihazB);
+  const s = (await iste('/v1/bildirim', { sadeceSay: true }, cihazD)).veri;
+  ok(s.son && s.son.tur === 'takip' && s.son.takma && s.okunmamis > 0, 'takip bildirimi ve özeti geldi');
+}
+
+// mesajlaşma
+{
+  const kB = (await iste('/v1/ben', {}, cihazB)).veri.hesap.kod;
+  const kD = (await iste('/v1/ben', {}, cihazD)).veri.hesap.kod;
+  await iste('/v1/takip', { kod: kB, takip: false }, cihazD);
+  ok((await iste('/v1/dmyaz', { kod: kB, metin: 'selam' }, cihazB)).veri.hata === 'girdi', 'kendine mesaj yazılamaz');
+  ok((await iste('/v1/dmyaz', { kod: kD, metin: 'selam' }, cihazB, { oturumsuz: true, ip: '7.7.7.7' })).durum === 401, 'mesaj hesap ister');
+  yzIstekleri = [];
+  let r = await iste('/v1/dmyaz', { kod: kD, metin: 'Merhaba, ceketin çok güzel-DM1' }, cihazB);
+  ok(r.veri.ok && r.veri.durum === 'istek_giden', 'takip etmeyene ilk mesaj istek olarak gitti');
+  ok(yzIstekleri.some(x => JSON.stringify(x.g).includes('çok güzel-DM1')), 'istek mesajı denetime metniyle gitti');
+  ok((await iste('/v1/dmyaz', { kod: kD, metin: 'ara beni 0532 111 22 33' }, cihazB)).veri.hata === 'baglanti', 'istekte telefon numarası engellendi');
+  await iste('/v1/dmyaz', { kod: kD, metin: 'ikinci' }, cihazB);
+  await iste('/v1/dmyaz', { kod: kD, metin: 'üçüncü' }, cihazB);
+  ok((await iste('/v1/dmyaz', { kod: kD, metin: 'dördüncü' }, cihazB)).veri.hata === 'istek_bekliyor', 'kabul edilmeden en fazla 3 mesaj');
+  let dl = (await iste('/v1/dmliste', {}, cihazD)).veri.liste;
+  ok(dl.length === 1 && dl[0].durum === 'istek_gelen' && dl[0].okunmamis === 3 && dl[0].kisi.kod === kB, 'alıcıda istek ve okunmamış sayısı');
+  ok((await iste('/v1/dmliste', {}, cihazB)).veri.liste[0].durum === 'istek_giden', 'gönderende "istek gönderildi"');
+  const say = (await iste('/v1/bildirim', { sadeceSay: true }, cihazD)).veri;
+  ok(say.mesaj === 3 && say.sonMesaj && say.sonMesaj.takma, 'okunmamış mesaj sayısı bildirimde');
+  r = await iste('/v1/dmoku', { kod: kB }, cihazD);
+  ok(r.veri.mesajlar.length === 3 && r.veri.mesajlar[0].metin.includes('DM1') && !r.veri.mesajlar[0].ben && r.veri.durum === 'istek_gelen', 'mesajlar sırayla okundu');
+  ok((await iste('/v1/bildirim', { sadeceSay: true }, cihazD)).veri.mesaj === 0, 'okununca sayaç sıfırlandı');
+  ok((await iste('/v1/dmoku', { kod: kD }, cihazB)).veri.mesajlar[2].okundu === 1, 'gönderen "görüldü" bilgisini alıyor');
+  ok((await iste('/v1/dmkabul', { kod: kB }, cihazD)).veri.durum === 'acik', 'istek kabul edildi');
+  ok((await iste('/v1/dmyaz', { kod: kD, metin: 'site: www.ornek.com' }, cihazB)).veri.hata === 'baglanti', 'açık sohbette de bağlantı engelli');
+  yzIstekleri = [];
+  r = await iste('/v1/dmyaz', { kod: kD, metin: 'numaram 0532 111 22 33' }, cihazB);
+  ok(r.veri.ok && r.veri.durum === 'acik' && yzIstekleri.length === 0, 'kabul edilen sohbette mesaj denetimsiz ve hızlı gider');
+  r = await iste('/v1/dmoku', { kod: kD, sonra: Date.now() - 2000 }, cihazB);
+  ok(r.veri.mesajlar.length >= 1 && r.veri.mesajlar.every(m => m.zaman > Date.now() - 3000), 'yalnız yeni mesajlar alınabiliyor');
+  ok((await iste('/v1/dmengel', { kod: kB }, cihazD)).veri.engel === true, 'engellendi');
+  ok((await iste('/v1/dmyaz', { kod: kD, metin: 'hey' }, cihazB)).veri.hata === 'izin', 'engelleyene mesaj gidemez');
+  ok((await iste('/v1/dmliste', {}, cihazD)).veri.liste.length === 0, 'engellenen sohbet listede yok');
+  ok((await iste('/v1/dmengel', { kod: kB, engel: false }, cihazD)).veri.engel === false, 'engel kaldırıldı');
+  await iste('/v1/dmyaz', { kod: kD, metin: 'tekrar merhaba' }, cihazB);
+  dl = (await iste('/v1/dmliste', {}, cihazD)).veri.liste;
+  ok(dl.length === 1 && dl[0].metin === 'tekrar merhaba', 'silinen sohbet yeni mesajla geri geldi');
+  const eskiler = (await iste('/v1/dmoku', { kod: kB }, cihazD)).veri.mesajlar;
+  ok(eskiler.length === 1, 'silmeden önceki mesajlar gizli kaldı');
+  ok((await iste('/v1/dmsikayet', { id: eskiler[0].id }, cihazD)).veri.ok, 'mesaj şikâyet edildi (ve gönderen engellendi)');
+  ok((await iste('/v1/dmsikayet', { id: eskiler[0].id }, cihazB)).durum === 404, 'kendi mesajını şikâyet edemez');
+  const kA = (await iste('/v1/ben', {}, cihazA)).veri.hesap.kod;
+  yzYanit = () => ({ uygun: false, neden: 'cinsel' });
+  r = await iste('/v1/dmyaz', { kod: kA, metin: 'uygunsuz bir teklif' }, cihazD);
+  ok(r.veri.hata === 'denetim' && r.veri.neden === 'cinsel', 'uygunsuz istek mesajı reddedildi');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+}
+
+// yönetici: şikâyet inceleme
+{
+  ok((await iste('/v1/yonetim', { islem: 'liste' }, cihazB)).durum === 403, 'yönetici olmayan panele giremez');
+  const pid = db.prepare('SELECT id FROM paylasim LIMIT 1').get().id;
+  db.prepare('UPDATE paylasim SET gizli = 1, sikayet = 3 WHERE id = ?').run(pid);
+  let l = (await iste('/v1/yonetim', { islem: 'liste' }, cihazC)).veri;
+  ok(l.paylasimlar.some(x => x.id === pid) && Array.isArray(l.engelliler) && l.mesajlar.length === 1, 'gizlenenler, engellenenler ve mesaj şikâyetleri listelendi');
+  const rs = (await iste('/v1/yonetim', { islem: 'resim', id: pid }, cihazC)).veri;
+  ok(rs.ok && rs.b64.startsWith('/9j/'), 'gizli görsel yöneticiye gösterilebiliyor');
+  ok((await iste('/v1/yonetim', { islem: 'paylasimac', id: pid }, cihazC)).veri.ok && db.prepare('SELECT gizli FROM paylasim WHERE id = ?').get(pid).gizli === 0, 'paylaşım geri açıldı');
+  const kD = (await iste('/v1/ben', {}, cihazD)).veri.hesap.kod;
+  ok((await iste('/v1/yonetim', { islem: 'engelle', kod: kD }, cihazC)).veri.ok, 'yönetici kullanıcıyı engelledi');
+  ok((await iste('/v1/akis', {}, cihazD)).durum === 403, 'engellenen kişi hiçbir şey yapamıyor');
+  ok((await iste('/v1/yonetim', { islem: 'engelkaldir', kod: kD }, cihazC)).veri.ok && (await iste('/v1/akis', {}, cihazD)).durum === 200, 'engel kaldırıldı');
+  const mid = l.mesajlar[0].id;
+  ok((await iste('/v1/yonetim', { islem: 'dmyoksay', id: mid }, cihazC)).veri.ok && (await iste('/v1/yonetim', { islem: 'liste' }, cihazC)).veri.mesajlar.length === 0, 'mesaj şikâyeti kapatıldı');
+}
+
+// e-postayla şifre sıfırlama
+{
+  ok((await iste('/v1/durum', {})).veri.eposta === false, 'e-posta anahtarı yokken kapalı');
+  ok((await iste('/v1/kodgonder', { eposta: 'bora@ornek.com' })).veri.hata === 'eposta_yok', 'anahtar yokken kod gönderilmiyor');
+  env.BREVO_API_KEY = 'brevo-x'; env.EPOSTA_GONDEREN = 'kombinle@ornek.com';
+  const eski = globalThis.fetch; let giden = null;
+  globalThis.fetch = async (url, o) => { if (url.includes('brevo')) { giden = { url, h: o.headers, g: JSON.parse(o.body) }; return new Response('{}', { status: 201 }); } return eski(url, o); };
+  const ep = db.prepare("SELECT eposta FROM hesap WHERE eposta LIKE 'feride%' OR eposta LIKE 'gizem%' LIMIT 1").get().eposta;
+  ok((await iste('/v1/kodgonder', { eposta: ep, dil: 'tr' }, cihazA, { ip: '5.5.5.5' })).veri.ok && giden && giden.h['api-key'] === 'brevo-x' && giden.g.to[0].email === ep, 'kod e-postayla gönderildi');
+  const kod = giden.g.textContent.match(/(\d{6})/)[1];
+  giden = null;
+  ok((await iste('/v1/kodgonder', { eposta: 'yok@ornek.com' }, cihazA, { ip: '5.5.5.5' })).veri.ok && giden === null, 'kayıtsız e-posta için aynı yanıt, e-posta yok');
+  ok((await iste('/v1/kodsifirla', { eposta: ep, kod: '000000', yeniSifre: 'yeni-sifre-99' }, cihazA, { ip: '5.5.5.5' })).veri.hata === 'yanlis', 'yanlış kod reddedildi');
+  const r = await iste('/v1/kodsifirla', { eposta: ep, kod, yeniSifre: 'yeni-sifre-99' }, cihazA, { ip: '5.5.5.5' });
+  ok(r.veri.ok && /^[a-f0-9]{64}$/.test(r.veri.oturum), 'doğru kodla şifre değişti');
+  ok((await iste('/v1/kodsifirla', { eposta: ep, kod, yeniSifre: 'baska-sifre-1' }, cihazA, { ip: '5.5.5.5' })).veri.hata === 'yanlis', 'kod ikinci kez kullanılamaz');
+  ok((await iste('/v1/giris', { eposta: ep, sifre: 'yeni-sifre-99' }, '6'.repeat(64), { ip: '5.5.5.5' })).veri.ok, 'yeni şifreyle giriş');
+  ok((await iste('/v1/durum', {})).veri.eposta === true, 'anahtar varken açık');
+  globalThis.fetch = eski; delete env.BREVO_API_KEY; delete env.EPOSTA_GONDEREN;
+}
+
 // hesap silme
 const silinecek = (await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.length;
 ok(silinecek === 3, 'silmeden önce 3 paylaşım');

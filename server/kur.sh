@@ -37,6 +37,12 @@ echo "› yayınlanıyor"
 $W deploy > /dev/null
 printf '%s' "$GEMINI_API_KEY" | $W secret put GEMINI_API_KEY > /dev/null
 printf '%s' "$UYGULAMA_ANAHTARI" | $W secret put UYGULAMA_ANAHTARI > /dev/null
+# isteğe bağlı: e-postayla şifre sıfırlama (Brevo). Yoksa özellik kapalı kalır.
+if [ -n "${BREVO_API_KEY:-}" ] && [ -n "${EPOSTA_GONDEREN:-}" ]; then
+  printf '%s' "$BREVO_API_KEY" | tr -d '[:space:]' | $W secret put BREVO_API_KEY > /dev/null
+  printf '%s' "$EPOSTA_GONDEREN" | tr -d '[:space:]' | $W secret put EPOSTA_GONDEREN > /dev/null
+  echo "  e-postayla şifre sıfırlama açık"
+fi
 
 URL="https://kombinle-api.${ALT}.workers.dev"
 echo "› sağlık denetimi: $URL"

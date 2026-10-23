@@ -132,6 +132,23 @@ public final class Kopru {
         ekran.ui.post(() -> { try { if (okuyucu != null) okuyucu.stop(); } catch (Throwable ignored) { } });
     }
 
+    /* ---------------- telefon bildirimleri ---------------- */
+
+    @JavascriptInterface
+    public void bildirimIzni() {
+        if (!guvenli) return;
+        ekran.ui.post(ekran::bildirimIzniIste);
+    }
+
+    /** Bildirime dokunarak açıldıysa bir kez "mesaj" ya da "bildirim" döner. */
+    @JavascriptInterface
+    public String acilacak() {
+        if (!guvenli) return "";
+        String a = ekran.acilacak;
+        ekran.acilacak = "";
+        return a == null ? "" : a;
+    }
+
     /* ---------------- konum ---------------- */
 
     @JavascriptInterface

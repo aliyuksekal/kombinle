@@ -4,4 +4,15 @@
     <string name="ses_yok">Speech recognition is not available on this phone</string>
     <string name="ses_soyle">Where are you going?</string>
     <string name="tarayici_yok">No app found to open the link</string>
+    <string name="kanal_adi">Follows, likes and messages</string>
+    <string name="bn_takip">%1$s started following you</string>
+    <string name="bn_begeni">%1$s liked your post</string>
+    <string name="bn_yorum">%1$s commented on your post</string>
+    <string name="bn_anket">%1$s voted on your poll</string>
+    <string name="bn_genel">New notification from %1$s</string>
+    <string name="bn_mesaj">%1$s sent you a message</string>
+    <string name="bn_sayi">You have %1$d new notifications</string>
+    <string name="bn_mesaj_sayi">You have %1$d unread messages</string>
+    <string name="bn_ac">Tap to see</string>
+    <string name="bn_mesaj_ac">Tap to read</string>
 </resources>

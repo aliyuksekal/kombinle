@@ -60,7 +60,14 @@ function ozHakYazi(oz) {
   if (S.pro || !UCRETLI[oz] || sahipMi()) return null;
   return h('p', { class: 'hak', text: t('jetonBilgi', UCRETLI[oz], jeton()) });
 }
-function jetonHapGuncelle() { var e = $('#jetonHap span'); if (e) e.textContent = sahipMi() ? t('sahipRozet') : S.pro ? t('rozet') : t('jetonSay', jeton()); }
+/* üst çubuk kalabalıkken (giriş yapılmış: mesaj, zil, profil) jeton hapı kısa yazılır */
+function jetonEtiket() {
+  var kisa = yzKurulu() && girisli();
+  if (sahipMi()) return kisa ? '👑' : t('sahipRozet');
+  if (S.pro) return kisa ? 'PRO' : t('rozet');
+  return kisa ? String(jeton()) : t('jetonSay', jeton());
+}
+function jetonHapGuncelle() { var e = $('#jetonHap span'); if (e) e.textContent = jetonEtiket(); }
 
 /* ---------- Üst bar ve alt menü ---------- */
 function ustBar() {
@@ -75,10 +82,10 @@ function ustBar() {
           S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi();
         } } });
         if (hb) avatarDoldur(b, benimAvatar(), hb.ad); else b.appendChild(ikon('kisi', 'k'));
-        return hb ? h('span', { class: 'g-ust-ikili' }, zilDugmesi(), b) : b;
+        return hb ? h('span', { class: 'g-ust-ikili' }, dmDugmesi(), zilDugmesi(), b) : b;
       })() : null,
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
-        ikon('zap', 'k dolu'), h('span', { text: sahipMi() ? t('sahipRozet') : S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
+        ikon('zap', 'k dolu'), h('span', { text: jetonEtiket() }))));
 }
 var SEKMELER = ['bugun', 'dolap', 'kesfet', 'ayarlar'];
 function sekmeyeGec(ad) { if (S.sekme !== ad) { S.sekme = ad; ciz(); window.scrollTo(0, 0); } }

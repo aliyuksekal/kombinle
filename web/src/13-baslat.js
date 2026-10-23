@@ -103,6 +103,9 @@ function baslat() {
   if (A.karsilandi) havaYukle(false);
   proDurumuDenetle();
   hesapTazele(true);
+  /* bildirime dokunarak açıldıysa ilgili sayfa */
+  try { var ac = YEREL && typeof YEREL.acilacak === 'function' ? String(YEREL.acilacak() || '') : ''; if (ac) acilacakSayfa(ac); } catch (e) { }
+  if (girisli()) setTimeout(bildirimIzniIste, 4000);
   setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
   bildirimZamanlayici();

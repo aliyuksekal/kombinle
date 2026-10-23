@@ -61,7 +61,9 @@ public class AnaEkran extends Activity {
     static final String SAYFA = KOK + "/assets/www/index.html";
 
     private static final int ISTEK_DOSYA = 11, ISTEK_SES = 12, ISTEK_KAYDET = 13;
-    private static final int IZIN_KONUM = 21, IZIN_KAMERA = 22, IZIN_KONUM_YEREL = 23;
+    private static final int IZIN_KONUM = 21, IZIN_KAMERA = 22, IZIN_KONUM_YEREL = 23, IZIN_BILDIRIM = 24;
+    /* bildirime dokunarak açıldıysa sayfanın açacağı yer (bildirim / mesaj) */
+    volatile String acilacak = "";
     private String konumIstek;
 
     WebView web;
@@ -209,6 +211,34 @@ public class AnaEkran extends Activity {
 
         if (b != null) web.restoreState(b);
         if (web.getUrl() == null) web.loadUrl(SAYFA);
+        acilacakAl(getIntent());
+        BildirimIscisi.planla(this);
+    }
+
+    private void acilacakAl(Intent i) {
+        String a = i != null ? i.getStringExtra("ac") : null;
+        acilacak = "mesaj".equals(a) || "bildirim".equals(a) ? a : "";
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        setIntent(i);
+        acilacakAl(i);
+        if (!acilacak.isEmpty() && web != null && kopru != null && kopru.guvenli) {
+            final String ne = acilacak;
+            acilacak = "";
+            try { web.evaluateJavascript("window.dispatchEvent(new CustomEvent('kbac',{detail:{ne:'" + ne + "'}}))", null); } catch (Throwable ignored) { }
+        }
+    }
+
+    /** Android 13+: bildirim izni bir kez sorulur; reddedilirse bir daha sorulmaz (ayarlardan açılabilir). */
+    void bildirimIzniIste() {
+        if (Build.VERSION.SDK_INT < 33 || BildirimIscisi.izinVar(this)) return;
+        android.content.SharedPreferences a = getSharedPreferences("bildirim", MODE_PRIVATE);
+        if (a.getBoolean("soruldu", false)) return;
+        a.edit().putBoolean("soruldu", true).apply();
+        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, IZIN_BILDIRIM);
     }
 
     String surum() {
@@ -515,12 +545,15 @@ public class AnaEkran extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        BildirimIscisi.onPlanda = false;
         if (web != null) web.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        BildirimIscisi.onPlanda = true;
+        BildirimIscisi.temizle(this);
         if (web != null) web.onResume();
     }
 

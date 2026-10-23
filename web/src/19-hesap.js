@@ -44,6 +44,7 @@ function hesapKaydet(v) {
   try { if (YEREL && typeof YEREL.oturumAyarla === 'function') YEREL.oturumAyarla(v.oturum); } catch (e) { return false; }
   hesapYaz(v.hesap);
   TOPLULUK.yuklendi = false;
+  setTimeout(bildirimIzniIste, 1500);
   // giriş öncesi seçilmiş profil resmi hesapta yoksa hesaba da yüklenir (denetimden geçmezse telefonda kalır)
   var yerelAv = avatarYerel();
   if (yerelAv && !(v.hesap.av > 0)) setTimeout(function () {
@@ -79,7 +80,8 @@ function hesapHataMetni(e) {
   var k = e && e.message;
   return ({ eposta: t('hEpostaHata'), sifre: t('hSifreKisa'), ad: t('hAdHata'), kayitli: t('hKayitli'), yanlis: t('hYanlis'), kilitli: t('hKilitli'),
     kota: t('hKota'), baglanti: t('baglantiYok'), oturum: t('hOturumBitti'), kadi: t('kadiGecersiz'), alinmis: t('kadiAlinmis'), ayrilmis: t('kadiAyrilmis'),
-    yetki: t('yetkiYok'), resim: t('avResimHata'), sinir: t('sinirDoldu'), yok: t('kisiBulunamadi'), kendi: t('kendinAtayamazsin') })[k] || t('tpHata');
+    yetki: t('yetkiYok'), resim: t('avResimHata'), sinir: t('sinirDoldu'), yok: t('kisiBulunamadi'), kendi: t('kendinAtayamazsin'),
+    eposta_yok: t('hEpostaYok'), eposta_hata: t('hEpostaHatasi') })[k] || t('tpHata');
 }
 
 /* Ayarlardaki "Hesap" kartının içeriği */
@@ -119,7 +121,32 @@ function hesapBolumu(yenile) {
   var btn = h('button', { class: 'btn ana', style: { width: '100%', 'margin-top': '6px' } }, mod === 'kayit' ? t('hKayit') : mod === 'sifre' ? t('hSifreSifirla') : t('hGiris'));
   if (mod === 'kayit') { kap.appendChild(ad.sar); kap.appendChild(kadiAlan.sar); }
   kap.appendChild(ep.sar);
-  if (mod === 'sifre') { kap.appendChild(h('p', { class: 'ayar-not', text: t('hSifreNot') })); kap.appendChild(kod.sar); kap.appendChild(yeni.sar); }
+  var epKod = alan(t('hEpostaKodu'), 'text', 'one-time-code', 6);
+  epKod.el.setAttribute('inputmode', 'numeric');
+  var yolE = mod === 'sifre' && S.epostaVar === true && S.sifreYol !== 'kurtarma';
+  if (mod === 'sifre' && S.epostaVar === undefined && yzKurulu()) {
+    S.epostaVar = null;
+    yzIste('/v1/durum', {}, 10000).then(function (v) { S.epostaVar = v.eposta === true; if (S.epostaVar && S.hesapMod === 'sifre') yenile(); }).catch(function () { S.epostaVar = false; });
+  }
+  if (mod === 'sifre' && S.epostaVar === true) {
+    var ys = h('div', { class: 'seg' });
+    [['eposta', 'hEpostaKod'], ['kurtarma', 'hKurtarmaYol']].forEach(function (x) {
+      ys.appendChild(h('button', { 'aria-pressed': (yolE ? 'eposta' : 'kurtarma') === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { S.sifreYol = x[0]; yenile(); } } }));
+    });
+    kap.appendChild(ys);
+  }
+  if (mod === 'sifre' && yolE) {
+    var kg = h('button', { class: 'btn ikincil', style: { width: '100%' } }, ikon('gonder', 'k'), t('hKodGonder'));
+    kg.addEventListener('click', function () {
+      var e0 = kirp(ep.el.value, 254).toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e0)) { tost(t('hEpostaHata')); ep.el.focus(); return; }
+      kg.disabled = true;
+      yzIste('/v1/kodgonder', { eposta: e0, dil: A.dil }, 25000).then(function () { tost(t('hKodGitti')); epKod.el.focus(); })
+        .catch(function (x) { tost(hesapHataMetni(x)); }).then(function () { setTimeout(function () { kg.disabled = false; }, 30000); });
+    });
+  }
+  if (mod === 'sifre' && yolE) { kap.appendChild(kg); kap.appendChild(epKod.sar); kap.appendChild(yeni.sar); }
+  else if (mod === 'sifre') { kap.appendChild(h('p', { class: 'ayar-not', text: t('hSifreNot') })); kap.appendChild(kod.sar); kap.appendChild(yeni.sar); }
   else kap.appendChild(sf.sar);
   if (mod === 'kayit') kap.appendChild(sf2.sar);
   kap.appendChild(btn);
@@ -143,7 +170,8 @@ function hesapBolumu(yenile) {
       yol = '/v1/kayit'; govde = { ad: a, eposta: e, sifre: sf.el.value, kadi: kd };
     } else if (mod === 'sifre') {
       if (yeni.el.value.length < 8) { tost(t('hSifreKisa')); yeni.el.focus(); return; }
-      yol = '/v1/sifre'; govde = { eposta: e, kurtarma: kirp(kod.el.value, 20), yeniSifre: yeni.el.value };
+      if (yolE) { yol = '/v1/kodsifirla'; govde = { eposta: e, kod: String(epKod.el.value || '').replace(/\D/g, '').slice(0, 6), yeniSifre: yeni.el.value }; }
+      else { yol = '/v1/sifre'; govde = { eposta: e, kurtarma: kirp(kod.el.value, 20), yeniSifre: yeni.el.value }; }
     } else {
       if (!sf.el.value) { sf.el.focus(); return; }
       yol = '/v1/giris'; govde = { eposta: e, sifre: sf.el.value };
@@ -297,6 +325,8 @@ function yoneticiPaneli() {
     h('div', { class: 'hesap-alan' }, h('span', { text: t('ayrilmisAd') }), adlar),
     h('label', { class: 'hesap-alan' }, h('span', { text: t('hedefKadi') }), h('div', { class: 'kadi-kutu' }, h('i', { text: '@' }), hedef)),
     h('div', { class: 'sarili', style: { gap: '10px' } }, ata, geri), sonuc,
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('ykBaslik') }),
+    h('button', { class: 'satir', on: { click: sikayetPaneli } }, ikon('bayrak'), h('span', { text: t('ykAc2') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('proHediye') }),
     h('button', { class: 'satir', on: { click: proHediyePaneli } }, ikon('tac'), h('span', { text: t('proHediyeAc') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('rkYonetim') }),

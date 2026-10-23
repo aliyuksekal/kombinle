@@ -5,4 +5,15 @@
     <string name="ses_yok">Bu telefonda ses tanıma bulunamadı</string>
     <string name="ses_soyle">Nereye gidiyorsun?</string>
     <string name="tarayici_yok">Bağlantıyı açacak uygulama bulunamadı</string>
+    <string name="kanal_adi">Takip, beğeni ve mesajlar</string>
+    <string name="bn_takip">%1$s seni takip etmeye başladı</string>
+    <string name="bn_begeni">%1$s paylaşımını beğendi</string>
+    <string name="bn_yorum">%1$s paylaşımına yorum yaptı</string>
+    <string name="bn_anket">%1$s anketine oy verdi</string>
+    <string name="bn_genel">%1$s ile ilgili yeni bir bildirimin var</string>
+    <string name="bn_mesaj">%1$s sana mesaj gönderdi</string>
+    <string name="bn_sayi">%1$d yeni bildirimin var</string>
+    <string name="bn_mesaj_sayi">%1$d okunmamış mesajın var</string>
+    <string name="bn_ac">Görmek için dokun</string>
+    <string name="bn_mesaj_ac">Okumak için dokun</string>
 </resources>

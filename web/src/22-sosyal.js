@@ -1,5 +1,5 @@
 /* ---------- Sosyal: profil sayfası, takipçi listeleri, bildirimler, kaydedilenler, etiketler ---------- */
-var BILDIRIM = { okunmamis: 0, son: 0, zamanlayici: null };
+var BILDIRIM = { okunmamis: 0, son: 0, zamanlayici: null, gorulen: 0, gorulenMesaj: 0 };
 function sayiKisa(n) {
   n = n | 0;
   if (n < 1000) return String(n);
@@ -22,8 +22,8 @@ function profilSayfasi(kod, on) {
   var sekmeler = h('div', { class: 'pr-sekmeler', role: 'tablist' });
   function sekmeCiz() {
     temizle(sekmeler);
-    [['paylasim', 'galeri', 'prPaylasimlar']].concat(benim ? [['kayitli', 'yerimi', 'prKaydedilenler']] : []).forEach(function (x) {
-      sekmeler.appendChild(h('button', { role: 'tab', 'aria-selected': sekme === x[0] ? 'true' : 'false', on: { click: function () { if (sekme !== x[0]) { sekme = x[0]; sekmeCiz(); izgaraYukle(); } } } }, ikon(x[1], 'k'), t(x[2])));
+    [['paylasim', 'galeri', 'prPaylasimlar'], ['takipci', 'kisi', 'prTakipcilerSekme'], ['takip', 'kisi', benim ? 'prTakipBenSekme' : 'prTakipSekme']].concat(benim ? [['kayitli', 'yerimi', 'prKaydedilenler']] : []).forEach(function (x) {
+      sekmeler.appendChild(h('button', { role: 'tab', 'aria-selected': sekme === x[0] ? 'true' : 'false', on: { click: function () { if (sekme !== x[0]) { sekme = x[0]; sekmeCiz(); izgaraYukle(); } } } }, ikon(x[1], 'k'), h('span', { text: t(x[2]) })));
     });
   }
   sekmeCiz();
@@ -37,8 +37,8 @@ function profilSayfasi(kod, on) {
     bas.appendChild(h('div', { class: 'pr-ust' }, av,
       h('div', { class: 'pr-sayilar' },
         sayi(p.paylasim, t('prPaylasim')),
-        sayi(p.takipci, t('prTakipci'), function () { takipListesiSayfasi(p.kod, 'takipci', p.takma); }),
-        sayi(p.takip, t('prTakip'), function () { takipListesiSayfasi(p.kod, 'takip', p.takma); }))));
+        sayi(p.takipci, t('prTakipci'), function () { sekmeSec('takipci'); }),
+        sayi(p.takip, t('prTakip'), function () { sekmeSec('takip'); }))));
     bas.appendChild(h('div', { class: 'pr-kim' }, h('b', { text: kirp(p.takma, 24) }), kadiEl(p.kadi)));
     if (p.bio) bas.appendChild(h('p', { class: 'pr-bio', text: kirp(p.bio, 150) }));
     var dugmeler = h('div', { class: 'pr-dugmeler' });
@@ -48,6 +48,7 @@ function profilSayfasi(kod, on) {
     } else {
       var tk = takipDugmesi(p.kod, !!p.takipte); tk.classList.add('buyuk');
       dugmeler.appendChild(tk);
+      dugmeler.appendChild(h('button', { class: 'btn ikincil pr-mesaj', on: { click: function () { dmSohbet({ kod: p.kod, takma: p.takma, kadi: p.kadi, av: p.av }); } } }, ikon('gonder', 'k'), t('dmMesaj')));
       dugmeler.appendChild(h('button', { class: 'btn ikincil ikon-kare', 'aria-label': t('secenekler'), on: { click: function () { profilMenusu(p, s); } } }, ikon('nokta')));
     }
     bas.appendChild(dugmeler);
@@ -61,7 +62,10 @@ function profilSayfasi(kod, on) {
       if (e && e.message === 'yok') { temizle(bas); bas.appendChild(h('p', { class: 'alt-yazi', text: t('prYok') })); }
     });
   }
+  function sekmeSec(ad) { if (sekme !== ad) { sekme = ad; sekmeCiz(); izgaraYukle(); } try { sekmeler.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { } }
   function izgaraYukle() {
+    if (sekme === 'takipci' || sekme === 'takip') { izgara.classList.add('liste-mod'); takipListesiDoldur(izgara, kod, sekme, function () { s.kapat(); }); return; }
+    izgara.classList.remove('liste-mod');
     temizle(izgara); izgara.appendChild(h('div', { class: 'g-yukleniyor pr-tam' }, h('span', { class: 'yukleniyor' })));
     var govde = sekme === 'kayitli' ? { sira: 'kayitli' } : benim ? { sira: 'benim' } : { sira: 'kisi', kisi: kod };
     govde.engelli = engelliler();
@@ -149,10 +153,17 @@ function bildirimSayi(hemen) {
   BILDIRIM.son = Date.now();
   yzIste('/v1/bildirim', { sadeceSay: true }, 12000).then(function (v) {
     BILDIRIM.okunmamis = sayiMi(v.okunmamis) ? Math.max(0, v.okunmamis | 0) : 0; rozetGuncelle();
+    DM.okunmamis = sayiMi(v.mesaj) ? Math.max(0, v.mesaj | 0) : 0; dmRozetGuncelle();
+    /* uygulama açıkken yeni takipçi / bildirim / mesaj kısa bir uyarıyla haber verilir (ilk açılışta eskiler için değil) */
+    var son = v.son && sayiMi(v.son.zaman) ? v.son : null, sm = v.sonMesaj && sayiMi(v.sonMesaj.zaman) ? v.sonMesaj : null;
+    if (BILDIRIM.gorulen && son && son.zaman > BILDIRIM.gorulen) tost(son.tur === 'takip' ? t('bnYeniTakip', kirp(son.takma, 24)) : t('bnYeni'));
+    if (BILDIRIM.gorulenMesaj && sm && sm.zaman > BILDIRIM.gorulenMesaj && !DM.acik) tost(t('bnYeniMesaj', kirp(sm.takma, 24)));
+    BILDIRIM.gorulen = Math.max(BILDIRIM.gorulen || 1, son ? son.zaman : 1);
+    BILDIRIM.gorulenMesaj = Math.max(BILDIRIM.gorulenMesaj || 1, sm ? sm.zaman : 1);
   }).catch(function () { });
 }
 function rozetGuncelle() {
-  $$('.g-zil').forEach(function (b) {
+  $$('.g-zil:not(.g-dm)').forEach(function (b) {
     var r = $('.zil-rozet', b);
     if (BILDIRIM.okunmamis > 0) { if (!r) { r = h('span', { class: 'zil-rozet' }); b.appendChild(r); } r.textContent = BILDIRIM.okunmamis > 99 ? '99+' : String(BILDIRIM.okunmamis); }
     else if (r) r.remove();
@@ -165,7 +176,7 @@ function zilDugmesi() {
 }
 function bildirimZamanlayici() {
   if (BILDIRIM.zamanlayici) return;
-  BILDIRIM.zamanlayici = setInterval(function () { if (!document.hidden) bildirimSayi(false); }, 60000);
+  BILDIRIM.zamanlayici = setInterval(function () { if (!document.hidden) bildirimSayi(true); }, 30000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) bildirimSayi(false); });
   setTimeout(function () { bildirimSayi(true); }, 1500);
 }
