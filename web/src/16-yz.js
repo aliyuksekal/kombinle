@@ -154,7 +154,7 @@ function analizSayfasi() {
     gov.appendChild(h('div', { class: 'g-analiz-giris' },
       h('span', { class: 'g-analiz-ikon' }, ikon('grafik')),
       h('p', { text: t('analizAlt') })));
-    var btn = h('button', { class: 'g-olustur', on: { click: basla } }, ikon('isilti', 'k'), t('analizBasla'), !S.pro ? h('small', { text: ' • ' + t('birJeton') }) : null);
+    var btn = h('button', { class: 'g-olustur', on: { click: basla } }, ikon('isilti', 'k'), t('analizBasla'), !S.pro && !sahipMi() ? h('small', { text: ' • ' + t('birJeton') }) : null);
     gov.appendChild(btn);
   }
   function basla() {

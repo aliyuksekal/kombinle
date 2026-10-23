@@ -103,6 +103,8 @@ async function yonlendir(istek, env, ctx) {
   if (govde.oturum && !hesap && ['cikis'].indexOf(islem[1]) < 0) throw new Hata('oturum', 401);
   const cihaz = hesap ? hesap.kimlik : dogrulama.cihaz;
   const hesapGerek = () => { if (!hesap) throw new Hata('giris', 401); };
+  // uygulama sahibi (@admin) deneme yaparken günlük sınıra takılmasın; yine de sınırsız değil (10 kat)
+  const kat = hesap && hesap.kadi === 'admin' ? 10 : 1;
   if (await env.DB.prepare('SELECT 1 FROM engelli WHERE cihaz = ?').bind(cihaz).first()) throw new Hata('engelli', 403);
 
   switch (islem[1]) {
@@ -115,15 +117,15 @@ async function yonlendir(istek, env, ctx) {
     case 'kadi': await kotaDus(env, ['kisi_ip:' + ip]); return json(await kadiBak(env, govde, hesap));
     case 'ata': hesapGerek(); await kotaDus(env, ['ata_cihaz:' + cihaz]); return json(await adAta(env, govde, hesap));
     case 'hesapsil': hesapGerek(); await kotaDus(env, ['giris_ip:' + ip]); return json(await hesapSil(env, govde, hesap));
-    case 'tani': await kotaDus(env, ['tani_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await tani(env, govde));
-    case 'kombin': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await kombin(env, govde));
-    case 'analiz': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await analiz(env, govde));
+    case 'tani': await kotaDus(env, ['tani_cihaz:' + cihaz, 'yz_ip:' + ip], kat); return json(await tani(env, govde));
+    case 'kombin': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip], kat); return json(await kombin(env, govde));
+    case 'analiz': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip], kat); return json(await analiz(env, govde));
     case 'paylas': hesapGerek(); await kotaDus(env, ['paylas_cihaz:' + cihaz, 'paylas_ip:' + ip]); govde.takma = hesap.ad; return json(await paylas(env, govde, cihaz));
     case 'akis': await kotaDus(env, ['akis_ip:' + ip]); return json(await akis(env, govde, cihaz));
     case 'oy': await kotaDus(env, ['oy_cihaz:' + cihaz, 'oy_ip:' + ip]); hesapGerek(); return json(await oyVer(env, govde, cihaz));
     case 'sikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); hesapGerek(); return json(await sikayet(env, govde, cihaz));
     case 'sil': hesapGerek(); return json(await sil(env, govde, cihaz));
-    case 'sohbet': await kotaDus(env, ['sohbet_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await sohbet(env, govde));
+    case 'sohbet': await kotaDus(env, ['sohbet_cihaz:' + cihaz, 'yz_ip:' + ip], kat); return json(await sohbet(env, govde));
     case 'yorumlar': await kotaDus(env, ['akis_ip:' + ip]); return json(await yorumlar(env, govde, cihaz));
     case 'yorum': hesapGerek(); await kotaDus(env, ['yorum_cihaz:' + cihaz, 'yz_ip:' + ip]); govde.takma = hesap.ad; return json(await yorumYaz(env, govde, cihaz));
     case 'yorumsil': hesapGerek(); return json(await yorumSil(env, govde, cihaz));
@@ -186,7 +188,7 @@ async function dogrula(istek, env) {
 
 function gunAnahtari(ms) { return new Date(ms).toISOString().slice(0, 10); }
 
-async function kotaDus(env, anahtarlar) {
+async function kotaDus(env, anahtarlar, kat) {
   const gun = gunAnahtari(Date.now());
   const sonuclar = await env.DB.batch(anahtarlar.map(a => env.DB.prepare(
     'INSERT INTO kota (anahtar, gun, sayi) VALUES (?, ?, 1) ON CONFLICT(anahtar, gun) DO UPDATE SET sayi = sayi + 1 RETURNING sayi'
@@ -194,7 +196,7 @@ async function kotaDus(env, anahtarlar) {
   sonuclar.forEach((s, i) => {
     const tur = anahtarlar[i].split(':')[0];
     const sayi = s.results && s.results[0] ? s.results[0].sayi : 0;
-    if (sayi > (KOTA[tur] || 0)) throw new Hata('kota', 429);
+    if (sayi > (KOTA[tur] || 0) * (kat || 1)) throw new Hata('kota', 429);
   });
 }
 

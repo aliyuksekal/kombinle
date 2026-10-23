@@ -133,7 +133,7 @@ DIL.uz = {
   ip_yagmur: "Suv o'tkazmaydigan sumka va yopiq poyabzal bilan yomg'irga tayyorsan.", ip_soguk: "Bo'yning isib turishi uchun sharf qo'sh.", ip_sicak: "Yengil shlyapa va quyosh ko'zoynagi salqin tutadi.", ip_canta: 'Neytral sumka obrazni yakunlaydi.',
   ip_esarp: "Yuzingni yorqinlashtirish uchun obrazdagi eng och tusdagi ro'molni tanla.", ip_genel: "Belni ta'kidlovchi kamar qomatni chiroyli ko'rsatadi.", karsilamaSlogan: 'Oʻz uslubingni yarat.',
   slotTek: "Ko'ylak / kombinezon", slotUst: 'Ust', slotAlt: 'Past', slotKat: 'Kardigan / blezer / jilet', slotDis: 'Ustki kiyim', slotAyk: 'Poyabzal', slotAks: 'Aksessuarlar',
-  nKendi: function (x) { return "O'z obrazing: " + x + '.'; }, rozet: "PRO a'zo", kendiYok: "Hali saqlangan obrazing yo'q, shuning uchun yangisini tuzdim.",
+  nKendi: function (x) { return "O'z obrazing: " + x + '.'; }, rozet: "PRO a'zo", sahipRozet: 'Egasi 👑', kendiYok: "Hali saqlangan obrazing yo'q, shuning uchun yangisini tuzdim.",
   sirala: 'Saralash', siraYeni: 'Yangi', siraCok: "Ko'p kiyilgan", siraAz: 'Kam kiyilgan', siraRenk: "Rang bo'yicha", arkaSil: "Fonni o'chirish", nelerGiyilir: 'Bu bilan nima kiyiladi?', yeniTur: 'Yangi tur',
   dinlen: 'Tavsiya qilma', dinlenAlt: "Yuvishda, tikuvchida yoki dam olmoqda", mevsimEtk: "Mavsum (bo'sh — hammasi)", marka: 'Brend', markaYer: 'Masalan: Zara', fiyat: 'Narxi', kumas: 'Mato', kumasYer: "Masalan: paxta, jun, zig'ir",
   arkaSiliniyor: "Fon o'chirilmoqda…", arkaSilindi: "Fon o'chirildi", arkaModel: "AI modeli yuklanmoqda; birozdan keyin urinib ko'r.", arkaOlmadi: "Fonni ajratib bo'lmadi. Tekis fondagi suratni sinab ko'r.",

@@ -140,7 +140,7 @@ function sohbetAc() {
     };
     if (!yzAcik()) { setTimeout(function () { bitir(yerelPrenses(m)); }, 450); return; }
     /* günlük sohbet hakkı: ücretsiz 10, PRO 40 mesaj */
-    var sinir = S.pro ? SOHBET_GUNLUK.pro : SOHBET_GUNLUK.ucretsiz;
+    var sinir = sahipMi() ? 400 : S.pro ? SOHBET_GUNLUK.pro : SOHBET_GUNLUK.ucretsiz;
     if (gunlukSayac('sohbet') >= sinir) {
       setTimeout(function () {
         var y = yerelPrenses(m);

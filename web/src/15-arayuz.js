@@ -41,24 +41,26 @@ function jetonBekle(ms) {
     })();
   });
 }
-function ozKalan(oz) { return !UCRETLI[oz] ? Infinity : S.pro ? Math.max(0, PRO_GUNLUK - gunlukSayac('pro')) : jeton(); }
+/* Uygulama sahibi (@admin hesabı) jeton harcamaz, mağazaya yönlendirilmez */
+function sahipMi() { try { var hb = hesapBilgi(); return !!(hb && hb.yonetici); } catch (e) { return false; } }
+function ozKalan(oz) { return !UCRETLI[oz] || sahipMi() ? Infinity : S.pro ? Math.max(0, PRO_GUNLUK - gunlukSayac('pro')) : jeton(); }
 function ozIzin(oz) {
-  if (!UCRETLI[oz]) return true;
+  if (!UCRETLI[oz] || sahipMi()) return true;
   if (S.pro) { if (gunlukSayac('pro') < PRO_GUNLUK) return true; tost(t('proGunlukDoldu', PRO_GUNLUK)); return false; }
   if (jeton() >= UCRETLI[oz]) return true;
   magazaSayfasi(oz); return false;
 }
 function ozKullan(oz) {
-  if (!UCRETLI[oz]) return;
+  if (!UCRETLI[oz] || sahipMi()) return;
   if (S.pro) { gunlukArtir('pro'); return; }
   LS.yaz('jeton', Math.max(0, jeton() - UCRETLI[oz]));
   jetonHapGuncelle();
 }
 function ozHakYazi(oz) {
-  if (S.pro || !UCRETLI[oz]) return null;
+  if (S.pro || !UCRETLI[oz] || sahipMi()) return null;
   return h('p', { class: 'hak', text: t('jetonBilgi', UCRETLI[oz], jeton()) });
 }
-function jetonHapGuncelle() { var e = $('#jetonHap span'); if (e) e.textContent = S.pro ? t('rozet') : t('jetonSay', jeton()); }
+function jetonHapGuncelle() { var e = $('#jetonHap span'); if (e) e.textContent = sahipMi() ? t('sahipRozet') : S.pro ? t('rozet') : t('jetonSay', jeton()); }
 
 /* ---------- Üst bar ve alt menü ---------- */
 function ustBar() {
@@ -76,7 +78,7 @@ function ustBar() {
         return hb ? h('span', { class: 'g-ust-ikili' }, zilDugmesi(), b) : b;
       })() : null,
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
-        ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
+        ikon('zap', 'k dolu'), h('span', { text: sahipMi() ? t('sahipRozet') : S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
 }
 var SEKMELER = ['bugun', 'dolap', 'kesfet', 'ayarlar'];
 function sekmeyeGec(ad) { if (S.sekme !== ad) { S.sekme = ad; ciz(); window.scrollTo(0, 0); } }
@@ -213,7 +215,7 @@ function istekKarti() {
   kart.appendChild(h('label', { class: 'g-etiket', text: t('detayEtiket') }));
   kart.appendChild(h('div', { class: 'g-girdi-kap' }, alan, mik));
   kart.appendChild(h('button', { class: 'g-olustur', id: 'onerBtn', on: { click: kombinIste } }, ikon('isilti', 'k vurgu'), t('kombinOner')));
-  if (!S.pro && S.parcalar.some(function (p) { return !p.ornek; })) kart.appendChild(h('p', { class: 'hak', text: t('jetonBilgi', 1, jeton()) }));
+  if (!S.pro && !sahipMi() && S.parcalar.some(function (p) { return !p.ornek; })) kart.appendChild(h('p', { class: 'hak', text: t('jetonBilgi', 1, jeton()) }));
   return kart;
 }
 function sonucCiz(alan) {
@@ -359,13 +361,13 @@ function dikeyKarosel(ic, sayfa) {
 function araclarBolumu() {
   var kutu = function (ik, baslik, alt, oz, fn) {
     return h('button', { class: 'g-arac', on: { click: fn } }, h('span', { class: 'g-arac-ikon' }, ikon(ik)), h('b', { text: baslik }),
-      h('small', { text: alt + (UCRETLI[oz] && !S.pro ? ' • ' + t('birJeton') : '') }));
+      h('small', { text: alt + (UCRETLI[oz] && !S.pro && !sahipMi() ? ' • ' + t('birJeton') : '') }));
   };
   return h('section', null,
     h('h2', { class: 'g-baslik2', text: t('dahaFazla') }),
     yzKurulu() ? h('button', { class: 'g-analiz-kart', on: { click: analizSayfasi } },
       h('span', { class: 'g-arac-ikon' }, ikon('grafik')),
-      h('div', null, h('b', { text: t('analizBaslik') }), h('small', { text: t('analizAlt') + (!S.pro ? ' • ' + t('birJeton') : '') })),
+      h('div', null, h('b', { text: t('analizBaslik') }), h('small', { text: t('analizAlt') + (!S.pro && !sahipMi() ? ' • ' + t('birJeton') : '') })),
       ikon('sag', 'k')) : null,
     h('div', { class: 'g-araclar' },
       kutu('kalp', t('sKombin'), t('kombinlerimKisa'), '', function () { S.sekme = 'kombin'; ciz(); window.scrollTo(0, 0); }),
