@@ -139,3 +139,8 @@ CREATE TABLE IF NOT EXISTS kisi_sikayet (
   zaman INTEGER NOT NULL,
   PRIMARY KEY (kod, cihaz)
 );
+CREATE TABLE IF NOT EXISTS pro_hediye (
+  hesap TEXT PRIMARY KEY,
+  bitis INTEGER NOT NULL,
+  zaman INTEGER NOT NULL
+);

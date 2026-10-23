@@ -38,6 +38,8 @@ let gecti = 0, kaldi = 0;
 function ok(k, m) { if (k) { gecti++; } else { kaldi++; console.log('  ✗ ' + m); } }
 const cihazA = 'a'.repeat(64), cihazB = 'b'.repeat(64), cihazC = 'c'.repeat(64), cihazD = 'd'.repeat(64);
 const OTURUM = {};
+// şikâyetin sayılması için hesaplar 2 günden eski olmalı: sınamada hesaplar yaşlandırılır
+function yaslandir() { db.exec('UPDATE hesap SET zaman = zaman - 3 * 86400000'); }
 async function iste(yol, govde, cihaz = cihazA, bozuk = {}) {
   if (OTURUM[cihaz] && !('oturum' in govde) && !bozuk.oturumsuz) govde = Object.assign({}, govde, { oturum: OTURUM[cihaz] });
   const metin = JSON.stringify(govde);
@@ -168,6 +170,7 @@ r = await iste('/v1/akis', { sira: 'yeni', engelli: [yazar] }, cihazC);
 ok(r.veri.liste.length === 0, 'engellenen kullanıcının paylaşımı görünmüyor');
 
 // şikâyet → gizleme
+yaslandir();
 await iste('/v1/sikayet', { id, neden: 'uygunsuz' }, cihazB);
 await iste('/v1/sikayet', { id, neden: 'uygunsuz' }, cihazB);
 await iste('/v1/sikayet', { id, neden: 'spam' }, cihazC);
@@ -222,6 +225,7 @@ ok((await iste('/v1/yorum', { id: pub, metin: 'ara beni 05321234567', takma: 'Ay
 let yl = (await iste('/v1/yorumlar', { id: pub }, E)).veri.liste;
 ok(yl.length === 1 && yl[0].silebilir === true && yl[0].benim === false, 'paylaşım sahibi yorumu silebilir');
 ok((await iste('/v1/akis', { sira: 'benim' }, E)).veri.liste.find(x => x.id === pub).yorum === 1, 'yorum sayısı');
+yaslandir();
 await iste('/v1/ysikayet', { id: yl[0].id }, G2);
 await iste('/v1/ysikayet', { id: yl[0].id }, cihazB);
 await iste('/v1/ysikayet', { id: yl[0].id }, cihazC);
@@ -350,9 +354,11 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   yzYanit = () => { throw new Error('x'); };
   ok((await iste('/v1/avatar', { resim: jpeg }, cihazD)).veri.ok === true, 'denetim hizmeti çökse de profil resmi kabul edildi');
   yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  yaslandir();
   for (const c of [cihazA, cihazB, cihazC, '7'.repeat(64)]) await iste('/v1/ksikayet', { kod: dHesap.kod, neden: 'resim' }, c);
   ok((await iste('/v1/profilgor', { kod: dHesap.kod }, cihazB)).veri.profil.av > 0, '4 şikâyette resim duruyor');
   OTURUM['8'.repeat(64)] = (await iste('/v1/kayit', { ad: 'Fatma', eposta: 'fatma@ornek.com', sifre: 'sifre-fatma-1' }, '8'.repeat(64))).veri.oturum;
+  yaslandir();
   await iste('/v1/ksikayet', { kod: dHesap.kod, neden: 'resim' }, '8'.repeat(64));
   ok((await iste('/v1/profilgor', { kod: dHesap.kod }, cihazB)).veri.profil.av === 0, '5 şikâyette profil resmi kaldırıldı');
 }
@@ -364,6 +370,60 @@ ok((await iste('/v1/hesapsil', { sifre: 'yanlis' }, E)).durum === 401, 'hesap si
 ok((await iste('/v1/hesapsil', { sifre: 'sifre-Elif-123' }, E)).veri.ok, 'hesap silindi');
 ok(db.prepare("SELECT COUNT(*) AS n FROM paylasim WHERE aciklama IN ('herkese','takipçilere','gizli')").get().n === 0, 'hesabın paylaşımları da silindi');
 ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapandı');
+
+// PRO hediyesi: yalnız @admin (cihazC) verir; kullanıcı adı ya da e-postayla
+{
+  const ECE = '7'.repeat(64);
+  ok((await iste('/v1/proata', { hedef: 'user', gun: 30 }, cihazB)).durum === 403, 'yönetici olmayan PRO veremez');
+  ok((await iste('/v1/prolar', {}, cihazB)).durum === 403, 'yönetici olmayan PRO listesini göremez');
+  ok((await iste('/v1/ben', {}, ECE)).veri.hesap.pro === 0, 'başta PRO yok');
+  let r = await iste('/v1/proata', { hedef: 'ECE@ornek.com', gun: 30 }, cihazC);
+  ok(r.veri.ok && r.veri.pro > Date.now() + 29 * 86400000, 'e-postayla 30 gün PRO verildi');
+  ok((await iste('/v1/ben', {}, ECE)).veri.hesap.pro === r.veri.pro, 'hesap PRO bitiş tarihini görüyor');
+  r = await iste('/v1/proata', { hedef: 'ece@ornek.com', gun: 0 }, cihazC);
+  ok(r.veri.ok && r.veri.pro === -1, 'süresiz PRO verildi');
+  const gir = await iste('/v1/giris', { eposta: 'ece@ornek.com', sifre: 'sifre-ece-123' }, '9'.repeat(64));
+  ok(gir.veri.hesap && gir.veri.hesap.pro === -1, 'girişte PRO bilgisi geliyor');
+  r = await iste('/v1/proata', { hedef: '@user', gun: 7 }, cihazC);
+  ok(r.veri.ok && r.veri.kadi === 'user', 'kullanıcı adıyla PRO verildi');
+  const l = await iste('/v1/prolar', {}, cihazC);
+  ok(l.veri.liste.length === 2 && l.veri.liste.some(x => x.kadi === 'user') && l.veri.liste.some(x => x.eposta === 'ec***@ornek.com' && x.pro === -1), 'PRO listesi, e-postalar gizli');
+  ok((await iste('/v1/proata', { hedef: 'olmayan.kisi', gun: 7 }, cihazC)).durum === 404, 'olmayan kişiye PRO verilemez');
+  ok((await iste('/v1/proata', { hedef: 'ece@ornek.com', geriAl: true }, cihazC)).veri.pro === 0, 'PRO geri alındı');
+  ok((await iste('/v1/ben', {}, ECE)).veri.hesap.pro === 0, 'geri alınan PRO hesapta yok');
+  db.exec("INSERT INTO pro_hediye (hesap, bitis, zaman) SELECT id, 1000, 1 FROM hesap WHERE eposta = 'ece@ornek.com'");
+  ok((await iste('/v1/ben', {}, ECE)).veri.hesap.pro === 0, 'süresi biten PRO geçersiz');
+}
+
+// yorum denetimi ve sohbet: kullanıcı metni yapay zekâya gerçekten gidiyor
+{
+  yzIstekleri = [];
+  const pid = (await iste('/v1/akis', {}, cihazB)).veri.liste.find(x => !x.benim).id;
+  await iste('/v1/yorum', { id: pid, metin: 'çok yakışmış-XYZ' }, cihazB);
+  ok(yzIstekleri.some(x => JSON.stringify(x.g).includes('çok yakışmış-XYZ')), 'yorum metni denetime gitti');
+  yzIstekleri = [];
+  yzYanit = () => ({ yanit: 'tamam', parcalar: [], oneriler: [] });
+  await iste('/v1/sohbet', { mesaj: 'mavi ceketle ne giyerim-QWE', dil: 'tr' }, cihazB);
+  ok(yzIstekleri.some(x => JSON.stringify(x.g).includes('mavi ceketle ne giyerim-QWE')), 'sohbet mesajı yapay zekâya gitti');
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+}
+
+// yeni açılmış hesabın şikâyeti sayılmaz (toplu sahte hesap saldırısı)
+{
+  const yeniler = ['e1', 'e2', 'e3'].map(x => x.repeat(32));
+  for (const [i, c] of yeniler.entries()) OTURUM[c] = (await iste('/v1/kayit', { ad: 'Yeni' + i, eposta: 'yeni' + i + '@ornek.com', sifre: 'sifre-yeni-123' }, c)).veri.oturum;
+  const hedef = (await iste('/v1/akis', {}, cihazB)).veri.liste.find(x => !x.benim && !x.gizli);
+  for (const c of yeniler) await iste('/v1/sikayet', { id: hedef.id, neden: 'spam' }, c);
+  ok(!db.prepare('SELECT gizli FROM paylasim WHERE id = ?').get(hedef.id).gizli, 'yeni hesapların şikâyetiyle paylaşım gizlenmedi');
+}
+
+// genel günlük yapay zekâ bütçesi
+{
+  env.GUNLUK_YZ = '1';
+  const r = await iste('/v1/sohbet', { mesaj: 'merhaba', dil: 'tr' }, cihazD);
+  ok(r.durum === 503 && r.veri.hata === 'yz_yogun', 'genel bütçe dolunca yapay zekâ durdu');
+  delete env.GUNLUK_YZ;
+}
 
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });

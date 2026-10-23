@@ -64,8 +64,8 @@ function ayarIcerik(gov) {
     /* pro ve destek */
     gov.appendChild(kart('pro', 'zap', t('proBaslik'), S.pro ? t('proAcik') : t('jetonVar', jeton()),
       h('div', { class: 'ayar-grup' },
-        satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? t('proAcikAlt', PRO_GUNLUK) : t('jetonVar', jeton()), magazaSayfasi),
-        S.pro ? satir('ayar', t('aboneligiYonet'), null, function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } }) : null,
+        satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? (A.pro ? t('proAcikAlt', PRO_GUNLUK) : t('proHediyeAlt', hesapBilgi() && hesapBilgi().pro === -1 ? t('proSuresiz') : t('proBitis', tarihYaz(hesapBilgi() ? hesapBilgi().pro : 0)))) : t('jetonVar', jeton()), magazaSayfasi),
+        A.pro ? satir('ayar', t('aboneligiYonet'), null, function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } }) : null,
         satir('yenile', t('geriYukle'), null, satinAlimlariGeriYukle),
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
@@ -112,7 +112,8 @@ function proDurumuDenetle() {
     if (!var_) return;
     var sahip = false;
     try { sahip = !!odeme().owned(PRO_URUN); } catch (e) { }
-    if (sahip !== S.pro || A.pro !== sahip) { S.pro = sahip; A.pro = sahip; ayarKaydet(); ciz(); }
+    if (A.pro !== sahip) { A.pro = sahip; ayarKaydet(); }
+    if (proHesapla()) ciz();
   });
 }
 function satinAlimlariGeriYukle() {
@@ -120,7 +121,7 @@ function satinAlimlariGeriYukle() {
   zamanAsimi(odeme().restore(), 20000).then(function (l) {
     var sahip = Array.isArray(l) && l.indexOf(PRO_URUN) >= 0;
     try { sahip = sahip || !!odeme().owned(PRO_URUN); } catch (e) { }
-    S.pro = sahip; A.pro = sahip; ayarKaydet();
+    A.pro = sahip; ayarKaydet(); proHesapla();
     tost(sahip ? t('proGeriGeldi') : t('proBulunamadi')); ciz();
   }).catch(function () { tost(t('odemeTamamlanmadi')); });
 }

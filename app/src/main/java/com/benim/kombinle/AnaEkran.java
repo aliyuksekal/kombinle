@@ -89,6 +89,9 @@ public class AnaEkran extends Activity {
         kok.setBackgroundColor(ACILIS_RENGI);   // açılış animasyonuyla aynı mor: beyaz parlama olmaz
         web = new WebView(this);
         web.setBackgroundColor(Color.TRANSPARENT);
+        // uygulama gibi dursun: sayfanın kenarında kaydırma çizgisi görünmez
+        web.setVerticalScrollBarEnabled(false);
+        web.setHorizontalScrollBarEnabled(false);
         kok.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(kok);
         cubuklariAyarla(true);
@@ -458,7 +461,7 @@ public class AnaEkran extends Activity {
 
     /* ---------------- görünüm ---------------- */
 
-    static final int ACILIS_RENGI = 0xFF1B0C40;
+    static final int ACILIS_RENGI = 0xFF0C0720;   // açılış animasyonunun zemin rengiyle birebir aynı
 
     /** Temanın zemin rengi (sayfa bildirir): kenar boşlukları ve kaydırma taşmasında görünür. */
     void zeminRengi(int renk) {

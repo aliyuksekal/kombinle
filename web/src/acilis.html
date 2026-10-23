@@ -4,6 +4,7 @@
 #acilis{position:fixed;inset:0;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#0c0720;
   transition:opacity .6s ease .1s,visibility .7s;contain:strict;--e:cubic-bezier(.22,1,.36,1)}
 #acilis.bitti{opacity:0;visibility:hidden;pointer-events:none}
+html:has(#acilis:not(.bitti)),html:has(#acilis:not(.bitti)) body{overflow:hidden}
 #acilis.bitti .orta{transform:scale(1.06);opacity:0;filter:blur(6px);transition:transform .6s var(--e),opacity .45s ease,filter .5s ease}
 #acilis .au{position:absolute;border-radius:50%;filter:blur(60px);opacity:0;animation:akAuGir 1.6s ease forwards,akAuAk 14s ease-in-out infinite alternate;will-change:transform}
 #acilis .au.a1{width:78vmax;height:78vmax;left:-30vmax;top:-34vmax;background:radial-gradient(circle,#6d28d9 0%,rgba(109,40,217,0) 65%)}

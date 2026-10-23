@@ -7,7 +7,24 @@ function hesapBilgi() {
   if (!h || typeof h !== 'object' || typeof h.ad !== 'string' || typeof h.eposta !== 'string') return null;
   try { if (YEREL && typeof YEREL.oturumVar === 'function' && !YEREL.oturumVar()) { LS.sil('hesap'); return null; } } catch (e) { }
   return { ad: kirp(h.ad, 24), eposta: kirp(h.eposta, 254), kod: typeof h.kod === 'string' && /^[a-f0-9]{12}$/.test(h.kod) ? h.kod : '',
-    kadi: typeof h.kadi === 'string' && kadiGecerli(h.kadi) ? h.kadi : '', bio: typeof h.bio === 'string' ? kirp(h.bio, 150) : '', yonetici: h.yonetici === true && h.kadi === 'admin', av: sayiMi(h.av) ? h.av : 0 };
+    kadi: typeof h.kadi === 'string' && kadiGecerli(h.kadi) ? h.kadi : '', bio: typeof h.bio === 'string' ? kirp(h.bio, 150) : '', yonetici: h.yonetici === true && h.kadi === 'admin', av: sayiMi(h.av) ? h.av : 0, pro: sayiMi(h.pro) ? h.pro : 0 };
+}
+/* @admin'in hediye ettiği PRO: -1 süresiz, yoksa bitiş anı (ms) */
+function hediyePro() { var hb = hesapBilgi(); return !!hb && (hb.pro === -1 || hb.pro > Date.now()); }
+function proHesapla() { var once = S.pro; S.pro = !!A.pro || hediyePro(); return once !== S.pro; }
+/* Hesap bilgisi (PRO hediyesi, kullanıcı adı) sunucudan tazelenir: açılışta ve uygulamaya dönünce en çok 10 dakikada bir */
+var hesapTazelendi = 0;
+function hesapTazele(zorla) {
+  if (!girisli() || !yzKurulu() || (!zorla && Date.now() - hesapTazelendi < 10 * 60000)) return;
+  hesapTazelendi = Date.now();
+  var once = hediyePro();
+  yzIste('/v1/ben', {}, 15000).then(function (v) {
+    if (!v || !v.hesap || typeof v.hesap.ad !== 'string') return;
+    hesapYaz(v.hesap);
+    var simdi = hediyePro();
+    if (simdi && !once) tost(t('proHediyeGeldi'));
+    if (simdi !== once) ciz();
+  }).catch(function () { });
 }
 /* Kullanıcı adı kuralları sunucuyla aynı: 3–20 karakter, harfle başlar, küçük harf/rakam/nokta/alt çizgi */
 var KADI_TR = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'â': 'a', 'î': 'i', 'û': 'u' };
@@ -39,13 +56,16 @@ function hesapKaydet(v) {
 }
 function hesapYaz(x) {
   LS.yaz('hesap', { ad: kirp(x.ad, 24), eposta: kirp(x.eposta, 254), kod: typeof x.kod === 'string' ? x.kod : '',
-    kadi: typeof x.kadi === 'string' ? x.kadi : '', bio: typeof x.bio === 'string' ? kirp(x.bio, 150) : '', yonetici: x.yonetici === true, av: sayiMi(x.av) ? x.av : 0 });
+    kadi: typeof x.kadi === 'string' ? x.kadi : '', bio: typeof x.bio === 'string' ? kirp(x.bio, 150) : '', yonetici: x.yonetici === true, av: sayiMi(x.av) ? x.av : 0,
+    pro: sayiMi(x.pro) && (x.pro === -1 || x.pro > 0) ? x.pro : 0 });
   LS.yaz('takma', kirp(x.ad, 24));
+  proHesapla();
 }
 function hesapTemizle() {
   try { if (YEREL && typeof YEREL.oturumAyarla === 'function') YEREL.oturumAyarla(''); } catch (e) { }
   LS.sil('hesap'); LS.sil('avatar');
   TOPLULUK.yuklendi = false;
+  proHesapla();
 }
 /* Topluluk eylemleri hesap ister */
 function girisIste() {
@@ -277,6 +297,8 @@ function yoneticiPaneli() {
     h('div', { class: 'hesap-alan' }, h('span', { text: t('ayrilmisAd') }), adlar),
     h('label', { class: 'hesap-alan' }, h('span', { text: t('hedefKadi') }), h('div', { class: 'kadi-kutu' }, h('i', { text: '@' }), hedef)),
     h('div', { class: 'sarili', style: { gap: '10px' } }, ata, geri), sonuc,
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('proHediye') }),
+    h('button', { class: 'satir', on: { click: proHediyePaneli } }, ikon('tac'), h('span', { text: t('proHediyeAc') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('rkYonetim') }),
     h('button', { class: 'satir', on: { click: reklamYonetimi } }, ikon('grafik'), h('span', { text: t('rkYonetimAc') }))) });
   var calis = function (govde, btn) {
@@ -292,4 +314,61 @@ function yoneticiPaneli() {
     onayIste(t('adVerSor', secili, k), function () { calis({ ad: secili, hedef: k }, ata); });
   });
   geri.addEventListener('click', function () { onayIste(t('adGeriSor', secili), function () { calis({ ad: secili, geriAl: true }, geri); }); });
+}
+
+/* @admin: deneme yapacak kişilere PRO hediye eder ya da geri alır (kullanıcı adı ya da e-postayla) */
+function proHediyePaneli() {
+  var hb = hesapBilgi(); if (!hb || !hb.yonetici) return;
+  var gun = 30;
+  var sureler = h('div', { class: 'cipler' });
+  [[7, 'gun7'], [30, 'gun30'], [365, 'gun365'], [0, 'suresiz']].forEach(function (x) {
+    sureler.appendChild(h('button', { class: 'cip', 'data-gun': String(x[0]), 'aria-pressed': x[0] === gun ? 'true' : 'false', text: t(x[1]), on: { click: function () {
+      gun = x[0]; $$('button', sureler).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-gun') === String(gun) ? 'true' : 'false'); });
+    } } }));
+  });
+  var hedef = h('input', { class: 'metin', type: 'text', maxlength: '254', autocapitalize: 'none', autocomplete: 'off', spellcheck: 'false', placeholder: t('proHedefYer'), 'aria-label': t('proHedef') });
+  var ver = h('button', { class: 'btn ana', style: { width: '100%' } }, ikon('tac', 'k'), t('proVer'));
+  var sonuc = h('p', { class: 'ayar-not yonetici-sonuc', 'aria-live': 'polite' });
+  var liste = h('div', { class: 'ayar-grup' });
+  var bitisYazi = function (pro) { return pro === -1 ? t('proSuresiz') : t('proBitis', tarihYaz(pro)); };
+  var hedefGecerli = function (v) { return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/.test(v) || kadiGecerli(kadiNormal(v)); };
+  var hataYaz = function (e) { tost(e && e.message === 'yok' ? t('proYok') : hesapHataMetni(e)); };
+  function yukle() {
+    temizle(liste); liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' } }, h('span', { class: 'yukleniyor' })));
+    yzIste('/v1/prolar', {}, 20000).then(function (v) {
+      temizle(liste);
+      var l = Array.isArray(v.liste) ? v.liste : [];
+      if (!l.length) { liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: t('proListeBos') })); return; }
+      l.slice(0, 200).forEach(function (x) {
+        if (!x || typeof x.ad !== 'string' || typeof x.hedef !== 'string') return;
+        var geri = h('button', { class: 'btn tehlike-cizgi kucuk' }, t('proGeriAl'));
+        geri.addEventListener('click', function () {
+          onayIste(t('proGeriSor', kirp(x.ad, 24)), function () {
+            geri.disabled = true;
+            yzIste('/v1/proata', { hedef: x.hedef, geriAl: true }, 20000).then(function () { tost(t('proGeriAlindi', kirp(x.ad, 24))); yukle(); })
+              .catch(function (e) { geri.disabled = false; hataYaz(e); });
+          });
+        });
+        liste.appendChild(h('div', { class: 'satir', style: { cursor: 'default' } },
+          h('span', { class: 'sol' }, ikon('tac'), h('div', null, kirp(x.ad, 24) + (x.kadi ? ' · @' + kirp(x.kadi, 20) : ''),
+            h('small', { text: (x.kadi ? '' : kirp(x.eposta || '', 60) + ' · ') + bitisYazi(x.pro) }))), geri));
+      });
+    }).catch(function (e) { temizle(liste); liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) })); });
+  }
+  ver.addEventListener('click', function () {
+    var v = kirp(hedef.value.trim(), 254);
+    if (!hedefGecerli(v)) { tost(t('proHedefGecersiz')); hedef.focus(); return; }
+    ver.disabled = true;
+    yzIste('/v1/proata', { hedef: v, gun: gun }, 20000).then(function (r) {
+      sonuc.textContent = t('proVerildi', kirp(r.ad || '', 24), bitisYazi(r.pro));
+      tost(sonuc.textContent); hedef.value = ''; yukle();
+    }).catch(hataYaz).then(function () { ver.disabled = false; });
+  });
+  sayfaAc({ baslik: t('proHediye'), icerik: h('div', { class: 'profil-duzen' },
+    h('p', { class: 'alt-yazi', text: t('proHediyeMetin') }),
+    h('label', { class: 'hesap-alan' }, h('span', { text: t('proHedef') }), hedef),
+    h('div', { class: 'hesap-alan' }, h('span', { text: t('proSure') }), sureler),
+    ver, sonuc,
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('proListe') }), liste) });
+  yukle();
 }

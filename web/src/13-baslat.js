@@ -75,7 +75,7 @@ window.addEventListener('unhandledrejection', function (e) { hataYakala(e.reason
 /* ---------- Başlat ---------- */
 function baslat() {
   ayarYukle();
-  S.pro = A.pro;
+  S.pro = !!A.pro || hediyePro();
   temaUygula(temaSecimi());
   try {
     var mq = window.matchMedia && matchMedia('(prefers-color-scheme: dark)');
@@ -86,6 +86,7 @@ function baslat() {
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') return;
     var jn = jetonTeslimAl(); if (jn > 0) { tost(t('jetonYuklendi', jn)); if (A.karsilandi) ciz(); }
+    hesapTazele(false);
     if (!A.karsilandi) return;
     if (S.hava.durum === 'konumYok' && S.hava.kapali) havaYukle(true);
     else if (S.hava.kayit && Date.now() - S.hava.kayit.alindi > 60 * 60000) havaYukle(false);
@@ -101,6 +102,7 @@ function baslat() {
   }).catch(function (e) { hataYakala(e); ciz(); });
   if (A.karsilandi) havaYukle(false);
   proDurumuDenetle();
+  hesapTazele(true);
   setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
   bildirimZamanlayici();
