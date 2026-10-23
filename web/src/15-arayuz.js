@@ -3,15 +3,21 @@
    ========================================================= */
 
 /* ---------- Jeton ekonomisi ----------
-   Yeni kullanıcı 15 jetonla başlar. Kombin önerisi ve yapay zekâ işleri 1 jeton.
-   PRO sınırsızdır. Jeton paketleri Google Play'den satın alınır. */
+   Yeni kullanıcı 15 jetonla başlar; her yapay zekâ işi 1 jeton.
+   Fiyatlar bir yapay zekâ işinin maliyeti (~0,35 ₺), KDV (%20) ve mağaza payı (%15) hesaba katılarak belirlendi.
+   PRO aylık abonedir; "sınırsız" adil kullanımla: günde 25 yapay zekâ işi ve 40 sohbet mesajı. */
 var BASLANGIC_JETON = 15;
 var JETON_PAKETLERI = [
-  { id: 'jeton_100', adet: 100, fiyat: '39,99 ₺' },
-  { id: 'jeton_300', adet: 300, fiyat: '89,99 ₺' },
-  { id: 'jeton_500', adet: 500, fiyat: '129,99 ₺', populer: true }
+  { id: 'jeton_50', adet: 50, fiyat: '49,99 ₺' },
+  { id: 'jeton_150', adet: 150, fiyat: '129,99 ₺', avantaj: 13 },
+  { id: 'jeton_400', adet: 400, fiyat: '299,99 ₺', avantaj: 25, populer: true }
 ];
+var PRO_FIYAT = '449,99 ₺';
+var PRO_GUNLUK = 25, SOHBET_GUNLUK = { ucretsiz: 10, pro: 40 };
 var UCRETLI = { kombin: 1, arka: 1, bavul: 1, eslestir: 1, ilham: 1, analiz: 1 };
+function sayacGunu() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function gunlukSayac(ad) { var x = LS.al('gs_' + ad, null); return x && x.g === sayacGunu() && sayiMi(x.n) ? x.n : 0; }
+function gunlukArtir(ad) { LS.yaz('gs_' + ad, { g: sayacGunu(), n: gunlukSayac(ad) + 1 }); }
 function jeton() {
   var j = LS.al('jeton', null);
   if (j === null) { LS.yaz('jeton', BASLANGIC_JETON); return BASLANGIC_JETON; }
@@ -35,13 +41,16 @@ function jetonBekle(ms) {
     })();
   });
 }
-function ozKalan(oz) { return S.pro || !UCRETLI[oz] ? Infinity : jeton(); }
+function ozKalan(oz) { return !UCRETLI[oz] ? Infinity : S.pro ? Math.max(0, PRO_GUNLUK - gunlukSayac('pro')) : jeton(); }
 function ozIzin(oz) {
-  if (S.pro || !UCRETLI[oz] || jeton() >= UCRETLI[oz]) return true;
+  if (!UCRETLI[oz]) return true;
+  if (S.pro) { if (gunlukSayac('pro') < PRO_GUNLUK) return true; tost(t('proGunlukDoldu', PRO_GUNLUK)); return false; }
+  if (jeton() >= UCRETLI[oz]) return true;
   magazaSayfasi(oz); return false;
 }
 function ozKullan(oz) {
-  if (S.pro || !UCRETLI[oz]) return;
+  if (!UCRETLI[oz]) return;
+  if (S.pro) { gunlukArtir('pro'); return; }
   LS.yaz('jeton', Math.max(0, jeton() - UCRETLI[oz]));
   jetonHapGuncelle();
 }
@@ -57,6 +66,11 @@ function ustBar() {
     h('div', { class: 'g-marka' }, h('img', { class: 'g-logo', src: LOGO_ROZET, alt: '' }),
       h('div', null, h('h1', { text: 'Kombinle' }), h('span', { text: t('altBaslik') }))),
     h('div', { class: 'g-ust-sag' },
+      yzKurulu() ? (function () {
+        var hb = hesapBilgi();
+        return h('button', { class: 'g-hesap' + (hb ? ' girisli' : ''), 'aria-label': hb ? hb.ad : t('hGiris'), on: { click: function () { S.ayarAcik = S.ayarAcik || {}; S.ayarAcik.hesap = true; ayarlarSayfasi(); } } },
+          hb ? (hb.ad.charAt(0) || '?').toLocaleUpperCase('tr') : ikon('kisi', 'k'));
+      })() : null,
       h('button', { class: 'g-jeton', id: 'jetonHap', 'aria-label': t('magazaBaslik'), on: { click: function () { magazaSayfasi(); } } },
         ikon('zap', 'k dolu'), h('span', { text: S.pro ? t('rozet') : t('jetonSay', jeton()) }))));
 }
@@ -138,7 +152,7 @@ function havaKarti() {
   }
   k.appendChild(alt);
   if (o.elle) k.appendChild(elleHavaSecici());
-  if (!o.elle) k.appendChild(h('span', { class: 'g-kaynak', text: (o.eski ? t('eskiVeri') + ' ' : '') + t('kaynakMet') }));
+  if (!o.elle && o.eski) k.appendChild(h('span', { class: 'g-kaynak', text: t('eskiVeri') }));
   return k;
 }
 /* Akıllı seçim: yazılan/söylenen plan bir ortam anlatıyorsa (barınak, düğün…) o ortam seçilir.
@@ -211,12 +225,13 @@ function sonucCiz(alan) {
   kart.appendChild(h('div', { class: 'g-ipucu' },
     h('div', null, ikon('ampul', 'k'), t('stilistIpucu')), h('p', { text: yz && yz.ipucu ? yz.ipucu : stilistIpucu(k, s.c) })));
   if (yz) kart.appendChild(h('p', { class: 'ai-not', text: t('aiNot') }));
-  var izgara = h('div', { class: 'g-parcalar' });
-  kombinParcalari(k).forEach(function (p) {
+  var parcalar = kombinParcalari(k);
+  var izgara = h('div', { class: 'g-parcalar' + (parcalar.length > 2 ? ' karosel-ic' : '') });
+  parcalar.forEach(function (p) {
     izgara.appendChild(h('button', { class: 'g-parca' + (p.kesik ? ' kesik' : ''), 'aria-label': parcaAd(p), on: { click: function () { parcaDuzenle(p, null); } } },
       resimEl(p.id, false, null, parcaAd(p)), h('b', { text: p.ad || turAd(p.tur) }), h('span', { text: renkAd(p.renk) })));
   });
-  kart.appendChild(izgara);
+  kart.appendChild(parcalar.length > 2 ? dikeyKarosel(izgara, Math.ceil(parcalar.length / 2)) : izgara);
   var anl = h('div', { class: 'anladim' });
   var pc = s.cumle.pencere;
   if (pc.bas !== 8 || pc.son !== 21) anl.appendChild(h('span', { class: 'etiket' }, ikon('takvim'), (pc.bas < 10 ? '0' : '') + pc.bas + ':00–' + (pc.son >= 24 ? '24' : pc.son) + ':00'));
@@ -236,6 +251,24 @@ function sonucCiz(alan) {
     h('button', { class: 'g-btn-ikon', 'aria-label': t('favori'), 'aria-pressed': kayit && kayit.fav ? 'true' : 'false', on: { click: function () { kombinKaydet(k, false); } } }, ikon('kalp', 'k')),
     yzKurulu() && !kombinParcalari(k).every(function (p) { return p.ornek; }) ? h('button', { class: 'g-btn-ikon', 'aria-label': t('paylas'), on: { click: function () { paylasSayfasi(k, { ortam: s.cumle.ortam, hv: s.hv }); } } }, ikon('paylas', 'k')) : null));
   alan.appendChild(kart);
+}
+/* Yukarı-aşağı kayan karosel: her seferinde bir sıra (2 parça) görünür, kaydırınca yerine oturur */
+function dikeyKarosel(ic, sayfa) {
+  var gosterge = h('span', { class: 'karosel-sayi', text: '1 / ' + sayfa });
+  var noktalar = h('div', { class: 'karosel-nokta' });
+  for (var i = 0; i < sayfa; i++) noktalar.appendChild(h('i', { class: i === 0 ? 'acik' : null }));
+  var git = function (yon) { ic.scrollBy({ top: yon * ic.clientHeight, behavior: 'smooth' }); };
+  var yukari = h('button', { class: 'karosel-ok', 'aria-label': t('yukari'), on: { click: function () { git(-1); } } }, ikon('sag', 'k yukari'));
+  var asagi = h('button', { class: 'karosel-ok', 'aria-label': t('asagi'), on: { click: function () { git(1); } } }, ikon('sag', 'k asagi'));
+  var guncelle = function () {
+    var n = Math.min(sayfa - 1, Math.round(ic.scrollTop / Math.max(1, ic.clientHeight)));
+    gosterge.textContent = (n + 1) + ' / ' + sayfa;
+    $$('i', noktalar).forEach(function (x, j) { x.className = j === n ? 'acik' : ''; });
+    yukari.disabled = n === 0; asagi.disabled = n === sayfa - 1;
+  };
+  ic.addEventListener('scroll', function () { clearTimeout(ic._z); ic._z = setTimeout(guncelle, 60); }, { passive: true });
+  setTimeout(guncelle, 0);
+  return h('div', { class: 'karosel' }, ic, h('div', { class: 'karosel-yan' }, yukari, noktalar, gosterge, asagi));
 }
 function araclarBolumu() {
   var kutu = function (ik, baslik, alt, oz, fn) {
@@ -376,22 +409,8 @@ function kesfetEkrani() {
   bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('kesfetBaslik') }), h('p', { text: t('kesfetAlt') }))));
   bol.appendChild(seg);
   var kayitli = LS.al('kesfetFav', []); if (!Array.isArray(kayitli)) kayitli = [];
-  ILHAM_SECKI.forEach(function (x) {
-    var img = h('img', { class: 'g-akis-resim', src: x.url, alt: A.dil !== 'tr' ? x.en : x.tr, loading: 'lazy', referrerpolicy: 'no-referrer' });
-    img.addEventListener('error', function () { img.replaceWith(h('div', { class: 'g-akis-resim bos', text: t('resimInternet') })); });
-    var begen = h('button', { class: 'g-begen', 'aria-pressed': kayitli.indexOf(x.id) >= 0 ? 'true' : 'false' }, ikon('kalp', 'k'), t('kaydet'));
-    begen.addEventListener('click', function () {
-      var l = LS.al('kesfetFav', []); if (!Array.isArray(l)) l = [];
-      var i = l.indexOf(x.id); if (i >= 0) l.splice(i, 1); else l.push(x.id);
-      LS.yaz('kesfetFav', l.slice(0, 50)); begen.setAttribute('aria-pressed', i >= 0 ? 'false' : 'true');
-      tost(i >= 0 ? t('favCikti') : t('favEklendi'));
-    });
-    bol.appendChild(h('div', { class: 'g-akis' },
-      h('div', { class: 'g-akis-bas' }, h('span', { class: 'g-avatar', text: 'K' }), h('div', null, h('b', { text: t('kombinleStil') }), h('small', { text: t('editorSecki') }))),
-      img,
-      h('div', { class: 'g-akis-alt' }, h('b', { text: A.dil !== 'tr' ? x.en : x.tr }), begen),
-      h('button', { class: 'g-btn-cizgi', on: { click: function () { seckidenKur(x); } } }, ikon('isilti', 'k'), t('benzeriniKur'), !S.pro ? h('small', { text: ' • ' + t('birJeton') }) : null)));
-  });
+  /* Editör seçkisi: editörlerimiz seçki yayınladığında burada görünecek */
+  bol.appendChild(h('div', { class: 'g-bos-not secki-bos' }, h('span', { class: 'g-analiz-ikon' }, ikon('isilti')), h('b', { text: t('seckiBosBaslik') }), h('span', { text: t('seckiBosMetin') })));
   bol.appendChild(h('div', { class: 'g-dolap-bas', style: { 'margin-top': '22px' } },
     h('div', null, h('h2', { text: t('ilhamBaslik') }), h('p', { text: t('ilhamKisa') })),
     h('button', { class: 'g-ekle', on: { click: ilhamPanosu } }, ikon('galeri', 'k'), t('ac'))));
@@ -411,11 +430,21 @@ function seckidenKur(x) {
 /* ---------- AI Stil Mağazası (Google Play) ---------- */
 function proSayfasi(oz) { magazaSayfasi(oz); }
 function magazaSayfasi(oz) {
-  var fiyatlar = {};
   var gov = h('div', { class: 'g-magaza' });
   gov.appendChild(h('div', { class: 'g-magaza-bas' }, h('span', { class: 'g-magaza-ikon' }, ikon('zap', 'dolu')),
     h('h3', { text: t('magazaBaslik') }), h('p', { text: oz && UCRETLI[oz] ? t('jetonBitti') : t('magazaAlt') })));
   if (!S.pro) gov.appendChild(h('p', { class: 'g-bakiye', text: t('bakiye', jeton()) }));
+  /* PRO aylık: en avantajlı teklif en üstte */
+  var proFiyat = h('span', { class: 'g-pro-fiyat' }, PRO_FIYAT, h('small', { text: t('ayBasi') }));
+  var proBtn = S.pro
+    ? h('button', { class: 'g-pro-btn ikincil', on: { click: function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } } } }, t('aboneligiYonet'))
+    : h('button', { class: 'g-pro-btn', on: { click: function () { al(PRO_URUN, null); } } }, t('aboneBaslat'));
+  gov.appendChild(h('div', { class: 'g-pro' },
+    h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), h('h4', { text: t('proAylikBaslik') })), proFiyat),
+    h('p', { class: 'g-pro-kiyas', text: t('proKiyas', PRO_GUNLUK * 30) }),
+    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS3'), t('proS5')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
+    proBtn,
+    h('p', { class: 'g-pro-not', text: t('aboneNot') })));
   gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('jetonPaketleri') }));
   var fiyatEl = {};
   JETON_PAKETLERI.forEach(function (pk) {
@@ -423,23 +452,17 @@ function magazaSayfasi(oz) {
     fiyatEl[pk.id] = btn;
     gov.appendChild(h('div', { class: 'g-paket' + (pk.populer ? ' populer' : '') },
       pk.populer ? h('span', { class: 'g-populer', text: t('populer') }) : null,
-      h('div', null, h('b', { text: t('jetonPaket', pk.adet) }), h('small', { text: t('jetonPaketAlt', pk.adet) })), btn));
+      h('div', null, h('b', { text: t('jetonPaket', pk.adet) }), h('small', { text: t('jetonPaketAlt', pk.adet) + (pk.avantaj ? ' • ' + t('avantajYuzde', pk.avantaj) : '') })), btn));
   });
-  var proFiyat = h('span', { class: 'g-pro-fiyat', text: '499 ₺' });
-  var proBtn = h('button', { class: 'g-pro-btn', text: S.pro ? t('proAktif') : t('proyaGec'), disabled: S.pro ? true : null, on: { click: function () { al(PRO_URUN, null); } } });
-  gov.appendChild(h('div', { class: 'g-pro' },
-    h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: t('sinirsizPaket') }), h('h4', { text: t('proBaslik') })), proFiyat),
-    h('ul', null, ['proM1', 'proM2', 'proM3', 'proM4'].map(function (k) { return h('li', { text: '✓ ' + t(k) }); })),
-    proBtn));
   gov.appendChild(h('button', { class: 'g-geri-yukle', text: t('geriYukle'), on: { click: satinAlimlariGeriYukle } }));
   var s = sayfaAc({ baslik: '', icerik: gov });
   if (odemeHazir()) {
     zamanAsimi(odeme().products([PRO_URUN].concat(JETON_PAKETLERI.map(function (p) { return p.id; }))), 10000).then(function (l) {
       (l || []).forEach(function (u) {
         if (!u || typeof u.price !== 'string') return;
-        fiyatlar[u.id] = kirp(u.price, 24);
-        if (fiyatEl[u.id]) fiyatEl[u.id].textContent = fiyatlar[u.id];
-        if (u.id === PRO_URUN) proFiyat.textContent = fiyatlar[u.id];
+        var f = kirp(u.price, 24);
+        if (fiyatEl[u.id]) fiyatEl[u.id].textContent = f;
+        if (u.id === PRO_URUN) { temizle(proFiyat); proFiyat.appendChild(document.createTextNode(f)); proFiyat.appendChild(h('small', { text: t('ayBasi') })); }
       });
     }).catch(function () { });
   }

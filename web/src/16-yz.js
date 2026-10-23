@@ -17,6 +17,8 @@ function yzIste(yol, govde, ms) {
     if (!d || !d.ok || !v || typeof v !== 'object' || v.ok === false) {
       var e = new Error((v && typeof v.hata === 'string' && v.hata) || (d && d.hata) || 'ag');
       e.veri = v && typeof v === 'object' ? v : null;
+      if (e.message === 'oturum' && typeof hesapTemizle === 'function') { hesapTemizle(); tost(t('hOturumBitti')); }
+      if (e.message === 'giris' && typeof girisIste === 'function') setTimeout(girisIste, 50);
       throw e;
     }
     return v;
@@ -230,7 +232,7 @@ function takipDugmesi(kod, takipte) {
   var mesgul = false;
   b.addEventListener('click', function (e) {
     e.stopPropagation();
-    if (mesgul) return;
+    if (mesgul || !girisIste()) return;
     var yeni = b.getAttribute('aria-pressed') !== 'true';
     mesgul = true; takipGuncelle(kod, yeni);
     yzIste('/v1/takip', { kod: kod, takip: yeni }, 15000).then(function () {
@@ -346,8 +348,7 @@ function goruntuleyiciAc(src, alt) {
 function yorumBolumu(x, sayac) {
   var kap = h('div', { class: 'g-yorumlar' });
   var liste = h('div', { class: 'g-yorumlar' }, h('div', { class: 'g-yukleniyor', style: { padding: '10px 0' } }, h('span', { class: 'yukleniyor' })));
-  var takmaVar = kirp(LS.al('takma', ''), 24).length >= 2;
-  var takma = takmaVar ? null : h('input', { type: 'text', maxlength: '24', placeholder: t('takmaAd'), 'aria-label': t('takmaAd'), style: { 'max-width': '34%' } });
+  var takma = null;
   var girdi = h('input', { type: 'text', maxlength: '300', placeholder: t('yorumYaz'), 'aria-label': t('yorumYaz'), enterkeyhint: 'send' });
   var gonderBtn = h('button', { text: t('gonder') });
   kap.appendChild(liste);
@@ -367,6 +368,7 @@ function yorumBolumu(x, sayac) {
               if (evet) yzIste('/v1/yorumsil', { id: y.id }, 15000).then(yukle).catch(function () { tost(t('tpHata')); });
             });
           } else {
+            if (!girisIste()) return;
             yzIste('/v1/ysikayet', { id: y.id }, 15000).then(function () { satir.remove(); tost(t('sikayetAlindi')); }).catch(function () { tost(t('tpHata')); });
           }
         });
@@ -378,8 +380,8 @@ function yorumBolumu(x, sayac) {
   var gidiyor = false;
   function gonder() {
     if (gidiyor) return;
-    var ad = takma ? kirp(takma.value, 24) : kirp(LS.al('takma', ''), 24), m = kirp(girdi.value, 300);
-    if (ad.length < 2) { tost(t('takmaKisa')); if (takma) takma.focus(); return; }
+    if (!girisIste()) return;
+    var hb = hesapBilgi(), ad = hb ? hb.ad : '', m = kirp(girdi.value, 300);
     if (!m) { girdi.focus(); return; }
     if (/(https?:\/\/|www\.|\b\d[\d\s().-]{8,}\d\b)/i.test(m)) { tost(t('baglantiYok')); return; }
     gidiyor = true; gonderBtn.disabled = true;
@@ -415,7 +417,7 @@ function paylasimKarti(x, adres) {
   var mesgul = false;
   function oyla(deger) {
     if (x.benim) { tost(t('kendiOy')); return; }
-    if (mesgul) return;
+    if (mesgul || !girisIste()) return;
     var yeni = x.oy === deger ? 0 : deger, eski = { oy: x.oy, b: x.begeni, bm: x.begenmeme };
     /* hemen göster, sunucu yanıtıyla düzelt */
     if (x.oy === 1) x.begeni--; if (x.oy === -1) x.begenmeme--;
@@ -471,7 +473,7 @@ function paylasimMenusu(x, kart) {
     }));
     return;
   }
-  gov.appendChild(menuSatir('bayrak', t('sikayetEt'), '', function () { s.kapat(); setTimeout(function () { sikayetSayfasi(x, kart); }, 300); }));
+  gov.appendChild(menuSatir('bayrak', t('sikayetEt'), '', function () { s.kapat(); if (!girisli()) { setTimeout(girisIste, 300); return; } setTimeout(function () { sikayetSayfasi(x, kart); }, 300); }));
   gov.appendChild(menuSatir('kapat', t('engelle'), '', function () {
     var l = engelliler(); if (l.indexOf(x.yazar) < 0) l.push(x.yazar);
     LS.yaz('engelli', l.slice(-200));
@@ -551,8 +553,10 @@ function tuvaldenB64(c, enFazla) {
 }
 function paylasSayfasi(k, baglam) {
   if (!yzKurulu()) { tost(t('tpYok')); return; }
+  if (!girisIste()) return;
+  var hb = hesapBilgi();
   var tuval = null, onizleme = h('div', { class: 'g-paylas-onizleme' }, h('span', { class: 'yukleniyor' }));
-  var takma = h('input', { class: 'metin', maxlength: '24', placeholder: t('takmaYer'), value: kirp(LS.al('takma', ''), 24), 'aria-label': t('takmaAd') });
+  var takma = h('div', { class: 'hesap-kart kucuk' }, h('span', { class: 'hesap-av', text: (hb.ad.charAt(0) || '?').toLocaleUpperCase('tr') }), h('div', null, h('small', { text: t('paylasan') }), h('b', { text: hb.ad })));
   var aciklama = h('textarea', { class: 'metin', maxlength: '200', rows: '3', placeholder: t('aciklamaYer'), 'aria-label': t('aciklamaYer') });
   var onay = h('input', { type: 'checkbox', id: 'kuralOnay' });
   if (LS.al('kuralOnay', false) === true) onay.checked = true;
@@ -594,7 +598,7 @@ function paylasSayfasi(k, baglam) {
   var gov = h('div', null,
     onizleme,
     h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, k ? kolajBtn : null, fotoBtn),
-    h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('takmaAd') }), takma),
+    h('div', { class: 'bolum' }, takma),
     h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('aciklamaYer') }), aciklama),
     h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('gorunurlukBaslik') }), gorSec),
     h('div', { class: 'g-kurallar' },
@@ -606,8 +610,7 @@ function paylasSayfasi(k, baglam) {
   var gidiyor = false;
   function gonder() {
     if (gidiyor) return;
-    var ad = kirp(takma.value, 24), not = kirp(aciklama.value, 200);
-    if (ad.length < 2) { tost(t('takmaKisa')); takma.focus(); return; }
+    var ad = hb.ad, not = kirp(aciklama.value, 200);
     if (!onay.checked) { tost(t('onayGerek')); return; }
     if (!tuval) { kendiFotografi(); return; }
     if (/(https?:\/\/|www\.|\b\d[\d\s().-]{8,}\d\b)/i.test(not + ' ' + ad)) { tost(t('baglantiYok')); return; }

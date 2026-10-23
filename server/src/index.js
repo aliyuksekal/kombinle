@@ -15,15 +15,17 @@ const ZAMAN_PAYI = 10 * 60 * 1000;
 const GIZLEME_ESIGI = 3;
 
 const KOTA = {
-  yz_cihaz: 80,     // cihaz başına günlük yapay zekâ isteği
-  yz_ip: 300,       // IP başına günlük yapay zekâ isteği
+  yz_cihaz: 30,     // kişi başına günlük yapay zekâ işi (kombin, analiz); PRO adil kullanım 25
+  tani_cihaz: 60,   // kişi başına günlük kıyafet tanıma
+  yz_ip: 250,       // IP başına günlük yapay zekâ isteği
+  giris_ip: 60,     // IP başına günlük giriş/kayıt denemesi
   paylas_cihaz: 8,
   paylas_ip: 30,
   oy_cihaz: 600,
   oy_ip: 3000,
   sikayet_cihaz: 30,
   akis_ip: 3000,
-  sohbet_cihaz: 120,
+  sohbet_cihaz: 45,
   yorum_cihaz: 60,
   takip_cihaz: 300,
   kisi_ip: 2000
@@ -86,24 +88,36 @@ async function yonlendir(istek, env, ctx) {
   if (!islem) throw new Hata('yok', 404);
 
   const ip = istek.headers.get('CF-Connecting-IP') || '0';
-  const { govde, cihaz } = await dogrula(istek, env);
+  const dogrulama = await dogrula(istek, env);
+  const govde = dogrulama.govde;
+  // hesapla giriş yapılmışsa kimlik hesaba bağlanır (telefon değişse de paylaşımlar ve takipler korunur)
+  const hesap = await oturumBul(env, govde.oturum);
+  if (govde.oturum && !hesap && ['cikis'].indexOf(islem[1]) < 0) throw new Hata('oturum', 401);
+  const cihaz = hesap ? hesap.kimlik : dogrulama.cihaz;
+  const hesapGerek = () => { if (!hesap) throw new Hata('giris', 401); };
   if (await env.DB.prepare('SELECT 1 FROM engelli WHERE cihaz = ?').bind(cihaz).first()) throw new Hata('engelli', 403);
 
   switch (islem[1]) {
-    case 'tani': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await tani(env, govde));
+    case 'kayit': await kotaDus(env, ['giris_ip:' + ip]); return json(await kayit(env, govde));
+    case 'giris': await kotaDus(env, ['giris_ip:' + ip]); return json(await giris(env, govde));
+    case 'sifre': await kotaDus(env, ['giris_ip:' + ip]); return json(await sifreSifirla(env, govde));
+    case 'cikis': return json(await cikis(env, govde));
+    case 'ben': hesapGerek(); return json({ ok: true, hesap: hesapOzet(hesap) });
+    case 'hesapsil': hesapGerek(); await kotaDus(env, ['giris_ip:' + ip]); return json(await hesapSil(env, govde, hesap));
+    case 'tani': await kotaDus(env, ['tani_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await tani(env, govde));
     case 'kombin': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await kombin(env, govde));
     case 'analiz': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await analiz(env, govde));
-    case 'paylas': await kotaDus(env, ['paylas_cihaz:' + cihaz, 'paylas_ip:' + ip]); return json(await paylas(env, govde, cihaz));
+    case 'paylas': hesapGerek(); await kotaDus(env, ['paylas_cihaz:' + cihaz, 'paylas_ip:' + ip]); govde.takma = hesap.ad; return json(await paylas(env, govde, cihaz));
     case 'akis': await kotaDus(env, ['akis_ip:' + ip]); return json(await akis(env, govde, cihaz));
-    case 'oy': await kotaDus(env, ['oy_cihaz:' + cihaz, 'oy_ip:' + ip]); return json(await oyVer(env, govde, cihaz));
-    case 'sikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); return json(await sikayet(env, govde, cihaz));
-    case 'sil': return json(await sil(env, govde, cihaz));
+    case 'oy': await kotaDus(env, ['oy_cihaz:' + cihaz, 'oy_ip:' + ip]); hesapGerek(); return json(await oyVer(env, govde, cihaz));
+    case 'sikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); hesapGerek(); return json(await sikayet(env, govde, cihaz));
+    case 'sil': hesapGerek(); return json(await sil(env, govde, cihaz));
     case 'sohbet': await kotaDus(env, ['sohbet_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await sohbet(env, govde));
     case 'yorumlar': await kotaDus(env, ['akis_ip:' + ip]); return json(await yorumlar(env, govde, cihaz));
-    case 'yorum': await kotaDus(env, ['yorum_cihaz:' + cihaz, 'yz_ip:' + ip]); return json(await yorumYaz(env, govde, cihaz));
-    case 'yorumsil': return json(await yorumSil(env, govde, cihaz));
-    case 'ysikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); return json(await yorumSikayet(env, govde, cihaz));
-    case 'takip': await kotaDus(env, ['takip_cihaz:' + cihaz]); return json(await takipEt(env, govde, cihaz));
+    case 'yorum': hesapGerek(); await kotaDus(env, ['yorum_cihaz:' + cihaz, 'yz_ip:' + ip]); govde.takma = hesap.ad; return json(await yorumYaz(env, govde, cihaz));
+    case 'yorumsil': hesapGerek(); return json(await yorumSil(env, govde, cihaz));
+    case 'ysikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); hesapGerek(); return json(await yorumSikayet(env, govde, cihaz));
+    case 'takip': await kotaDus(env, ['takip_cihaz:' + cihaz]); hesapGerek(); return json(await takipEt(env, govde, cihaz));
     case 'kisiler': await kotaDus(env, ['kisi_ip:' + ip]); return json(await kisiler(env, govde, cihaz));
     default: throw new Hata('yok', 404);
   }
@@ -736,4 +750,125 @@ async function resimVer(env, id) {
       'Content-Disposition': 'inline'
     })
   });
+}
+
+/* ------------------------------------------------------------------ */
+/* Hesaplar: e-posta + şifre, oturum belirteci, kurtarma kodu           */
+/* ------------------------------------------------------------------ */
+const EPOSTA = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
+const PBKDF2_TUR = 20000;   // ücretsiz Worker CPU sınırı içinde; ayrıca gizli "biber" ile HMAC'lenir
+
+function rastgeleHex(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return hex(a); }
+async function sifreOzeti(env, sifre, tuz) {
+  // önce sunucu sırrıyla HMAC (veritabanı çalınsa bile çevrimdışı kırılamaz), sonra PBKDF2
+  const biber = await hmac(env.UYGULAMA_ANAHTARI, 'sifre:' + sifre);
+  const k = await crypto.subtle.importKey('raw', yazici.encode(biber), 'PBKDF2', false, ['deriveBits']);
+  const bit = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: yazici.encode(tuz), iterations: PBKDF2_TUR }, k, 256);
+  return hex(bit);
+}
+async function hesapKimlik(env, id) { return (await sha256('hesap:' + env.UYGULAMA_ANAHTARI + ':' + id)).slice(0, 40); }
+function hesapOzet(h) { return { ad: h.ad, eposta: h.eposta, kod: h.kimlik.slice(0, 12) }; }
+async function oturumAc(env, hesapId) {
+  const belirtec = rastgeleHex(32);
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO oturum (ozet, hesap, zaman) VALUES (?, ?, ?)').bind(await sha256('oturum:' + belirtec), hesapId, Date.now()),
+    // bir hesapta en fazla 10 oturum: eskiler silinir
+    env.DB.prepare('DELETE FROM oturum WHERE hesap = ?1 AND ozet NOT IN (SELECT ozet FROM oturum WHERE hesap = ?1 ORDER BY zaman DESC LIMIT 10)').bind(hesapId)
+  ]);
+  return belirtec;
+}
+async function oturumBul(env, belirtec) {
+  if (typeof belirtec !== 'string' || !/^[a-f0-9]{64}$/.test(belirtec)) return null;
+  const h = await env.DB.prepare('SELECT h.id, h.ad, h.eposta FROM oturum o JOIN hesap h ON h.id = o.hesap WHERE o.ozet = ?').bind(await sha256('oturum:' + belirtec)).first();
+  if (!h) return null;
+  h.kimlik = await hesapKimlik(env, h.id);
+  return h;
+}
+function sifreGecerli(s) { return typeof s === 'string' && s.length >= 8 && s.length <= 128; }
+function kurtarmaKodu() {
+  const harf = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const a = new Uint8Array(12); crypto.getRandomValues(a);
+  let s = ''; for (let i = 0; i < 12; i++) { s += harf[a[i] % 32]; if (i === 3 || i === 7) s += '-'; }
+  return s;
+}
+
+async function kayit(env, g) {
+  const ad = metin(g.ad, 24), eposta = metin(g.eposta, 254).toLowerCase();
+  if (ad.length < 2) throw new Hata('ad');
+  if (LINK.test(ad)) throw new Hata('baglanti');
+  if (!EPOSTA.test(eposta)) throw new Hata('eposta');
+  if (!sifreGecerli(g.sifre)) throw new Hata('sifre');
+  if (await env.DB.prepare('SELECT 1 FROM hesap WHERE eposta = ?').bind(eposta).first()) throw new Hata('kayitli', 409);
+  const id = rastgeleHex(16), tuz = rastgeleHex(16), kurtarma = kurtarmaKodu();
+  const kurtarmaTuz = rastgeleHex(8);
+  await env.DB.prepare('INSERT INTO hesap (id, eposta, ad, tuz, ozet, kurtarma, zaman) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, eposta, ad, tuz, await sifreOzeti(env, g.sifre, tuz), kurtarmaTuz + ':' + await sifreOzeti(env, kurtarma, kurtarmaTuz), Date.now()).run();
+  const kimlik = await hesapKimlik(env, id);
+  await profilYaz(env, kimlik, ad).run();
+  return { ok: true, oturum: await oturumAc(env, id), kurtarma, hesap: { ad, eposta, kod: kimlik.slice(0, 12) } };
+}
+
+async function giris(env, g) {
+  const eposta = metin(g.eposta, 254).toLowerCase();
+  if (!EPOSTA.test(eposta) || !sifreGecerli(g.sifre)) throw new Hata('yanlis', 401);
+  const h = await env.DB.prepare('SELECT id, ad, eposta, tuz, ozet, hatali, kilit FROM hesap WHERE eposta = ?').bind(eposta).first();
+  if (!h) { await sifreOzeti(env, g.sifre, 'sahte-tuz'); throw new Hata('yanlis', 401); }   // zamanlama farkı olmasın
+  if (h.kilit > Date.now()) throw new Hata('kilitli', 429);
+  if (!esit(await sifreOzeti(env, g.sifre, h.tuz), h.ozet)) {
+    const hatali = h.hatali + 1;
+    await env.DB.prepare('UPDATE hesap SET hatali = ?, kilit = ? WHERE id = ?').bind(hatali >= 5 ? 0 : hatali, hatali >= 5 ? Date.now() + 15 * 60000 : 0, h.id).run();
+    throw new Hata(hatali >= 5 ? 'kilitli' : 'yanlis', hatali >= 5 ? 429 : 401);
+  }
+  if (h.hatali) await env.DB.prepare('UPDATE hesap SET hatali = 0, kilit = 0 WHERE id = ?').bind(h.id).run();
+  const kimlik = await hesapKimlik(env, h.id);
+  return { ok: true, oturum: await oturumAc(env, h.id), hesap: { ad: h.ad, eposta: h.eposta, kod: kimlik.slice(0, 12) } };
+}
+
+async function sifreSifirla(env, g) {
+  const eposta = metin(g.eposta, 254).toLowerCase();
+  const kod = metin(g.kurtarma, 20).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!EPOSTA.test(eposta) || kod.length !== 12) throw new Hata('yanlis', 401);
+  if (!sifreGecerli(g.yeniSifre)) throw new Hata('sifre');
+  const h = await env.DB.prepare('SELECT id, ad, eposta, kurtarma, kilit, hatali FROM hesap WHERE eposta = ?').bind(eposta).first();
+  if (!h) throw new Hata('yanlis', 401);
+  if (h.kilit > Date.now()) throw new Hata('kilitli', 429);
+  const [ktuz, kozet] = String(h.kurtarma).split(':');
+  const bicimli = kod.slice(0, 4) + '-' + kod.slice(4, 8) + '-' + kod.slice(8);
+  if (!esit(await sifreOzeti(env, bicimli, ktuz), kozet)) {
+    const hatali = h.hatali + 1;
+    await env.DB.prepare('UPDATE hesap SET hatali = ?, kilit = ? WHERE id = ?').bind(hatali >= 5 ? 0 : hatali, hatali >= 5 ? Date.now() + 15 * 60000 : 0, h.id).run();
+    throw new Hata('yanlis', 401);
+  }
+  const tuz = rastgeleHex(16);
+  await env.DB.batch([
+    env.DB.prepare('UPDATE hesap SET tuz = ?, ozet = ?, hatali = 0, kilit = 0 WHERE id = ?').bind(tuz, await sifreOzeti(env, g.yeniSifre, tuz), h.id),
+    env.DB.prepare('DELETE FROM oturum WHERE hesap = ?').bind(h.id)   // eski oturumlar kapanır
+  ]);
+  const kimlik = await hesapKimlik(env, h.id);
+  return { ok: true, oturum: await oturumAc(env, h.id), hesap: { ad: h.ad, eposta: h.eposta, kod: kimlik.slice(0, 12) } };
+}
+
+async function cikis(env, g) {
+  if (typeof g.oturum === 'string' && /^[a-f0-9]{64}$/.test(g.oturum)) await env.DB.prepare('DELETE FROM oturum WHERE ozet = ?').bind(await sha256('oturum:' + g.oturum)).run();
+  return { ok: true };
+}
+
+/* Hesap ve ona bağlı tüm topluluk verileri silinir (Play Store hesap silme şartı) */
+async function hesapSil(env, g, hesap) {
+  const h = await env.DB.prepare('SELECT tuz, ozet FROM hesap WHERE id = ?').bind(hesap.id).first();
+  if (!h || !sifreGecerli(g.sifre) || !esit(await sifreOzeti(env, g.sifre, h.tuz), h.ozet)) throw new Hata('yanlis', 401);
+  const k = hesap.kimlik, kod = k.slice(0, 12);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM oy WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?)').bind(k),
+    env.DB.prepare('DELETE FROM sikayet WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?)').bind(k),
+    env.DB.prepare('DELETE FROM yorum_sikayet WHERE yorum IN (SELECT id FROM yorum WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?1) OR yazar = ?1)').bind(k),
+    env.DB.prepare('DELETE FROM yorum WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?1) OR yazar = ?1').bind(k),
+    env.DB.prepare('DELETE FROM paylasim WHERE yazar = ?').bind(k),
+    env.DB.prepare('DELETE FROM oy WHERE cihaz = ?').bind(k),
+    env.DB.prepare('DELETE FROM takip WHERE takipci = ?1 OR takip = ?1').bind(kod),
+    env.DB.prepare('DELETE FROM profil WHERE kod = ?').bind(kod),
+    env.DB.prepare('DELETE FROM oturum WHERE hesap = ?').bind(hesap.id),
+    env.DB.prepare('DELETE FROM hesap WHERE id = ?').bind(hesap.id)
+  ]);
+  return { ok: true };
 }

@@ -118,7 +118,7 @@ with sync_playwright() as pw:
 
     print('— Kendi kombinlerimden öner')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
-    p.click('.ayar-sekme button.satir:has-text("Sadece kendi kombinlerimden")'); p.wait_for_timeout(200)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=kisisel]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Sadece kendi kombinlerimden")'); p.wait_for_timeout(200)
     o.ekran('78_ayarlar', tam=False)
     kapat_hepsi(p)
     p.click('nav.alt-menu button[data-sekme="bugun"]'); p.wait_for_timeout(400)

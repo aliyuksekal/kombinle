@@ -6,7 +6,7 @@ SAHTE = SAHTE.replace("if (yol === '/v1/akis')", """if (yol === '/v1/kisiler') r
     if (yol === '/v1/yorumlar') return yanit(req, {ok: true, durum: 200, veri: {ok: true, liste: [{id: 'y'.repeat(20), takma: 'Melis', metin: 'Çok yakışmış!', zaman: Date.now()-600000, yazar: 'abcdefabcdef', benim: false, silebilir: false}]}});
     if (yol === '/v1/akis')""")
 
-SAHTE = SAHTE.replace("yzVar: () => true,", "yzVar: () => true, konus: (m, d) => window.__cagri.push('konus:' + d + ':' + m.slice(0, 30)), sus: () => {}, geriAlindi: () => window.__cagri.push('geri'), cik: () => window.__cagri.push('cik'), zemin: h => window.__cagri.push('zemin:' + h),")
+SAHTE = SAHTE.replace("yzVar: () => true, oturumVar: () => true, oturumAyarla: () => {},", "yzVar: () => true, konus: (m, d) => window.__cagri.push('konus:' + d + ':' + m.slice(0, 30)), sus: () => {}, geriAlindi: () => window.__cagri.push('geri'), cik: () => window.__cagri.push('cik'), zemin: h => window.__cagri.push('zemin:' + h),")
 SAHTE = "window.__cagri = [];\n" + SAHTE
 SAHTE = SAHTE.replace("if (yol === '/v1/takip')", "if (yol === '/v1/takip')")
 SAHTE = SAHTE.replace("if (yol === '/v1/kisiler')", "if (yol === '/v1/takip') return yanit(req, {ok: true, durum: 200, veri: {ok: true, takipte: g.takip !== false, takipci: 1}});\n    if (yol === '/v1/yorum') return yanit(req, {ok: true, durum: 200, veri: {ok: true, id: 'z'.repeat(20)}});\n    if (yol === '/v1/kisiler')")
@@ -25,12 +25,12 @@ with sync_playwright() as pw:
     ok(p.evaluate("document.documentElement.getAttribute('data-renk')") == 'pembe', 'varsayılan tema Prenses (pembe)')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
     ok(p.locator('.tema-izgara').first.locator('.tema-sec').count() == 9, '9 tema seçeneği (otomatik dahil)')
-    p.click('.tema-sec:has-text("AMOLED")'); p.wait_for_timeout(300)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=tema]').open = true"); p.wait_for_timeout(150); p.click('.tema-sec:has-text("AMOLED")'); p.wait_for_timeout(300)
     ok(p.evaluate("document.documentElement.getAttribute('data-renk')") == 'amoled' and p.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(0, 0, 0)', 'AMOLED gerçek siyah')
     ok('zemin:#000000' in p.evaluate('window.__cagri'), 'tema rengi telefona bildirildi')
     p.click('.tema-sec:has-text("Lavanta")'); p.wait_for_timeout(300)
     ok(p.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--vurgu').trim()") == '#8b5cf6', 'Lavanta vurgu rengi')
-    p.click('.tema-sec:has-text("Русский")'); p.wait_for_timeout(500)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=dil]').open = true"); p.wait_for_timeout(150); p.click('.tema-sec:has-text("Русский")'); p.wait_for_timeout(500)
     ok('Настройки' in p.inner_text('#uygulama') and 'Главная' in p.inner_text('#altMenu'), 'Rusça arayüz')
     p.click('nav.alt-menu button[data-sekme="dolap"]'); p.wait_for_timeout(400)
     ok('Верх' in p.inner_text('#uygulama') and 'Обувь' in p.inner_text('#uygulama'), 'kıyafet grupları Rusça')
@@ -89,9 +89,9 @@ with sync_playwright() as pw:
     ok(p.locator('.g-takip[data-kod="0123456789ab"][aria-pressed="true"]').count() >= 1, 'takip edildi ve tüm kartlarda güncellendi')
     p.locator('.g-yorum-btn').first.click(); p.wait_for_timeout(500)
     ok('Çok yakışmış' in p.inner_text('.g-yorumlar'), 'yorumlar yüklendi')
-    p.locator('.g-yorum-form input').first.fill('Ayşe'); p.locator('.g-yorum-form input').nth(1).fill('Harika olmuş'); p.locator('.g-yorum-form button').click(); p.wait_for_timeout(500)
+    p.locator('.g-yorum-form input').first.fill('Harika olmuş'); p.locator('.g-yorum-form button').click(); p.wait_for_timeout(500)
     yorum = [a for a in p.evaluate('window.__api') if a['yol'] == '/v1/yorum']
-    ok(yorum and yorum[-1]['g']['metin'] == 'Harika olmuş' and yorum[-1]['g']['takma'] == 'Ayşe', 'yorum gönderildi')
+    ok(yorum and yorum[-1]['g']['metin'] == 'Harika olmuş' and yorum[-1]['g']['takma'] == 'Elif', 'yorum hesap adıyla gönderildi')
     p.evaluate("""() => { const i = document.createElement('img'); i.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='; }""")
     p.evaluate("document.querySelector('.g-akis-resim-kap') && document.querySelector('.buyut-btn').click()"); p.wait_for_timeout(300)
     if p.locator('.goruntuleyici').count():

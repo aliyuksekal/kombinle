@@ -1,7 +1,7 @@
 import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ortak import *
 # Sahte telefon köprüsü + sahte Kombinle sunucusu
-SAHTE = r"""window.__api = []; window.__mod = {};
+SAHTE = r"""localStorage.setItem('kb_hesap', JSON.stringify({ad: 'Elif', eposta: 'elif@ornek.com', kod: '0123456789ab'})); window.__api = []; window.__mod = {};
 const yanit = (req, d) => setTimeout(() => window.dispatchEvent(new CustomEvent('kbyerel', {detail: Object.assign({req}, d)})), 60);
 const AKIS = [
   {id: 'a'.repeat(20), takma: 'Zeynep', aciklama: 'Pazar kahvaltısı', etiketler: ['kahve'], begeni: 4, begenmeme: 1, zaman: Date.now() - 3600000, benim: false, gizli: 0, yazar: '0123456789ab', oy: 0},
@@ -15,7 +15,7 @@ window.KombinleNative = {
   arkaSil: (req) => yanit(req, {ok: false}), dosyaKaydet: (req) => yanit(req, {ok: true}),
   odemeSorgula: (req) => yanit(req, {ok: true, products: []}), odemeAl: (req) => yanit(req, {ok: false}),
   odemeSahip: () => '[]', odemeGeriYukle: req => yanit(req, {ok: true, owned: []}), jetonTeslim: () => 0,
-  yzVar: () => true, sunucu: () => 'https://kombinle-api.ornek.workers.dev',
+  yzVar: () => true, oturumVar: () => true, oturumAyarla: () => {}, sunucu: () => 'https://kombinle-api.ornek.workers.dev',
   api: (req, yol, govde) => {
     const g = JSON.parse(govde); window.__api.push({yol, g});
     if (window.__mod.hata) return yanit(req, {ok: false, durum: 429, veri: {ok: false, hata: 'kota'}});
@@ -122,9 +122,9 @@ with sync_playwright() as pw:
     p.click('#sonucAlani .g-btn-ikon[aria-label="Paylaş"]'); p.wait_for_timeout(1500)
     ok(p.locator('.sayfa.acik .g-paylas-onizleme img').count() == 1, 'kolaj önizlemesi')
     o.ekran('84_paylas')
+    ok('Elif' in p.inner_text('.sayfa.acik .hesap-kart'), 'hesap adıyla paylaşılıyor')
     p.click('.sayfa.acik .alt-bar .btn.ana'); p.wait_for_timeout(300)
-    ok('Takma ad' in p.inner_text('#tost'), 'takma ad zorunlu')
-    p.fill('.sayfa.acik input.metin', 'Elif')
+    ok('kuralları kabul' in p.inner_text('#tost'), 'kurallar onayı zorunlu')
     p.fill('.sayfa.acik textarea', 'beni ara 0532 123 45 67')
     p.click('.sayfa.acik #kuralOnay')
     p.click('.sayfa.acik .alt-bar .btn.ana'); p.wait_for_timeout(300)
@@ -141,7 +141,7 @@ with sync_playwright() as pw:
 
     print('— Arayüzde Google/Gemini adı yok')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
-    p.click('.ayar-sekme button.satir:has-text("Gizlilik")'); p.wait_for_timeout(400)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=veri]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Gizlilik")'); p.wait_for_timeout(400)
     tum = p.evaluate("document.body.innerText")
     ok('Google' not in tum and 'Gemini' not in tum, 'gizlilik ve ayarlar sayfasında marka adı yok')
     o.ekran('85_gizlilik')

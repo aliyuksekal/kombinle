@@ -84,7 +84,7 @@ with sync_playwright() as pw:
 
     print('— Senaryo: kapalı giyim modu')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
-    p.click('.ayar-sekme button.satir:has-text("Kapalı giyim")'); p.wait_for_timeout(200)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=kisisel]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Kapalı giyim")'); p.wait_for_timeout(200)
     o.ekran('22_ayarlar')
     p.click('nav.alt-menu button[data-sekme="bugun"]'); p.wait_for_timeout(500)
     ok(p.locator('#istek').count() == 1, 'Ana Sayfa sekmesine dönüldü')

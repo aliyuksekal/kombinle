@@ -69,3 +69,20 @@ CREATE TABLE IF NOT EXISTS yorum_sikayet (
   cihaz TEXT NOT NULL,
   PRIMARY KEY (yorum, cihaz)
 );
+CREATE TABLE IF NOT EXISTS hesap (
+  id TEXT PRIMARY KEY,
+  eposta TEXT NOT NULL UNIQUE,
+  ad TEXT NOT NULL,
+  tuz TEXT NOT NULL,
+  ozet TEXT NOT NULL,
+  kurtarma TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  hatali INTEGER NOT NULL DEFAULT 0,
+  kilit INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS oturum (
+  ozet TEXT PRIMARY KEY,
+  hesap TEXT NOT NULL,
+  zaman INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS o_hesap ON oturum(hesap);

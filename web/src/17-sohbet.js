@@ -139,6 +139,16 @@ function sohbetAc() {
       sesliOku(a.m);
     };
     if (!yzAcik()) { setTimeout(function () { bitir(yerelPrenses(m)); }, 450); return; }
+    /* günlük sohbet hakkı: ücretsiz 10, PRO 40 mesaj */
+    var sinir = S.pro ? SOHBET_GUNLUK.pro : SOHBET_GUNLUK.ucretsiz;
+    if (gunlukSayac('sohbet') >= sinir) {
+      setTimeout(function () {
+        var y = yerelPrenses(m);
+        bitir({ m: (S.pro ? t('sohbetSinirPro', sinir) : t('sohbetSinir', sinir)) + '\n\n' + y.m, p: y.p });
+        if (!S.pro) setTimeout(function () { magazaSayfasi(); }, 900);
+      }, 300);
+      return;
+    }
     var hv = null; try { hv = aktifHava(); } catch (e) { hv = null; }
     yzIste('/v1/sohbet', {
       mesaj: m, dil: A.dil, tesettur: !!A.tesettur,
@@ -150,6 +160,7 @@ function sohbetAc() {
       if (!cevap) throw new Error('bos');
       var var_ = Object.create(null); S.parcalar.forEach(function (p) { var_[p.id] = 1; });
       var ids = Array.isArray(s.parcalar) ? s.parcalar.filter(function (i) { return typeof i === 'string' && var_[i]; }).slice(0, 6) : [];
+      gunlukArtir('sohbet');
       bitir({ m: cevap, p: ids }, Array.isArray(s.oneriler) ? s.oneriler : []);
     }).catch(function (e) {
       var y = yerelPrenses(m);

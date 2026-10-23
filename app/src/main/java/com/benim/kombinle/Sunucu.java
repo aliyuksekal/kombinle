@@ -27,7 +27,7 @@ final class Sunucu {
 
     static final String ADRES = BuildConfig.SUNUCU;
     private static final String ANAHTAR = BuildConfig.UYGULAMA_ANAHTARI;
-    private static final Pattern YOL = Pattern.compile("/v1/(tani|kombin|analiz|paylas|akis|oy|sikayet|sil|sohbet|yorumlar|yorum|yorumsil|ysikayet|takip|kisiler)");
+    private static final Pattern YOL = Pattern.compile("/v1/(tani|kombin|analiz|paylas|akis|oy|sikayet|sil|sohbet|yorumlar|yorum|yorumsil|ysikayet|takip|kisiler|kayit|giris|sifre|cikis|ben|hesapsil)");
     private static final int EN_FAZLA_GOVDE = 3 * 1024 * 1024;
     private static final int EN_FAZLA_YANIT = 2 * 1024 * 1024;
     private static volatile long saatFarki = 0;
@@ -58,8 +58,32 @@ final class Sunucu {
         return k;
     }
 
+    /* Hesap oturumu telefonda saklanır; sayfa belirteci bir kez verir, sonra istekler buradan eklenir */
+    static void oturumYaz(Context c, String belirtec) {
+        SharedPreferences a = c.getSharedPreferences("sunucu", Context.MODE_PRIVATE);
+        if (belirtec != null && belirtec.matches("[a-f0-9]{64}")) a.edit().putString("oturum", belirtec).apply();
+        else a.edit().remove("oturum").apply();
+    }
+
+    static boolean oturumVar(Context c) {
+        return c.getSharedPreferences("sunucu", Context.MODE_PRIVATE).getString("oturum", "").matches("[a-f0-9]{64}");
+    }
+
+    private static String oturumEkle(Context c, String yol, String govde) {
+        try {
+            String o = c.getSharedPreferences("sunucu", Context.MODE_PRIVATE).getString("oturum", "");
+            if (!o.matches("[a-f0-9]{64}") || yol.equals("/v1/kayit") || yol.equals("/v1/giris") || yol.equals("/v1/sifre")) return govde;
+            JSONObject j = new JSONObject(govde);
+            if (!j.has("oturum")) j.put("oturum", o);
+            return j.toString();
+        } catch (Exception e) {
+            return govde;
+        }
+    }
+
     /** Arka planda çağrılmalı. Dönen nesne: {durum, veri} */
-    static JSONObject gonder(Context c, String yol, String govde) throws Exception {
+    static JSONObject gonder(Context c, String yol, String govde0) throws Exception {
+        final String govde = oturumEkle(c, yol, govde0);
         JSONObject sonuc = istek(c, yol, govde);
         JSONObject veri = sonuc.optJSONObject("veri");
         // telefon saati çok yanlışsa sunucu saatine göre bir kez daha dene
@@ -67,6 +91,10 @@ final class Sunucu {
             saatFarki = veri.optLong("zaman") - System.currentTimeMillis();
             sonuc = istek(c, yol, govde);
         }
+        // oturum geçersizse (şifre değişti, hesap silindi) telefondaki belirteç silinir
+        JSONObject v2 = sonuc.optJSONObject("veri");
+        if (sonuc.optInt("durum") == 401 && v2 != null && "oturum".equals(v2.optString("hata"))) oturumYaz(c, null);
+        if ("/v1/cikis".equals(yol)) oturumYaz(c, null);
         return sonuc;
     }
 

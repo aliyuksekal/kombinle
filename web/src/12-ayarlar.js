@@ -15,13 +15,24 @@ function ayarIcerik(gov) {
     return h('button', { class: 'satir', on: { click: fn } },
       h('span', { class: 'sol' }, ikon(ik), h('div', null, baslik, alt ? h('small', { text: alt }) : null)), sag || ikon('sag', 'k'));
   }
+  /* açılır kapanır kartlar; hangi kartın açık olduğu hatırlanır */
+  S.ayarAcik = S.ayarAcik || { hesap: !girisli() };
+  function kart(id, ik, baslik, alt, icerik) {
+    var d = h('details', { class: 'ayar-kart', 'data-kart': id });
+    if (S.ayarAcik[id]) d.open = true;
+    d.addEventListener('toggle', function () { S.ayarAcik[id] = d.open; });
+    d.appendChild(h('summary', null, h('span', { class: 'ayar-kart-ikon' }, ikon(ik)), h('div', null, h('b', { text: baslik }), alt ? h('small', { text: alt }) : null), ikon('sag', 'k ok')));
+    d.appendChild(h('div', { class: 'ayar-kart-ic' }, icerik));
+    return d;
+  }
   function ciz3() {
     temizle(gov);
+    var hb = hesapBilgi();
+    /* hesap */
+    gov.appendChild(kart('hesap', 'kisi', t('hBaslik'), hb ? hb.ad + ' • ' + hb.eposta : t('hAlt'), hesapBolumu(ciz3)));
     /* AI Prenses */
-    if (typeof sohbetAc === 'function') {
-      gov.appendChild(h('div', { class: 'ai-kart' }, h('b', { text: t('prensesBaslik') }), h('p', { text: t('prensesKart') }),
-        h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { sohbetAc(); } } }, ikon('isilti', 'k'), t('sohbetBaslat'))));
-    }
+    gov.appendChild(kart('prenses', 'prenses', t('prensesBaslik'), t('cevrimiciAsistan'), h('div', null, h('p', { class: 'ayar-not', style: { margin: '0 0 12px' }, text: t('prensesKart') }),
+      h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { sohbetAc(); } } }, ikon('isilti', 'k'), t('sohbetBaslat')))));
     /* görünüm */
     var tema = temaSecimi();
     var izgara = h('div', { class: 'tema-izgara' });
@@ -29,34 +40,36 @@ function ayarIcerik(gov) {
       izgara.appendChild(h('button', { class: 'tema-sec', 'aria-pressed': tema === x[0] ? 'true' : 'false', on: { click: function () { temaUygula(x[0]); ciz(); } } },
         h('i', { style: { background: x[2] } }), t(x[1])));
     });
-    var dilSeg = h('div', { class: 'tema-izgara', style: { 'grid-template-columns': 'repeat(2,1fr)' } });
+    var temaAd = (TEMALAR.filter(function (x) { return x[0] === tema; })[0] || TEMALAR[0])[1];
+    gov.appendChild(kart('tema', 'isilti', t('temaBaslik'), t(temaAd), h('div', null, izgara, h('p', { class: 'ayar-not', text: t('amoledNot') }))));
+    var dilSeg = h('div', { class: 'tema-izgara dil-izgara' });
     DILLER.forEach(function (x) {
       dilSeg.appendChild(h('button', { class: 'tema-sec', 'aria-pressed': A.dil === x[0] ? 'true' : 'false', on: { click: function () { A.dil = x[0]; ayarKaydet(); document.documentElement.lang = x[0]; ciz(); } } },
-        h('i', { style: { background: 'var(--grad)', color: '#fff', display: 'grid', 'place-items': 'center', 'font-size': '13px', 'font-weight': '900', 'font-style': 'normal' }, text: x[0].toUpperCase() }), x[1]));
+        h('i', { class: 'dil-rozet', text: x[0].toUpperCase() }), x[1]));
     });
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('temaBaslik') }), izgara, h('p', { class: 'ayar-not', text: t('amoledNot') })));
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('dil') }), dilSeg));
+    gov.appendChild(kart('dil', 'dil', t('dilBaslik'), (DILLER.filter(function (x) { return x[0] === A.dil; })[0] || DILLER[0])[1], dilSeg));
     /* kişisel */
     var isiSeg = h('div', { class: 'seg' });
     [[-1, 'isiUsur'], [0, 'isiNormal'], [1, 'isiSicaklar']].forEach(function (x) {
-      isiSeg.appendChild(h('button', { 'aria-pressed': A.isi === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { A.isi = x[0]; ayarKaydet(); S.sonuc = null; ciz3(); ciz(); } } }));
+      isiSeg.appendChild(h('button', { 'aria-pressed': A.isi === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { A.isi = x[0]; ayarKaydet(); S.sonuc = null; ciz3(); } } }));
     });
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('kisisel') }),
+    gov.appendChild(kart('kisisel', 'termometre', t('kisisel'), A.konum ? A.konum.ad : t('otomatikKonum'),
       h('div', { class: 'ayar-grup' },
         satir('konum', t('konum'), A.konum ? A.konum.ad : t('otomatikKonum'), sehirSec),
         h('div', { class: 'satir', style: { 'flex-wrap': 'wrap' } }, h('span', { class: 'sol' }, ikon('termometre'), h('div', null, t('isiHissi'), h('small', { text: t('isiHissiAlt') }))), isiSeg),
-        anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; ciz(); }, 'esarp'),
+        anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; }, 'esarp'),
         (yzKurulu() ? anahtarSatir(t('yzAc'), t('yzAcAlt'), A.yz, function (v) { A.yz = v; ayarKaydet(); S.sonuc = null; }, 'isilti') : null),
         anahtarSatir(t('kendiMod'), t('kendiModAlt'), A.kendiMod, function (v) { A.kendiMod = v; ayarKaydet(); S.sonuc = null; }, 'kalp'),
         satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi))));
     /* pro ve destek */
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('proBaslik') }),
+    gov.appendChild(kart('pro', 'zap', t('proBaslik'), S.pro ? t('proAcik') : t('jetonVar', jeton()),
       h('div', { class: 'ayar-grup' },
-        satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? t('proAcikAlt') : t('jetonVar', jeton()), function () { if (!S.pro) magazaSayfasi(); }, S.pro ? ikon('tik', 'k') : null),
+        satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? t('proAcikAlt', PRO_GUNLUK) : t('jetonVar', jeton()), magazaSayfasi),
+        S.pro ? satir('ayar', t('aboneligiYonet'), null, function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } }) : null,
         satir('yenile', t('geriYukle'), null, satinAlimlariGeriYukle),
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
-    gov.appendChild(h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('verilerim') }),
+    gov.appendChild(kart('veri', 'kalkan', t('verilerim'), t('verilerimAlt'),
       h('div', { class: 'ayar-grup' },
         satir('indir', t('yedekAl'), t('yedekAlAlt'), yedekAl),
         satir('yukle', t('yedekYukle'), t('yedekYukleAlt'), function () { $('#yedekSec').click(); }),

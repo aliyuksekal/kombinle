@@ -269,6 +269,17 @@ public final class Kopru {
     }
 
     @JavascriptInterface
+    public void oturumAyarla(final String belirtec) {
+        if (!guvenli) return;
+        Sunucu.oturumYaz(ekran.getApplicationContext(), belirtec);
+    }
+
+    @JavascriptInterface
+    public boolean oturumVar() {
+        return guvenli && Sunucu.oturumVar(ekran.getApplicationContext());
+    }
+
+    @JavascriptInterface
     public void api(final String req, final String yol, final String govde) {
         if (!guvenli || !istekGecerli(req)) return;
         if (!Sunucu.hazir()) { gonder(req, false, "hata", "kurulu-degil"); return; }
@@ -333,6 +344,14 @@ public final class Kopru {
     @JavascriptInterface
     public int jetonTeslim() {
         return guvenli ? odeme.jetonTeslim() : 0;
+    }
+
+    /** Aboneliği iptal etme / yönetme sayfası (Play Store) */
+    @JavascriptInterface
+    public void aboneligiYonet() {
+        if (!guvenli) return;
+        final android.net.Uri u = android.net.Uri.parse("https://play.google.com/store/account/subscriptions?sku=" + Odeme.PRO + "&package=" + ekran.getPackageName());
+        ekran.ui.post(() -> ekran.disariAc(u));
     }
 
     @JavascriptInterface

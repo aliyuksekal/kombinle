@@ -2,8 +2,8 @@ import sys, os, json, base64; sys.path.insert(0, os.path.dirname(os.path.abspath
 from ortak import *
 
 APKPAY = """(sahip) => { window.__sahip = sahip || []; window.__alim = [];
- window.ApkPay = { products: ids => Promise.resolve(ids.map(id => ({ id, price: id === 'kombinle_pro' ? '₺149,99' : '₺14,99' }))),
-   buy: id => { window.__alim.push(id); if (id === 'kombinle_pro') window.__sahip.push(id); return Promise.resolve(true); },
+ window.ApkPay = { products: ids => Promise.resolve(ids.map(id => ({ id, price: id === 'kombinle_pro_aylik' ? '₺149,99' : '₺14,99' }))),
+   buy: id => { window.__alim.push(id); if (id === 'kombinle_pro_aylik') window.__sahip.push(id); return Promise.resolve(true); },
    owned: id => id === undefined ? window.__sahip : window.__sahip.indexOf(id) >= 0,
    restore: () => Promise.resolve(window.__sahip.slice()) }; }"""
 
@@ -50,12 +50,12 @@ with sync_playwright() as pw:
     ok('₺149,99' in p.inner_text('.sayfa.acik'), 'PRO fiyatı Play’den geldi')
     p.click('.sayfa.acik .g-pro-btn'); p.wait_for_timeout(700)
     ok('PRO' in p.inner_text('#jetonHap'), 'satın alma sonrası PRO rozeti')
-    ok(p.evaluate('window.__alim[0]') == 'kombinle_pro', 'doğru ürün kimliği kombinle_pro')
+    ok(p.evaluate('window.__alim[0]') == 'kombinle_pro_aylik', 'doğru ürün kimliği kombinle_pro')
     kombin_iste(p, 'akşam yemeği')
     ok(p.locator('#sonucAlani .g-sonuc').count() == 1 and J() == 0, 'PRO: jeton harcamadan kombin')
     p.reload(); p.evaluate(APKPAY, []); p.wait_for_timeout(1500)
     ok('PRO' not in p.inner_text('#jetonHap'), 'iade edilen PRO yeniden açılışta kapandı')
-    p.reload(); p.evaluate(APKPAY, ['kombinle_pro']); p.wait_for_timeout(1500)
+    p.reload(); p.evaluate(APKPAY, ['kombinle_pro_aylik']); p.wait_for_timeout(1500)
     ok('PRO' in p.inner_text('#jetonHap'), 'sahip olunan PRO yeniden açılışta tanındı')
 
     print('— Kod enjeksiyonu (XSS)')
@@ -70,7 +70,7 @@ with sync_playwright() as pw:
     print('— Yedek ve EXIF')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
     with p.expect_download() as d:
-        p.click('.ayar-sekme button.satir:has-text("Yedek al")')
+        p.evaluate("document.querySelector('.ayar-kart[data-kart=veri]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Yedek al")')
     yol = d.value.path(); veri = json.load(open(yol))
     ok(veri['uygulama'] == 'kombinle' and len(veri['parcalar']) == 4, 'yedek dosyası 4 kıyafet içeriyor')
     exifsiz = all(b'GizliKamera' not in base64.b64decode(x['foto'].split(',')[1]) and b'Exif' not in base64.b64decode(x['foto'].split(',')[1])[:200] for x in veri['parcalar'])
@@ -112,7 +112,7 @@ with sync_playwright() as pw:
 
     print('— Tüm verileri sil')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
-    p.click('.ayar-sekme button.satir:has-text("Tüm verileri sil")'); p.wait_for_timeout(300)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=veri]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Tüm verileri sil")'); p.wait_for_timeout(300)
     p.click('.pencere .btn.tehlike'); p.wait_for_timeout(400); p.click('.pencere .btn.tehlike'); p.wait_for_timeout(1200)
     ok('Dolabın henüz boş' in p.inner_text('#uygulama') or p.locator('.bos').count() > 0, 'tüm veriler silindi')
     ok(p.evaluate("localStorage.getItem('kb_jeton')") is not None, 'silme jetonları sıfırlamadı')

@@ -6,7 +6,7 @@
    ========================================================= */
 
 var SURUM = '1.0.0';
-var PRO_URUN = 'kombinle_pro';
+var PRO_URUN = 'kombinle_pro_aylik';
 var DESTEK_CAY = 'destek_cay', DESTEK_YEMEK = 'destek_yemek';
 var HAVA_ADRES = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 var GIZLILIK_ADRES = 'https://aliyuksekal.github.io/gizlilik/kombinle-gizlilik.html';

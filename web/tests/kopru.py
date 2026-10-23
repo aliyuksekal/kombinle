@@ -9,7 +9,7 @@ window.KombinleNative = {
   dinle: (req, dil) => { window.__cagri.push('dinle:' + dil); yanit(req, {ok: true, metin: 'akşam düğüne gideceğim'}); },
   etiketle: (req, b64) => { const ilk = !window.__cagri.some(c => c.startsWith('etiketle')); window.__cagri.push('etiketle:' + b64.length); yanit(req, {ok: true, etiketler: ilk ? [{t: 'Jeans', c: 0.91}, {t: 'Pattern', c: 0.3}] : []}); },
   dosyaKaydet: (req, ad, tur, b64) => { window.__cagri.push('kaydet:' + ad); yanit(req, {ok: true, yazildi: true}); },
-  odemeSorgula: (req, ids) => yanit(req, {ok: true, products: [{id: 'kombinle_pro', price: '₺149,99'}, {id: 'jeton_100', price: '₺41,99'}]}),
+  odemeSorgula: (req, ids) => yanit(req, {ok: true, products: [{id: 'kombinle_pro_aylik', price: '₺149,99'}, {id: 'jeton_50', price: '₺41,99'}]}),
   odemeAl: (req, id) => { window.__cagri.push('al:' + id); if (id.indexOf('jeton_') === 0) { window.__defter = (window.__defter || 0) + parseInt(id.slice(6)); } else window.__sahip.push(id); yanit(req, {ok: true, owned: window.__sahip}); },
   jetonTeslim: () => { const n = window.__defter || 0; window.__defter = 0; return n; },
   odemeSahip: () => JSON.stringify(window.__sahip),
@@ -39,14 +39,14 @@ with sync_playwright() as pw:
     ok('₺149,99' in p.inner_text('.sayfa.acik') and '₺41,99' in p.inner_text('.sayfa.acik'), 'PRO ve jeton fiyatları köprüden')
     once = p.evaluate("+localStorage.getItem('kb_jeton')")
     p.locator('.sayfa.acik .g-fiyat').first.click(); p.wait_for_timeout(1500)
-    ok(p.evaluate("+localStorage.getItem('kb_jeton')") == once + 100, '100 jeton telefon defterinden teslim alındı')
+    ok(p.evaluate("+localStorage.getItem('kb_jeton')") == once + 50, '50 jeton telefon defterinden teslim alındı')
     ok(p.evaluate("window.__defter") == 0, 'defter sıfırlandı (çift teslim yok)')
     p.click('#jetonHap'); p.wait_for_timeout(500)
     p.click('.sayfa.acik .g-pro-btn'); p.wait_for_timeout(800)
     ok('PRO' in p.inner_text('#jetonHap'), 'köprü üzerinden PRO satın alındı')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(400)
     ok('1.0.7' in p.inner_text('.ayar-sekme'), 'sürüm telefondan')
-    p.click('.ayar-sekme button.satir:has-text("Yedek al")'); p.wait_for_timeout(1500)
+    p.evaluate("document.querySelector('.ayar-kart[data-kart=veri]').open = true"); p.wait_for_timeout(150); p.click('.ayar-sekme button.satir:has-text("Yedek al")'); p.wait_for_timeout(1500)
     ok(any(c.startswith('kaydet:kombinle-yedek') for c in p.evaluate('window.__cagri')), 'yedek telefonun dosya kaydetme ekranına gitti')
     print([h for h in o.hatalar if 'analiz' not in h])
     o.kapat()

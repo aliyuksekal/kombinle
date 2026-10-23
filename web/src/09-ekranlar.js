@@ -13,6 +13,8 @@ function ciz() {
     else if (S.sekme === 'kesfet') kok.appendChild(kesfetEkrani());
     else if (S.sekme === 'ayarlar') kok.appendChild(ayarlarEkrani());
     else kok.appendChild(bugunEkrani());
+    /* Keşfet akışı karosel gibi: her kaydırmada bir paylaşım yerine oturur */
+    document.documentElement.classList.toggle('akis-karosel', S.sekme === 'kesfet');
   } catch (e) { hataYakala(e); hataEkrani(kok); }
 }
 function hataEkrani(kok) {

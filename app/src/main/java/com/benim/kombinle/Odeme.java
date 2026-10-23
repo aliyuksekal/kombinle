@@ -29,18 +29,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Google Play uygulama içi satın alma (Play Billing 8): Kombinle Pro ve destek ürünleri. */
+/** Google Play satın alma (Play Billing 8): aylık PRO aboneliği, jeton paketleri ve destek ürünleri. */
 final class Odeme implements PurchasesUpdatedListener {
 
-    static final String PRO = "kombinle_pro";
+    static final String PRO = "kombinle_pro_aylik";
+    /** abonelikler: sahiplik her açılışta Google Play'den yenilenir (iptal/iade düşer) */
     private static final Set<String> KALICI = new HashSet<>(Collections.singletonList(PRO));
     private static final Map<String, Integer> JETON = new HashMap<>();
     static {
-        JETON.put("jeton_100", 100);
-        JETON.put("jeton_300", 300);
-        JETON.put("jeton_500", 500);
+        JETON.put("jeton_50", 50);
+        JETON.put("jeton_150", 150);
+        JETON.put("jeton_400", 400);
     }
-    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_100", "jeton_300", "jeton_500"));
+    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_50", "jeton_150", "jeton_400"));
+
+    private static String tip(String id) {
+        return KALICI.contains(id) ? BillingClient.ProductType.SUBS : BillingClient.ProductType.INAPP;
+    }
 
     private final Activity act;
     private final Kopru kopru;
@@ -102,15 +107,19 @@ final class Odeme implements PurchasesUpdatedListener {
 
     /** Google Play'den güncel sahiplik: iade edilen ürün burada düşer. */
     private void yenile(Runnable bitti) {
+        // önce tek seferlik ürünler (bekleyen jetonlar tüketilir), sonra abonelikler
         istemci.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(), (r, alimlar) -> {
-            if (r.getResponseCode() == BillingClient.BillingResponseCode.OK && alimlar != null) {
-                Set<String> yeni = new HashSet<>();
-                for (Purchase p : alimlar) if (isle(p)) yeni.addAll(p.getProducts());
-                sahip.clear();
-                for (String s : yeni) if (KALICI.contains(s)) sahip.add(s);
-                kaydet();
-            }
-            if (bitti != null) bitti.run();
+            if (r.getResponseCode() == BillingClient.BillingResponseCode.OK && alimlar != null) for (Purchase p : alimlar) isle(p);
+            istemci.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build(), (r2, abonelikler) -> {
+                if (r2.getResponseCode() == BillingClient.BillingResponseCode.OK && abonelikler != null) {
+                    Set<String> yeni = new HashSet<>();
+                    for (Purchase p : abonelikler) if (isle(p)) yeni.addAll(p.getProducts());
+                    sahip.clear();
+                    for (String s : yeni) if (KALICI.contains(s)) sahip.add(s);
+                    kaydet();
+                }
+                if (bitti != null) bitti.run();
+            });
         });
     }
 
@@ -179,8 +188,15 @@ final class Odeme implements PurchasesUpdatedListener {
     private void bilgiYukle(List<String> idler, Runnable bitti) {
         List<QueryProductDetailsParams.Product> l = new ArrayList<>();
         for (String id : idler) {
-            l.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.INAPP).build());
+            l.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(tip(id)).build());
         }
+        // Play bir sorguda tek ürün türü ister: tek seferlik ve abonelikler ayrı sorgulanır
+        final List<QueryProductDetailsParams.Product> inapp = new ArrayList<>(), subs = new ArrayList<>();
+        for (int i = 0; i < l.size(); i++) (KALICI.contains(idler.get(i)) ? subs : inapp).add(l.get(i));
+        sorguCalistir(inapp, () -> sorguCalistir(subs, bitti));
+    }
+
+    private void sorguCalistir(List<QueryProductDetailsParams.Product> l, Runnable bitti) {
         if (l.isEmpty()) {
             bitti.run();
             return;
@@ -195,6 +211,22 @@ final class Odeme implements PurchasesUpdatedListener {
         });
     }
 
+    /** Aboneliğin temel planı (deneme/indirim teklifi olmayan) */
+    private static ProductDetails.SubscriptionOfferDetails temelPlan(ProductDetails d) {
+        List<ProductDetails.SubscriptionOfferDetails> l = d.getSubscriptionOfferDetails();
+        if (l == null || l.isEmpty()) return null;
+        for (ProductDetails.SubscriptionOfferDetails o : l) if (o.getOfferId() == null) return o;
+        return l.get(0);
+    }
+
+    private static String fiyat(ProductDetails d) {
+        if (d.getOneTimePurchaseOfferDetails() != null) return d.getOneTimePurchaseOfferDetails().getFormattedPrice();
+        ProductDetails.SubscriptionOfferDetails o = temelPlan(d);
+        if (o == null) return null;
+        List<ProductDetails.PricingPhase> f = o.getPricingPhases().getPricingPhaseList();
+        return f.isEmpty() ? null : f.get(f.size() - 1).getFormattedPrice();
+    }
+
     void sorgula(String istek, String csv) {
         final List<String> idler = new ArrayList<>();
         if (csv != null) for (String s : csv.split("[,;\\s]+")) if (tanimli(s.trim())) idler.add(s.trim());
@@ -204,10 +236,11 @@ final class Odeme implements PurchasesUpdatedListener {
                 synchronized (bilgi) {
                     for (String id : idler) {
                         ProductDetails d = bilgi.get(id);
-                        if (d == null || d.getOneTimePurchaseOfferDetails() == null) continue;
+                        String f = d == null ? null : fiyat(d);
+                        if (f == null) continue;
                         JSONObject o = new JSONObject();
                         o.put("id", id);
-                        o.put("price", d.getOneTimePurchaseOfferDetails().getFormattedPrice());
+                        o.put("price", f);
                         a.put(o);
                     }
                 }
@@ -237,11 +270,19 @@ final class Odeme implements PurchasesUpdatedListener {
                 kopru.gonder(istek, false, "hata", "playde-yok");
                 return;
             }
+            BillingFlowParams.ProductDetailsParams.Builder pb = BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d);
+            if (KALICI.contains(pid)) {
+                ProductDetails.SubscriptionOfferDetails o = temelPlan(d);
+                if (o == null) {
+                    kopru.gonder(istek, false, "hata", "playde-yok");
+                    return;
+                }
+                pb.setOfferToken(o.getOfferToken());
+            }
             alIstek = istek;
             alId = pid;
             BillingResult r = istemci.launchBillingFlow(act, BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(Collections.singletonList(
-                            BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build()))
+                    .setProductDetailsParamsList(Collections.singletonList(pb.build()))
                     .build());
             if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) {
                 alIstek = null;
