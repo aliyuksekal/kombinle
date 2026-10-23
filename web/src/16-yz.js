@@ -28,6 +28,8 @@ function yzHataMetni(e, varsayilan) {
   var k = e && e.message;
   if (k === 'kota') return t('yzKota');
   if (k === 'engelli') return t('engellendin');
+  if (k === 'yz_anahtar') return t('yzKapali');
+  if (k === 'yz_yogun') return t('yzYogun');
   return varsayilan;
 }
 

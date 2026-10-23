@@ -45,6 +45,11 @@ jobs:
             echo "Sunucu gizli anahtarları yok; APK yapay zekâsız derlenecek."
             exit 0
           fi
+          # kopyalarken gelen boşluk, satır sonu ya da tırnaklar anahtarı bozmasın
+          GEMINI_API_KEY=$(printf '%s' "$GEMINI_API_KEY" | tr -d '[:space:]"'"'")
+          export GEMINI_API_KEY
+          echo "::add-mask::$GEMINI_API_KEY"
+          echo "Yapay zekâ anahtarı uzunluğu: ${#GEMINI_API_KEY} (başı: ${GEMINI_API_KEY:0:4}…)"
           UYGULAMA_ANAHTARI=$(printf '%s' "kombinle-uygulama:$GEMINI_API_KEY" | sha256sum | cut -d' ' -f1)
           echo "::add-mask::$UYGULAMA_ANAHTARI"
           echo "UYGULAMA_ANAHTARI=$UYGULAMA_ANAHTARI" >> "$GITHUB_ENV"
@@ -59,7 +64,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OLC_CIKTI: /tmp/TANIMA.md
-        run: node server/test/tanima-olc.mjs
+        run: |
+          GEMINI_API_KEY=$(printf '%s' "$GEMINI_API_KEY" | tr -d '[:space:]"'"'")
+          export GEMINI_API_KEY
+          node server/test/tanima-olc.mjs
 
       - name: APK derle (küçültülmüş, imzalı)
         env:

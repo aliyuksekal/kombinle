@@ -271,6 +271,7 @@ async function yz(env, parcalar, sema, ayar) {
       throw new Hata('yz_zaman', 504);
     }
     if (r.status === 429) throw new Hata('yz_yogun', 503);
+    if (r.status === 401 || r.status === 403) { console.error('yz anahtarı geçersiz ya da yetkisiz', r.status); throw new Hata('yz_anahtar', 503); }
     if (!r.ok) {
       const ayrinti = (await r.text().catch(() => '')).slice(0, 600);
       console.warn('yz', model, r.status, ayrinti);

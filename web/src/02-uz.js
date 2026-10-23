@@ -215,5 +215,6 @@ DIL.uz = {
   bnBegendi: 'obrazingizni yoqtirdi', bnYorum: function (m) { return 'izoh qoldirdi: ' + m; }, bnTakip: "sizga obuna bo'ldi",
   etiketBos: function (e) { return '#' + e + " bilan hali ulashish yo'q."; }, aciklamaDuzenle: 'Tavsifni tahrirlash',
   prKaydet: 'Saqlash', prKaydedildi: "Saqlanganlarga qo'shildi", prKayitKaldirildi: 'Saqlanganlardan olindi', avResimHata: "Rasm o'qilmadi yoki juda katta.", sinirDoldu: 'Chegaraga yetdingiz.',
-  kiyafetDegil: "Rasmda kiyim ko'rinmadi. Turini pastdan tanlang.", bulutHata: "Kombinle AI hozir taniy olmadi; bu qurilma taxmini, tekshiring.", yenidenTani: 'AI bilan qayta tanish', taniniyor: 'Tanilmoqda…', digerOlasilik: 'Boshqa ehtimollar:'
+  kiyafetDegil: "Rasmda kiyim ko'rinmadi. Turini pastdan tanlang.", bulutHata: "Kombinle AI hozir taniy olmadi; bu qurilma taxmini, tekshiring.", yenidenTani: 'AI bilan qayta tanish', taniniyor: 'Tanilmoqda…', digerOlasilik: 'Boshqa ehtimollar:',
+  yzKapali: "Kombinle AI texnik xizmatda; birozdan so'ng urinib ko'ring.", yzYogun: "Kombinle AI hozir band; bir necha soniyadan so'ng urinib ko'ring."
 };
