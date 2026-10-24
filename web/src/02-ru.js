@@ -13,7 +13,7 @@ DIL.ru = {
   etUsur: 'С учётом того, что ты мёрзнешь', etSicaklar: 'С учётом того, что тебе жарко',
   enDusukYuksek: function (a, b) { return 'сегодня от ' + a + '° до ' + b + '°'; },
   hvFirtina: 'Гроза', hvKar: 'Снег', hvSaganak: 'Ливень', hvYagmur: 'Дождь', hvHafifYagmur: 'Небольшой дождь', hvSis: 'Туман', hvAcik: 'Солнечно', hvAcikGece: 'Ясно', hvParcali: 'Переменная облачность', hvBulutlu: 'Облачно',
-  kaynakMet: 'Погода: MET Norway', kaynakMetUzun: 'Данные о погоде: MET Norway (CC BY 4.0).', kaynakModel: 'Модель распознавания одежды обучена на данных Fashionpedia (CC BY 4.0).', eskiVeri: 'Последние сохранённые данные.',
+  kaynakMet: 'Погода: MET Norway', kaynakMetUzun: 'Данные о погоде: MET Norway (CC BY 4.0).', kaynakModel: 'Модели распознавания одежды обучены на данных Fashionpedia (CC BY 4.0) и Open Images (разметка CC BY 4.0, фото CC BY 2.0).', eskiVeri: 'Последние сохранённые данные.',
   istekBaslik: 'Куда ты сегодня идёшь?', istekEtiket: 'Твои планы', istekYer: 'Например: днём у меня встреча', sesleSoyle: 'Сказать голосом', ortamSec: 'Выбери повод',
   kombinOner: 'Создать образ дня', hazirlaniyor: 'Подбираю образ…', havaGerek: 'Сначала загрузи погоду или задай её вручную.',
   kombinYok: 'Не нашла подходящий образ. Добавь ещё немного одежды.', onerimiz: 'Образ дня', kacinci: function (a, b) { return a + ' / ' + b; },

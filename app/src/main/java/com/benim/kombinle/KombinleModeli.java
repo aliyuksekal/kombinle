@@ -38,8 +38,8 @@ final class KombinleModeli {
     private Interpreter yorum;
     private int girdi;
     private int zemin = Color.WHITE;
-    private JSONArray siniflar, desenler;
-    private int turCikis = -1, desenCikis = -1;
+    private JSONArray siniflar, desenler, kollar, boylar;
+    private int turCikis = -1, desenCikis = -1, kolCikis = -1, boyCikis = -1;
     private boolean denendi = false, hazir = false;
 
     KombinleModeli(Context ctx) {
@@ -77,6 +77,12 @@ final class KombinleModeli {
             girdi = b.optInt("girdi", 224);
             siniflar = b.getJSONArray("siniflar");
             desenler = b.getJSONArray("desenler");
+            /* 2. sürüm modelde isteğe bağlı çıkışlar: kol boyu, etek/elbise boyu */
+            kollar = b.optJSONArray("kollar");
+            boylar = b.optJSONArray("boylar");
+            if (kollar != null && (kollar.length() < 2 || kollar.length() == siniflar.length() || kollar.length() == desenler.length())) kollar = null;
+            if (boylar != null && (boylar.length() < 2 || boylar.length() == siniflar.length() || boylar.length() == desenler.length()
+                    || (kollar != null && boylar.length() == kollar.length()))) boylar = null;
             String z = b.optString("zemin", "#ffffff");
             if (z.matches("#[0-9a-fA-F]{6}")) zemin = 0xFF000000 | Integer.parseInt(z.substring(1), 16);
             if (girdi < 32 || girdi > 640 || siniflar.length() < 2 || desenler.length() < 2 || siniflar.length() == desenler.length()) return false;
@@ -103,6 +109,8 @@ final class KombinleModeli {
                 if (t.dataType() != DataType.FLOAT32 || s.length != 2) continue;
                 if (s[1] == siniflar.length()) turCikis = i;
                 else if (s[1] == desenler.length()) desenCikis = i;
+                else if (kollar != null && s[1] == kollar.length()) kolCikis = i;
+                else if (boylar != null && s[1] == boylar.length()) boyCikis = i;
             }
             if (turCikis < 0 || desenCikis < 0) {
                 kapat();
@@ -146,6 +154,10 @@ final class KombinleModeli {
         Map<Integer, Object> cikis = new HashMap<>();
         cikis.put(turCikis, tur);
         cikis.put(desenCikis, desen);
+        float[][] kol = kolCikis >= 0 ? new float[1][kollar.length()] : null;
+        float[][] boy = boyCikis >= 0 ? new float[1][boylar.length()] : null;
+        if (kol != null) cikis.put(kolCikis, kol);
+        if (boy != null) cikis.put(boyCikis, boy);
         yorum.runForMultipleInputsOutputs(new Object[]{giris}, cikis);
 
         JSONArray enIyi = new JSONArray();
@@ -163,7 +175,15 @@ final class KombinleModeli {
         JSONObject r = new JSONObject();
         r.put("siniflar", enIyi);
         r.put("desen", d);
+        if (kol != null) r.put("kol", olasiliklar(kollar, kol[0]));
+        if (boy != null) r.put("boy", olasiliklar(boylar, boy[0]));
         return r;
+    }
+
+    private static JSONObject olasiliklar(JSONArray adlar, float[] p) throws Exception {
+        JSONObject o = new JSONObject();
+        for (int i = 0; i < p.length && i < adlar.length(); i++) o.put(adlar.getString(i), Math.round(p[i] * 1000) / 1000.0);
+        return o;
     }
 
     synchronized void kapat() {

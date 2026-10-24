@@ -53,7 +53,9 @@ function parcaDuzenle(p, yeni) {
     if (TUR[tas.tur] && TUR[tas.tur].ozel) { tas.ad = kirp(rk + ' ' + tr, 40); return; }
     var dil = A.dil === 'en' ? 'en' : A.dil === 'ru' ? 'ru' : A.dil === 'uz' ? 'uz' : 'tr';
     var kucuk = function (x) { return x.split(' / ')[0].toLocaleLowerCase(dil === 'tr' ? 'tr' : dil); };
-    tas.ad = kirp(dil === 'ru' ? tr.split(' / ')[0] + ', ' + kucuk(rk) : rk + ' ' + kucuk(tr), 40);
+    /* Kombinle modeli kol / etek boyunu gördüyse ada eklenir (tür değişmediyse) */
+    var on = an && an.modelOn && an.modelOnTur === tas.tur ? t(an.modelOn) : '';
+    tas.ad = kirp(dil === 'ru' ? tr.split(' / ')[0] + (on ? ' ' + on : '') + ', ' + kucuk(rk) : rk + ' ' + (on ? on + ' ' : '') + kucuk(tr), 40);
   }
   if (an && LS.al('ayikla', false)) try { console.info('analiz ' + JSON.stringify({ g: an.guven, t: an.turlar, o: an.ozellik, p: an.olasilik })); } catch (e) { }
   var acikGrup = tas.tur ? TUR[tas.tur].g : (an && an.grup) || 'ust';

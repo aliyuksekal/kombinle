@@ -42,6 +42,7 @@ public final class Kopru {
     private ImageLabeler etiketleyici;
     private SubjectSegmenter ayirici;
     private KombinleModeli model;
+    private KombinleParca parca;
     volatile boolean guvenli = false;
     volatile long sonGeriYanit = 0;
 
@@ -299,6 +300,13 @@ public final class Kopru {
                 JSONObject sonuc = model.tani(bmp);
                 // boydan/üzerinde çekilmiş fotoğraf mı? (yüz varsa uygulama hangi parçanın ekleneceğini sorar)
                 try { sonuc.put("yuz", yuzSay(bmp)); } catch (Throwable ignored) { }
+                // parça haritası (varsa): boydan fotoğraftaki parçaların kutuları, internetsiz
+                try {
+                    synchronized (this) {
+                        if (parca == null && KombinleParca.dosyaVar(ekran.getApplicationContext())) parca = new KombinleParca(ekran.getApplicationContext());
+                    }
+                    if (parca != null && parca.hazirla()) sonuc.put("parcalar", parca.parcala(bmp));
+                } catch (Throwable ignored) { }
                 bmp.recycle();
                 gonder(req, true, "sonuc", sonuc);
             } catch (Throwable t) {
@@ -566,5 +574,7 @@ public final class Kopru {
         }
         final KombinleModeli m = model;
         if (m != null) MODEL_SIRA.execute(m::kapat);
+        final KombinleParca pm = parca;
+        if (pm != null) MODEL_SIRA.execute(pm::kapat);
     }
 }

@@ -8,7 +8,7 @@ var PS_KATEGORI = [['ust', 'psUst'], ['alt', 'psAlt'], ['tek', 'psElbise'], ['di
 
 function parcaSecimiGerek(sonuc) {
   var an = sonuc && sonuc.analiz;
-  if (!an || !an.bulut || !sonuc.kaynak || sonuc.kaynak._tek || !Array.isArray(an.parcalar)) return false;
+  if (!an || !(an.bulut || an.parcaModel) || !sonuc.kaynak || sonuc.kaynak._tek || !Array.isArray(an.parcalar)) return false;
   return an.parcalar.length >= 2 || (an.kisi && an.parcalar.length >= 1);
 }
 
@@ -157,4 +157,26 @@ Object.assign(DIL.uz, {
   psBulunamadi: function (x) { return 'Rasmda "' + x + '" topilmadi.'; }, psKesilemedi: "Rasm kesilmadi, qayta urinib ko'ring.",
   psUst: "Ust (bluzka, ko'ylak, futbolka)", psAlt: 'Past (shim, yubka)', psElbise: "Ko'ylak / kombinezon", psDis: 'Kurtka / palto', psAyk: 'Poyabzal', psCanta: 'Sumka',
   psSapka: "Shlyapa / do'ppi", psCorap: 'Paypoq', psGozluk: "Ko'zoynak", psTaki: 'Taqinchoq', psKemer: 'Kamar', psEsarp: "Ro'mol / sharf"
+});
+
+/* Kombinle parça haritası (telefonda) parça adları; kol / etek boyu ad ekleri */
+Object.assign(DIL.tr, {
+  pm_ust: 'Üst', pm_dis: 'Ceket / mont', pm_alt: 'Pantolon / şort', pm_etek: 'Etek', pm_elbise: 'Elbise / tulum', pm_ayakkabi: 'Ayakkabı',
+  pm_canta: 'Çanta', pm_sapka: 'Şapka / bere', pm_gozluk: 'Gözlük', pm_atki: 'Atkı / eşarp', pm_kemer: 'Kemer', pm_corap: 'Çorap',
+  kol_kolsuz: 'kolsuz', kol_kisa: 'kısa kollu', kol_uzun: 'uzun kollu', boy_mini: 'mini', boy_midi: 'midi', boy_maksi: 'maksi'
+});
+Object.assign(DIL.en, {
+  pm_ust: 'Top', pm_dis: 'Jacket / coat', pm_alt: 'Trousers / shorts', pm_etek: 'Skirt', pm_elbise: 'Dress / jumpsuit', pm_ayakkabi: 'Shoes',
+  pm_canta: 'Bag', pm_sapka: 'Hat', pm_gozluk: 'Glasses', pm_atki: 'Scarf', pm_kemer: 'Belt', pm_corap: 'Socks',
+  kol_kolsuz: 'sleeveless', kol_kisa: 'short-sleeve', kol_uzun: 'long-sleeve', boy_mini: 'mini', boy_midi: 'midi', boy_maksi: 'maxi'
+});
+Object.assign(DIL.ru, {
+  pm_ust: 'Верх', pm_dis: 'Куртка / пальто', pm_alt: 'Брюки / шорты', pm_etek: 'Юбка', pm_elbise: 'Платье / комбинезон', pm_ayakkabi: 'Обувь',
+  pm_canta: 'Сумка', pm_sapka: 'Шляпа / шапка', pm_gozluk: 'Очки', pm_atki: 'Шарф / платок', pm_kemer: 'Ремень', pm_corap: 'Носки',
+  kol_kolsuz: 'без рукавов', kol_kisa: 'с коротким рукавом', kol_uzun: 'с длинным рукавом', boy_mini: 'мини', boy_midi: 'миди', boy_maksi: 'макси'
+});
+Object.assign(DIL.uz, {
+  pm_ust: 'Ust', pm_dis: 'Kurtka / palto', pm_alt: 'Shim / shorti', pm_etek: 'Yubka', pm_elbise: "Ko'ylak / kombinezon", pm_ayakkabi: 'Poyabzal',
+  pm_canta: 'Sumka', pm_sapka: 'Shlyapa', pm_gozluk: "Ko'zoynak", pm_atki: "Sharf / ro'mol", pm_kemer: 'Kamar', pm_corap: 'Paypoq',
+  kol_kolsuz: 'yengsiz', kol_kisa: 'kalta yengli', kol_uzun: 'uzun yengli', boy_mini: 'mini', boy_midi: 'midi', boy_maksi: 'maksi'
 });

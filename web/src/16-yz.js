@@ -70,6 +70,7 @@ function bulutBirlestir(an, s) {
     return k ? { ad: kirp(x.ad, 40), kategori: typeof x.kategori === 'string' ? x.kategori : '', kutu: k } : null;
   }).filter(Boolean).slice(0, 8) : [];
   if (s.kiyafet === false) { an.kiyafetDegil = true; an.bulut = true; return; }
+  an.kiyafetDegil = false; an.modelYok = false;
   if (!TUR[s.tur] || !sayiMi(s.guven)) return;
   var alt = Array.isArray(s.alternatifler) ? s.alternatifler.filter(function (x, i, d) { return typeof x === 'string' && TUR[x] && x !== s.tur && d.indexOf(x) === i; }) : [];
   an.turlar = [s.tur].concat(alt, (an.turlar || []).filter(function (x) { return x !== s.tur && alt.indexOf(x) < 0; })).slice(0, 4);

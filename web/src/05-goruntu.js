@@ -98,6 +98,9 @@ function fotografIsle(kaynak) {
     var bulut = modelVar()
       ? Promise.all([modelSonuc, yz]).then(function (r) {
         if (r[0]) modelBirlestir(analiz, r[0]);
+        /* boydan fotoğraf: parça haritası parçaları bulduysa ayırma telefonda yapılır, buluta gidilmez */
+        if (!ek && modelParcaKullan(analiz)) { analiz.bulutAtlandi = true; analiz._bulutVeri = bulutVeri; return null; }
+        if (analiz.modelYok && !(analiz.yuz > 0)) analiz.kiyafetDegil = true;
         if (!bulutVeri) return null;
         if (modelYeterli(analiz)) { analiz.bulutAtlandi = true; analiz._bulutVeri = bulutVeri; return null; }
         return yzTani(bulutVeri, ek).catch(function () { return null; });
@@ -436,7 +439,8 @@ function yapayZekaBirlestir(an, etiketler) {
 /* ---------- Kombinle modeli (kendi eğitilmiş modelimiz, telefonda, internetsiz) ----------
    egitim/kombinle_model_egitimi.ipynb ile eğitilir; APK'da model yoksa bu bölüm hiç çalışmaz.
    Model eminse (≥ MODEL_ESIK) sonuç buluta sorulmadan kullanılır: hızlı ve maliyetsiz. */
-var MODEL_ESIK = 0.75;
+var MODEL_ESIK = 0.75, MODEL_YOK_ESIK = 0.9;
+var TAKI_TURLERI = { kupe: 1, kolye: 1, bileklik: 1, taki: 1 };
 var TAKI_ETIKETI = /^(Necklace|Bracelet|Bangle|Jewellery|Jewelry|Earring|Earrings|Ring|Chain|Pendant|Brooch|Locket)$/;
 var DESEN_TURLERI = ['duz', 'cizgili', 'kareli', 'cicekli', 'puantiyeli', 'hayvan', 'diger'];
 var modelDurum = null;
@@ -453,10 +457,58 @@ function modelTani(b64) {
     return d && d.ok && d.sonuc && typeof d.sonuc === 'object' ? d.sonuc : null;
   }).catch(function () { return null; });
 }
+/* olasılık tablosundan en olası ad (en az `esik` olasılıkla) */
+function enOlasi(o, adlar, esik) {
+  var en = '', p = -1;
+  if (!o || typeof o !== 'object') return '';
+  adlar.forEach(function (a) { if (sayiMi(o[a]) && o[a] > p) { p = o[a]; en = a; } });
+  return p >= esik ? en : '';
+}
+var KOL_ADLARI = ['kolsuz', 'kisa', 'orta', 'uzun'], BOY_ADLARI = ['mini', 'dizustu', 'diz', 'midi', 'maksi'];
+var PARCA_HARITA_GRUP = { ust: 'ust', dis: 'dis', alt: 'alt', etek: 'alt', elbise: 'tek', ayakkabi: 'ayk', canta: 'aks', sapka: 'aks', gozluk: 'aks', atki: 'aks', kemer: 'aks', corap: 'ic' };
+function modelParcalariAl(m) {
+  if (!Array.isArray(m.parcalar)) return null;
+  return m.parcalar.map(function (x) {
+    var k = x && typeof x.sinif === 'string' && PARCA_HARITA_GRUP[x.sinif] && kutuGecerli(x.kutu);
+    if (!k || !sayiMi(x.alan) || !sayiMi(x.p)) return null;
+    return { ad: t('pm_' + x.sinif), kategori: PARCA_HARITA_GRUP[x.sinif], kutu: k, alan: Math.max(0, Math.min(1, x.alan)), p: x.p, sinif: x.sinif };
+  }).filter(Boolean).slice(0, 8);
+}
+/* Parça haritası boydan fotoğrafı ayırdı mı? Üzerinde (yüz görünen) çekimde bir parça yeter;
+   yüz yoksa (ör. yere serilmiş kombin, yüzü telefonla kapalı ayna çekimi) en az iki büyük, farklı parça gerekir. */
+function modelParcaKullan(an) {
+  var l = an && an.modelParcalar;
+  if (!l || !l.length) return false;
+  var guvenli = l.filter(function (x) { return x.p >= 0.55; });
+  var kisi = an.yuz > 0 || (an.yzEtiket || []).some(function (e) { return e && e.t === 'Selfie' && sayiMi(e.c) && e.c >= 0.5; });
+  var buyuk = guvenli.filter(function (x) { return x.alan >= 0.06; });
+  var farkli = buyuk.filter(function (x, i, d) { return d.findIndex(function (y) { return y.kategori === x.kategori; }) === i; });
+  if (!(kisi ? guvenli.length >= 1 : farkli.length >= 2)) return false;
+  an.parcalar = guvenli.map(function (x) { return { ad: x.ad, kategori: x.kategori, kutu: x.kutu }; });
+  an.kisi = kisi;
+  an.parcaModel = true;
+  return true;
+}
+/* Model kol/etek boyunu biliyorsa otomatik ada eklenir: "Siyah uzun kollu bluz", "Bordo midi etek" */
+function modelAdOner(an) {
+  var tur = an.turlar && an.turlar[0], T = TUR[tur];
+  an.modelOn = '';
+  if (!T) return;
+  if ((T.g === 'ust' || T.g === 'tek' || T.g === 'dis') && an.kol && an.kol !== 'orta' && tur !== 'askili' && tur !== 'yelek') an.modelOn = 'kol_' + an.kol;
+  else if ((tur === 'etek' || tur === 'uzunetek' || tur === 'elbise' || tur === 'uzunelbise') && (an.boy === 'mini' || an.boy === 'midi' || an.boy === 'maksi')) an.modelOn = 'boy_' + an.boy;
+  an.modelOnTur = an.modelOn ? tur : '';
+}
 function modelBirlestir(an, m) {
   if (an && m && sayiMi(m.yuz) && m.yuz > 0) an.yuz = Math.min(3, m.yuz);   // fotoğrafta biri var: üzerindeki parçalardan seçilecek
+  if (an && m) { var mp = modelParcalariAl(m); if (mp) an.modelParcalar = mp; }
   if (!an || !m || !Array.isArray(m.siniflar) || !m.siniflar.length) return false;
   var s = m.siniflar[0];
+  /* kıyafet değil: model çok eminse 🫪, buluta gidilmez */
+  if (s && s.id === 'yok' && sayiMi(s.p)) {
+    an.model = { sinif: 'yok', p: Math.max(0, Math.min(1, s.p)) };
+    if (s.p >= MODEL_YOK_ESIK) an.modelYok = true;
+    return false;
+  }
   if (!s || typeof s.id !== 'string' || !sayiMi(s.p) || !GRUPLAR.some(function (g) { return g.id === s.grup; })) return false;
   var p = Math.max(0, Math.min(1, s.p));
   /* desen: model bir yöne açıkça eğilimliyse cihaz içi tahminin yerine geçer */
@@ -467,6 +519,8 @@ function modelBirlestir(an, m) {
     if (enDesen) an.desenTur = enDesen;
   }
   an.model = { sinif: kirp(s.id, 24), p: p };
+  an.kol = enOlasi(m.kol, KOL_ADLARI, 0.6);
+  an.boy = enOlasi(m.boy, BOY_ADLARI, 0.6);
   if (p < 0.5) return false;
   var adaylar = (Array.isArray(s.turlar) ? s.turlar : []).filter(function (x, i, d) { return typeof x === 'string' && TUR[x] && TUR[x].g === s.grup && d.indexOf(x) === i; });
   /* alt türünü bilmediği sınıflarda (ör. ayakkabı) cihaz içi analizin sırası korunur */
@@ -477,18 +531,29 @@ function modelBirlestir(an, m) {
   if (an.yzTur && TUR[an.yzTur] && TUR[an.yzTur].g === s.grup && an.yzTurC >= 0.75) {
     liste = [an.yzTur].concat(liste.filter(function (x) { return x !== an.yzTur; }));
   }
+  /* kol / boy bilgisi aday sırasını düzeltir (ör. uzun kollu üst: kazak/gömlek öne; maksi: uzun etek/elbise öne) */
+  var one = function (x) { var i = liste.indexOf(x); if (i > 0) { liste.splice(i, 1); liste.unshift(x); } };
+  if (p < 0.8) {
+    if (s.grup === 'ust' && an.kol === 'kolsuz') one('askili');
+    if (s.grup === 'alt' && an.boy === 'maksi') one('uzunetek');
+    if (s.grup === 'tek' && an.boy === 'maksi') one('uzunelbise');
+  }
   an.turlar = liste.slice(0, 4);
   an.grup = s.grup;
   an.guven = p;
   an.yz = true;
   an.sekilYok = false;
+  modelAdOner(an);
   return true;
 }
-/* Model sonucu tek başına yeterli mi? Takı olabilecek fotoğraflar her zaman buluta gider (modelde takı yok). */
+/* Model sonucu tek başına yeterli mi? Takı olabilecek fotoğrafı model takı olarak tanımadıysa bulut bakar. */
 function modelYeterli(an) {
+  if (an && an.modelYok && !(an.yuz > 0)) return true;   // kıyafet değil (model çok emin)
   if (!an || !an.model || an.model.p < MODEL_ESIK || an.grup !== (an.turlar[0] && TUR[an.turlar[0]] ? TUR[an.turlar[0]].g : '')) return false;
   /* üzerinde çekilmiş (yüz ya da özçekim görünen) fotoğrafta birden çok parça olabilir: bulut parçaları ayırır */
   if (an.yuz > 0 || (an.yzEtiket || []).some(function (e) { return e && e.t === 'Selfie' && sayiMi(e.c) && e.c >= 0.5; })) return false;
+  /* yeni model takıyı (küpe, kolye, bileklik) tanıyor: takı dediyse yeterli; başka bir şey dediyse ama fotoğrafta takı olabilirse bulut bakar */
+  if (TAKI_TURLERI[an.turlar[0]]) return true;
   var taki = (an.yzEtiket || []).some(function (e) { return e && typeof e.t === 'string' && TAKI_ETIKETI.test(e.t) && sayiMi(e.c) && e.c >= 0.5; });
   return !taki;
 }
