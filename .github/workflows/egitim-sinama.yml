@@ -1,0 +1,51 @@
+name: Eğitim defterleri sınaması
+
+# Colab defterlerini sahte küçük veriyle (KB_SINAMA=1) baştan sona çalıştırır:
+# veri hazırlama, eğitim, doğruluk ölçümü ve telefon modeline (TFLite) dönüştürme.
+# Gerçek eğitim Colab'da yapılır; bu iş yalnız defterlerin bozulmadığını gösterir.
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['egitim/**', '.github/workflows/egitim-sinama.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sina:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        defter: [kombinle_model_egitimi, kombinle_parca_egitimi]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Kurulum
+        run: pip install --quiet 'tensorflow-cpu==2.19.*' scipy pillow numpy nbconvert ipykernel
+      - name: Defteri çalıştır
+        env:
+          KB_SINAMA: '1'
+          KB_CALISMA: ${{ runner.temp }}/kb
+        run: |
+          jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=2400 \
+            --output-dir "$RUNNER_TEMP/cikti" "egitim/${{ matrix.defter }}.ipynb"
+          ls -la "$RUNNER_TEMP/kb/cikti"
+          python - <<'E'
+          import json, os, glob
+          for j in glob.glob(os.path.join(os.environ['RUNNER_TEMP'], 'kb', 'cikti', '*.json')):
+              d = json.load(open(j))
+              print(os.path.basename(j), {k: d[k] for k in d if k not in ('siniflar',)})
+          E
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.defter }}
+          path: |
+            ${{ runner.temp }}/cikti
+            ${{ runner.temp }}/kb/cikti
+          retention-days: 7
