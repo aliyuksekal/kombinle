@@ -32,14 +32,25 @@ jobs:
           KB_SINAMA: '1'
           KB_CALISMA: ${{ runner.temp }}/kb
         run: |
-          jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=2400 \
+          jupyter nbconvert --to notebook --execute --allow-errors --ExecutePreprocessor.timeout=2400 \
             --output-dir "$RUNNER_TEMP/cikti" "egitim/${{ matrix.defter }}.ipynb"
-          ls -la "$RUNNER_TEMP/kb/cikti"
-          python - <<'E'
-          import json, os, glob
-          for j in glob.glob(os.path.join(os.environ['RUNNER_TEMP'], 'kb', 'cikti', '*.json')):
-              d = json.load(open(j))
-              print(os.path.basename(j), {k: d[k] for k in d if k not in ('siniflar',)})
+          # sonuçlar ve hatalar iş özetine (annotation) yazılır: günlük indirmeden görülebilsin
+          python - "$RUNNER_TEMP/cikti/${{ matrix.defter }}.ipynb" <<'E'
+          import json, re, sys
+          nb = json.load(open(sys.argv[1]))
+          hata = False
+          for i, c in enumerate(nb['cells']):
+              for o in c.get('outputs', []):
+                  if o.get('output_type') == 'error':
+                      hata = True
+                      iz = [re.sub(r'\x1b\[[0-9;]*m', '', x) for x in o.get('traceback', [])]
+                      metin = ' | '.join(l.strip() for l in '\n'.join(iz).splitlines() if l.strip())[-1500:]
+                      print('::error title=Hücre %d::%s: %s ... %s' % (i, o.get('ename'), o.get('evalue', '')[:300], metin))
+                  elif o.get('output_type') == 'stream':
+                      for l in ''.join(o.get('text', '')).splitlines():
+                          if re.search(r'doğru|IoU|boyutu|uyum|Modele giren|aynı türü|çıkış|bilgisi olan|atlandı|Çıkış', l):
+                              print('::notice title=Hücre %d::%s' % (i, l.strip()[:300]))
+          sys.exit(1 if hata else 0)
           E
       - uses: actions/upload-artifact@v4
         if: always()
