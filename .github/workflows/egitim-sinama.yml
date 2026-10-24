@@ -48,7 +48,7 @@ jobs:
                       print('::error title=Hücre %d::%s: %s ... %s' % (i, o.get('ename'), o.get('evalue', '').replace('\n', ' ')[:600], metin))
                   elif o.get('output_type') == 'stream':
                       for l in ''.join(o.get('text', '')).splitlines():
-                          if re.search(r'doğru|IoU|boyutu|uyum|Modele giren|aynı türü|çıkış|bilgisi olan|atlandı|Çıkış', l):
+                          if re.search(r'doğru|IoU|boyut|uyum|Modele giren|aynı türü|çıkış|bilgisi olan|atlandı|Çıkış', l):
                               print('::notice title=Hücre %d::%s' % (i, l.strip()[:300]))
           sys.exit(1 if hata else 0)
           E
