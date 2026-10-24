@@ -624,7 +624,7 @@ function kombinKolaji(k, bilgi) {
       var img = o.img;
       if (o.kesik) {
         /* saydam (arka planı silinmiş) parça: gölgeli, kutusuz */
-        var oo = Math.min((h2.w - 20) / img.width, (h2.h - 20) / img.height);
+        var oo = Math.min((h2.w - 6) / img.width, (h2.h - 6) / img.height);
         var w = img.width * oo, hh = img.height * oo;
         x.save(); x.shadowColor = 'rgba(31,26,35,.18)'; x.shadowBlur = 26; x.shadowOffsetY = 12;
         x.drawImage(img, h2.x + (h2.w - w) / 2, h2.y + (h2.h - hh) / 2, w, hh); x.restore();

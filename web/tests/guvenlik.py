@@ -47,6 +47,7 @@ with sync_playwright() as pw:
     p.go_back(); p.wait_for_timeout(400)
     p.evaluate(APKPAY, [])
     p.click('#jetonHap'); p.wait_for_timeout(600)
+    p.locator('.sayfa.acik .g-pro-plan button', has_text='Aylık').click(); p.wait_for_timeout(200)
     ok('₺149,99' in p.inner_text('.sayfa.acik'), 'PRO fiyatı Play’den geldi')
     p.click('.sayfa.acik .g-pro-btn'); p.wait_for_timeout(700)
     ok('PRO' in p.inner_text('#jetonHap'), 'satın alma sonrası PRO rozeti')

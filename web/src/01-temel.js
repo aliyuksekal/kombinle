@@ -6,7 +6,9 @@
    ========================================================= */
 
 var SURUM = '1.0.0';
-var PRO_URUN = 'kombinle_pro_aylik';
+var PRO_URUN = 'kombinle_pro_aylik', PRO_URUN_YIL = 'kombinle_pro_yillik';
+/* aylık ya da yıllık PRO aboneliğinden biri Play'de etkin mi */
+function proSahibi() { try { return !!(odeme().owned(PRO_URUN) || odeme().owned(PRO_URUN_YIL)); } catch (e) { return false; } }
 var DESTEK_CAY = 'destek_cay', DESTEK_YEMEK = 'destek_yemek';
 var HAVA_ADRES = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 var GIZLILIK_ADRES = 'https://aliyuksekal.github.io/gizlilik/kombinle-gizlilik.html';
@@ -69,6 +71,7 @@ var IK = {
   kilit: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   dunya: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   buyut: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
+  kirp: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
   paylas: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>',
   yukari: '<path d="M7 10v11H3V10zM7 10l4-8c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.3l-1.4 8a2 2 0 0 1-2 1.7H7"/>',
   asagi: '<path d="M17 14V3h4v11zM17 14l-4 8c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.3l1.4-8a2 2 0 0 1 2-1.7H17"/>',

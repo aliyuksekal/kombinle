@@ -287,3 +287,24 @@ html[data-tema="koyu"] .g-pro{background:#0E0C0F!important;border-color:var(--al
 .ps-diger-btn{color:var(--murekkep)}
 .tahmin.uyari{background:var(--yuzey2)!important;border:1px solid var(--cizgi)!important}
 .tahmin.uyari svg{color:var(--uyari)}
+/* PRO: yıllık / aylık seçimi */
+.g-pro-plan{display:flex;width:100%;margin:0 0 14px;background:rgba(255,255,255,.08);border-radius:12px}
+.g-pro-plan button{flex:1;color:#CFC7D2;padding:8px 0}
+.g-pro-plan button[aria-pressed="true"]{background:#F4EFE7;color:#1F1A23;box-shadow:none}
+.g-pro-yil-alt{margin:6px 0 0;font-size:12.5px;color:#D8B98A}
+/* Arka planı silinmiş parçalar çerçeveyi doldursun (küçülmüş görünmesin) */
+.g-giysi.kesik .foto img,.giysi-kart.kesik .foto img{padding:3%}
+.g-parca.kesik img,.parca.kesik img{padding:2%}
+.oge.kesik img{padding:4%}
+/* Elle kırpma */
+.kirp-sayfa{display:flex;flex-direction:column;gap:12px}
+.kirp-alan{position:relative;align-self:center;max-width:100%;touch-action:none;-webkit-user-select:none;user-select:none;border-radius:12px;overflow:hidden;line-height:0;background:#fff}
+.kirp-alan.saydam{background:repeating-conic-gradient(#ECE9EE 0 25%,#FFFFFF 0 50%) 0 0/16px 16px}
+.kirp-resim{display:block;max-width:100%;max-height:58vh;width:auto;height:auto}
+.kirp-kutu{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(20,16,22,.55);cursor:move;
+  background:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 33.33% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 66.66% 0/1px 100% no-repeat,
+  linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 0 33.33%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) 0 66.66%/100% 1px no-repeat}
+.kirp-tut{position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.kirp-tut::after{content:'';position:absolute;inset:-12px}
+.kirp-tut.sol-ust{left:-12px;top:-12px}.kirp-tut.sag-ust{right:-12px;top:-12px}.kirp-tut.sol-alt{left:-12px;bottom:-12px}.kirp-tut.sag-alt{right:-12px;bottom:-12px}
+.kirp-arac{display:flex;justify-content:center}

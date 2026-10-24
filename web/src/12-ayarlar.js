@@ -111,8 +111,7 @@ function odemeBekle(ms) {
 function proDurumuDenetle() {
   return odemeBekle(4000).then(function (var_) {
     if (!var_) return;
-    var sahip = false;
-    try { sahip = !!odeme().owned(PRO_URUN); } catch (e) { }
+    var sahip = proSahibi();
     if (A.pro !== sahip) { A.pro = sahip; ayarKaydet(); }
     if (proHesapla()) ciz();
   });
@@ -120,8 +119,8 @@ function proDurumuDenetle() {
 function satinAlimlariGeriYukle() {
   if (!odemeHazir()) { tost(t('odemeYok')); return; }
   zamanAsimi(odeme().restore(), 20000).then(function (l) {
-    var sahip = Array.isArray(l) && l.indexOf(PRO_URUN) >= 0;
-    try { sahip = sahip || !!odeme().owned(PRO_URUN); } catch (e) { }
+    var sahip = Array.isArray(l) && (l.indexOf(PRO_URUN) >= 0 || l.indexOf(PRO_URUN_YIL) >= 0);
+    sahip = sahip || proSahibi();
     A.pro = sahip; ayarKaydet(); proHesapla();
     tost(sahip ? t('proGeriGeldi') : t('proBulunamadi')); ciz();
   }).catch(function () { tost(t('odemeTamamlanmadi')); });

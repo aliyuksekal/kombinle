@@ -519,7 +519,8 @@ function arkaPlanSil(blob) {
   }).then(function (c) {
     var kirpik = saydamKirp(c);
     if (!kirpik) throw new Error('kesilemedi');
-    var buyuk = olcekle(kirpik, 1024), kucuk = olcekle(kirpik, 420);
+    /* küçük kalan kesik büyütülür: arka planı silinen parça küçülmüş görünmesin */
+    var buyuk = olcekleEnAz(kirpik, 1024, 768), kucuk = olcekleEnAz(kirpik, 420, 420);
     var px = olcekle(kirpik, 128), x = px.getContext('2d', { willReadFrequently: true });
     var analiz = null;
     try { analiz = analizEt(x.getImageData(0, 0, px.width, px.height).data, px.width, px.height, true); } catch (e) { }
@@ -537,6 +538,14 @@ function olcekle(c, enFazla) {
   var x = d.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, d.width, d.height);
   return d;
 }
+function olcekleEnAz(c, enFazla, enAz) {
+  var m = Math.max(c.width, c.height);
+  if (m >= enAz) return olcekle(c, enFazla);
+  var o = enAz / m, d = document.createElement('canvas');
+  d.width = Math.max(1, Math.round(c.width * o)); d.height = Math.max(1, Math.round(c.height * o));
+  var x = d.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, d.width, d.height);
+  return d;
+}
 function saydamBlob(c, kalite) {
   return new Promise(function (coz) {
     try { c.toBlob(function (b) { if (b && b.size) coz(b); else c.toBlob(function (p) { coz(p); }, 'image/png'); }, 'image/webp', kalite); }
@@ -551,7 +560,7 @@ function saydamKirp(c) {
     if (d[(y * W + i) * 4 + 3] > 40) { dolu++; if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   }
   if (x1 < 0 || dolu < (W * H / 4) * 0.02) return null;
-  var p = Math.round(Math.max(x1 - x0, y1 - y0) * 0.06);
+  var p = Math.round(Math.max(x1 - x0, y1 - y0) * 0.02);   // az boşluk: parça çerçeveyi doldursun
   x0 = Math.max(0, x0 - p); y0 = Math.max(0, y0 - p); x1 = Math.min(W - 1, x1 + p); y1 = Math.min(H - 1, y1 + p);
   var o = document.createElement('canvas'); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
   o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);

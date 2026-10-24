@@ -29,12 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Google Play satın alma (Play Billing 8): aylık PRO aboneliği, jeton paketleri ve destek ürünleri. */
+/** Google Play satın alma (Play Billing 8): aylık ve yıllık PRO aboneliği, jeton paketleri ve destek ürünleri. */
 final class Odeme implements PurchasesUpdatedListener {
 
     static final String PRO = "kombinle_pro_aylik";
+    static final String PRO_YIL = "kombinle_pro_yillik";
     /** abonelikler: sahiplik her açılışta Google Play'den yenilenir (iptal/iade düşer) */
-    private static final Set<String> KALICI = new HashSet<>(Collections.singletonList(PRO));
+    private static final Set<String> KALICI = new HashSet<>(Arrays.asList(PRO, PRO_YIL));
     private static final Map<String, Integer> JETON = new HashMap<>();
     static {
         JETON.put("jeton_50", 50);

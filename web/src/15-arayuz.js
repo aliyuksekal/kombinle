@@ -15,7 +15,7 @@ var JETON_PAKETLERI = [
   { id: 'jeton_150', adet: 150, fiyat: '$6.49', avantaj: 13 },
   { id: 'jeton_400', adet: 400, fiyat: '$12.99', avantaj: 35, populer: true }
 ];
-var PRO_FIYAT = '$14.99';
+var PRO_FIYAT = '$14.99', PRO_YIL_FIYAT = '$99.99';   // yıllık: ayda 8,33 $ (aylığa göre %44 indirim)
 var PRO_GUNLUK = 20, SOHBET_GUNLUK = { ucretsiz: 5, pro: 40 };
 /* doğal (yapay zekâ) sesle okunan cevap: ücretsizde günde 3, PRO'da 20; sonrası telefonun kendi sesiyle */
 var SES_GUNLUK = { ucretsiz: 3, pro: 20 };
@@ -546,13 +546,31 @@ function magazaSayfasi(oz) {
   gov.appendChild(h('div', { class: 'g-magaza-bas' }, h('span', { class: 'g-magaza-ikon' }, ikon('zap', 'dolu')),
     h('h3', { text: t('magazaBaslik') }), h('p', { text: oz && UCRETLI[oz] ? t('jetonBitti') : t('magazaAlt') })));
   if (!S.pro) gov.appendChild(h('p', { class: 'g-bakiye', text: t('bakiye', jeton()) }));
-  /* PRO aylık: en avantajlı teklif en üstte */
-  var proFiyat = h('span', { class: 'g-pro-fiyat' }, PRO_FIYAT, h('small', { text: t('ayBasi') }));
+  /* PRO: yıllık (en avantajlı, varsayılan) ya da aylık */
+  var plan = 'yil', fiyatlar = {}; fiyatlar[PRO_URUN] = PRO_FIYAT; fiyatlar[PRO_URUN_YIL] = PRO_YIL_FIYAT;
+  var proFiyat = h('span', { class: 'g-pro-fiyat' });
+  var proBaslik = h('h4');
+  var proAlt = h('p', { class: 'g-pro-yil-alt' });
+  var planSeg = h('div', { class: 'seg g-pro-plan', role: 'group' });
+  function planCiz() {
+    temizle(proFiyat); temizle(planSeg); temizle(proBaslik);
+    proBaslik.appendChild(document.createTextNode(plan === 'yil' ? t('proYillikBaslik') : t('proAylikBaslik')));
+    proFiyat.appendChild(document.createTextNode(fiyatlar[plan === 'yil' ? PRO_URUN_YIL : PRO_URUN]));
+    proFiyat.appendChild(h('small', { text: plan === 'yil' ? t('yilBasi') : t('ayBasi') }));
+    proAlt.textContent = plan === 'yil' ? t('proYilAlt') : '';
+    proAlt.hidden = plan !== 'yil';
+    [['yil', t('planYillik')], ['ay', t('planAylik')]].forEach(function (x) {
+      planSeg.appendChild(h('button', { 'aria-pressed': plan === x[0] ? 'true' : 'false', text: x[1], on: { click: function () { plan = x[0]; planCiz(); } } }));
+    });
+  }
+  planCiz();
   var proBtn = S.pro
     ? h('button', { class: 'g-pro-btn ikincil', on: { click: function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } } } }, t('aboneligiYonet'))
-    : h('button', { class: 'g-pro-btn', on: { click: function () { al(PRO_URUN, null); } } }, t('aboneBaslat'));
+    : h('button', { class: 'g-pro-btn', on: { click: function () { al(plan === 'yil' ? PRO_URUN_YIL : PRO_URUN, null); } } }, t('aboneBaslat'));
   gov.appendChild(h('div', { class: 'g-pro' },
-    h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), h('h4', { text: t('proAylikBaslik') })), proFiyat),
+    S.pro ? null : planSeg,
+    h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), proBaslik), proFiyat),
+    S.pro ? null : proAlt,
     h('p', { class: 'g-pro-kiyas', text: t('proKiyas', PRO_GUNLUK * 30) }),
     h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS7', SES_GUNLUK.pro), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
     proBtn,
@@ -569,18 +587,18 @@ function magazaSayfasi(oz) {
   gov.appendChild(h('button', { class: 'g-geri-yukle', text: t('geriYukle'), on: { click: satinAlimlariGeriYukle } }));
   var s = sayfaAc({ baslik: '', icerik: gov });
   if (odemeHazir()) {
-    zamanAsimi(odeme().products([PRO_URUN].concat(JETON_PAKETLERI.map(function (p) { return p.id; }))), 10000).then(function (l) {
+    zamanAsimi(odeme().products([PRO_URUN, PRO_URUN_YIL].concat(JETON_PAKETLERI.map(function (p) { return p.id; }))), 10000).then(function (l) {
       (l || []).forEach(function (u) {
         if (!u || typeof u.price !== 'string') return;
         var f = kirp(u.price, 24);
         if (fiyatEl[u.id]) fiyatEl[u.id].textContent = f;
-        if (u.id === PRO_URUN) { temizle(proFiyat); proFiyat.appendChild(document.createTextNode(f)); proFiyat.appendChild(h('small', { text: t('ayBasi') })); }
+        if (u.id === PRO_URUN || u.id === PRO_URUN_YIL) { fiyatlar[u.id] = f; planCiz(); }
       });
     }).catch(function () { });
   }
   var alimda = false;
   function al(id, paket) {
-    if (alimda || (id === PRO_URUN && S.pro)) return;
+    if (alimda || ((id === PRO_URUN || id === PRO_URUN_YIL) && S.pro)) return;
     if (!odemeHazir()) { tost(t('odemeYok')); return; }
     alimda = true;
     zamanAsimi(odeme().buy(id), 600000).then(function (ok) {
@@ -590,7 +608,7 @@ function magazaSayfasi(oz) {
           if (n > 0) { tost(t('jetonYuklendi', n)); s.kapat(); ciz(); } else tost(t('odemeTamamlanmadi'));
         });
       }
-      var sahip = false; try { sahip = !!odeme().owned(PRO_URUN); } catch (e) { }
+      var sahip = proSahibi();
       if (sahip) { S.pro = true; A.pro = true; ayarKaydet(); s.kapat(); tost(t('proTesekkur')); ciz(); }
       else tost(t('odemeTamamlanmadi'));
     }).catch(function () { tost(t('odemeTamamlanmadi')); }).then(function () { alimda = false; });

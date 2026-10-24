@@ -293,6 +293,7 @@ function sikayetPaneli() {
 
 /* ---------- Metinler ---------- */
 Object.assign(DIL.tr, {
+  proYillikBaslik: 'Kombinle PRO, yıllık', planYillik: 'Yıllık', planAylik: 'Aylık', yilBasi: '/yıl', proYilAlt: 'Yılda bir kez ödenir; aylık plana göre belirgin şekilde daha ucuz.', aboneNot: 'Abonelik seçtiğin dönemin sonunda (aylık ya da yıllık) otomatik yenilenir; Play Store > Abonelikler bölümünden istediğin an iptal edebilirsin. "Sınırsız" adil kullanım sınırlarıyla geçerlidir.',
   proS7: function (n) { return 'Günde ' + n + ' cevap doğal insan sesiyle'; }, dogalSesBitti: 'Bugünkü doğal ses hakkın doldu; cevaplar telefonun sesiyle okunacak.', dogalSesBittiUcretsiz: function (n) { return 'Bugünkü ' + n + ' doğal sesli cevap hakkın doldu; telefonun sesiyle devam ediyorum. PRO ile günde 20.'; },
   dogalSes: 'Doğal ses', dogalSesAlt: 'Cevaplar Kombinle AI\'nin insan gibi doğal sesiyle okunur (internet gerekir). Kapalıysa telefonun kendi sesi kullanılır.',
   dmBaslik: 'Mesajlar', dmSohbetler: 'Sohbetler', dmIstekler: 'İstekler', dmBos: 'Henüz mesajın yok. Bir profilden "Mesaj" diyerek başlayabilirsin.', dmIstekYok: 'Mesaj isteğin yok.',
@@ -319,6 +320,7 @@ Object.assign(DIL.tr, {
   hEpostaKodu: 'E-postadaki 6 haneli kod', hEpostaYok: 'E-postayla sıfırlama şu an kapalı; kurtarma kodunu kullan.', hEpostaHatasi: 'E-posta şu an gönderilemedi, birazdan tekrar dene.'
 });
 Object.assign(DIL.en, {
+  proYillikBaslik: 'Kombinle PRO, yearly', planYillik: 'Yearly', planAylik: 'Monthly', yilBasi: '/yr', proYilAlt: 'Billed once a year; noticeably cheaper than monthly.', aboneNot: 'The subscription renews at the end of each period (monthly or yearly); cancel anytime in Play Store > Subscriptions. "Unlimited" is subject to fair-use limits.',
   proS7: function (n) { return n + ' replies a day in a natural human voice'; }, dogalSesBitti: 'Today\'s natural voice limit is used up; replies will use the phone\'s voice.', dogalSesBittiUcretsiz: function (n) { return 'You used today\'s ' + n + ' natural voice replies; continuing with the phone\'s voice. PRO gives 20 a day.'; },
   dogalSes: 'Natural voice', dogalSesAlt: 'Replies are read in Kombinle AI\'s natural, human-like voice (needs internet). When off, the phone\'s own voice is used.',
   dmBaslik: 'Messages', dmSohbetler: 'Chats', dmIstekler: 'Requests', dmBos: 'No messages yet. Tap "Message" on a profile to start.', dmIstekYok: 'No message requests.',
@@ -345,6 +347,7 @@ Object.assign(DIL.en, {
   hEpostaKodu: '6-digit code from the email', hEpostaYok: 'Email reset is not available right now; use your recovery code.', hEpostaHatasi: "The email couldn't be sent right now, try again shortly."
 });
 Object.assign(DIL.ru, {
+  proYillikBaslik: 'Kombinle PRO, на год', planYillik: 'Год', planAylik: 'Месяц', yilBasi: '/год', proYilAlt: 'Оплата раз в год; заметно дешевле помесячной.', aboneNot: 'Подписка продлевается в конце периода (месяц или год); отменить можно в Play Store > Подписки. «Безлимит» действует в рамках честного использования.',
   proS7: function (n) { return n + ' ответов в день естественным голосом'; }, dogalSesBitti: 'Лимит естественного голоса на сегодня исчерпан; ответы озвучит телефон.', dogalSesBittiUcretsiz: function (n) { return 'Сегодняшние ' + n + ' ответа естественным голосом использованы; дальше — голос телефона. С PRO — 20 в день.'; },
   dogalSes: 'Естественный голос', dogalSesAlt: 'Ответы озвучиваются естественным голосом Kombinle AI (нужен интернет). Если выключено — голос телефона.',
   dmBaslik: 'Сообщения', dmSohbetler: 'Чаты', dmIstekler: 'Запросы', dmBos: 'Сообщений пока нет. Нажми «Сообщение» в профиле.', dmIstekYok: 'Запросов нет.',
@@ -365,6 +368,7 @@ Object.assign(DIL.ru, {
   bnYeniTakip: function (a) { return a + ' подписался(-ась) на тебя'; }, bnYeni: 'У тебя новое уведомление', bnYeniMesaj: function (a) { return a + ' прислал(а) сообщение'; }
 });
 Object.assign(DIL.uz, {
+  proYillikBaslik: 'Kombinle PRO, yillik', planYillik: 'Yillik', planAylik: 'Oylik', yilBasi: '/yil', proYilAlt: "Yiliga bir marta to'lanadi; oylikdan sezilarli arzon.", aboneNot: "Obuna davr oxirida (oylik yoki yillik) avtomatik yangilanadi; Play Store > Obunalar bo'limida istalgan payt bekor qilish mumkin. «Cheksiz» adolatli foydalanish chegaralari bilan.",
   proS7: function (n) { return 'Kuniga ' + n + ' ta javob tabiiy ovozda'; }, dogalSesBitti: "Bugungi tabiiy ovoz limiti tugadi; javoblarni telefon ovozi o'qiydi.", dogalSesBittiUcretsiz: function (n) { return 'Bugungi ' + n + " ta tabiiy ovozli javob tugadi; telefon ovozida davom etaman. PRO bilan kuniga 20 ta."; },
   dogalSes: 'Tabiiy ovoz', dogalSesAlt: "Javoblar Kombinle AI ning tabiiy ovozida o'qiladi (internet kerak). O'chiq bo'lsa, telefon ovozi ishlatiladi.",
   dmBaslik: 'Xabarlar', dmSohbetler: 'Suhbatlar', dmIstekler: "So'rovlar", dmBos: "Hali xabar yo'q. Profilda «Xabar» ni bosing.", dmIstekYok: "So'rov yo'q.",

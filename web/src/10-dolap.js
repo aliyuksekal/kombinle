@@ -39,6 +39,8 @@ function parcaDuzenle(p, yeni) {
     : { tur: an && an.guven >= 0.5 && an.turlar[0] ? an.turlar[0] : '', renk: an ? an.renk : 'siyah', renk2: an ? an.renk2 : '', desen: an ? an.desen : 0, tarz: '', su: 0, ad: an && an.oneriAd || '',
       marka: '', fiyat: '', kumas: an && an.kumas || '', mevsim: an && an.mevsim || '', dinlen: 0 };
   var yeniResim = yeni ? { buyuk: yeni.sonuc.buyuk, kucuk: yeni.sonuc.kucuk, kesik: 0 } : null;
+  /* elle kırpma kaynağı: yeni parçada fotoğrafın aslı (tam çözünürlük); kırpıldıkça kırpılan tuval */
+  var kirpKaynak = yeni ? (yeni.sonuc.kaynak || null) : null, kirpmada = false;
   if (!p && tas.tur) { tas.tarz = TUR[tas.tur].s || ''; tas.su = TUR[tas.tur].su ? 1 : 0; }
   if (!p && an && an.bulut) { if (an.tarz) tas.tarz = an.tarz; if (an.su === 0 || an.su === 1) tas.su = an.su; }
   var tarzElle = false;
@@ -64,7 +66,8 @@ function parcaDuzenle(p, yeni) {
     img.addEventListener('click', function () { if (img.src) goruntuleyiciAc(img.src, img.alt); });
     gov.appendChild(img);
     var arkaBtn = h('button', { class: 'btn ikincil kucuk', on: { click: arkaPlaniSil } }, ikon('isilti', 'k'), t('arkaSil'));
-    var araclar = h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, (yeni ? yeniResim.kesik : p.kesik) ? null : arkaBtn,
+    var kirpBtn = h('button', { class: 'btn ikincil kucuk', on: { click: elleKirpAc } }, ikon('kirp', 'k'), t('kirp'));
+    var araclar = h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, kirpBtn, (yeni ? yeniResim.kesik : p.kesik) ? null : arkaBtn,
       p ? h('button', { class: 'btn ikincil kucuk', on: { click: function () { s.kapat(); setTimeout(function () { nelerGiyilir(p); }, 300); } } }, ikon('kalp', 'k'), t('nelerGiyilir')) : null);
     if (araclar.childNodes.length) gov.appendChild(araclar);
     if (yeni) {
@@ -171,6 +174,26 @@ function parcaDuzenle(p, yeni) {
       on: { click: function () { tas.tur = id; acikGrup = TUR[id].g; if (!tarzElle) tas.tarz = TUR[id].s || ''; tas.su = TUR[id].su ? 1 : (p ? tas.su : 0); ciz2(); } }
     });
   }
+  function elleKirpAc() {
+    if (kirpmada || silmede) return;
+    kirpmada = true;
+    var saydam = yeni ? !!yeniResim.kesik : !!p.kesik;
+    var kaynak = yeni ? Promise.resolve(!saydam && kirpKaynak ? kirpKaynak : yeniResim.buyuk) : Depo.resimAl(p.id).then(function (r) { return r && r.buyuk; });
+    kaynak.then(function (b) { if (!b) throw new Error('resim'); return elleKirp(b, saydam); }).then(function (c) {
+      if (!c) return;
+      if (yeni && !saydam) kirpKaynak = c;
+      return kirpikKaydet(c, saydam).then(function (r) {
+        if (yeni) {
+          yeniResim = { buyuk: r.buyuk, kucuk: r.kucuk, kesik: yeniResim.kesik };
+          if (geciciUrl) URL.revokeObjectURL(geciciUrl);
+          geciciUrl = URL.createObjectURL(r.buyuk);
+          ciz2(); tost(t('kirpildi'));
+          return;
+        }
+        return Depo.resimYaz(p.id, { buyuk: r.buyuk, kucuk: r.kucuk }).then(function () { urlBirak(p.id); ciz2(); ciz(); tost(t('kirpildi')); });
+      });
+    }).catch(function (e) { hataYakala(e); tost(t('kirpOlmadi')); }).then(function () { kirpmada = false; });
+  }
   var silmede = false;
   function arkaPlaniSil() {
     if (silmede || !ozIzin('arka')) return;
@@ -180,7 +203,7 @@ function parcaDuzenle(p, yeni) {
     kaynak.then(function (b) { if (!b) throw new Error('resim'); return arkaPlanSil(b); }).then(function (r) {
       ozKullan('arka');
       if (yeni) {
-        yeniResim = { buyuk: r.buyuk, kucuk: r.kucuk, kesik: 1 };
+        yeniResim = { buyuk: r.buyuk, kucuk: r.kucuk, kesik: 1 }; kirpKaynak = null;
         if (geciciUrl) URL.revokeObjectURL(geciciUrl);
         geciciUrl = URL.createObjectURL(r.buyuk);
         if (r.analiz && !r.analiz.sekilYok && r.analiz.guven > (an.yz ? 2 : an.guven)) { r.analiz.yz = false; an.turlar = r.analiz.turlar; an.guven = r.analiz.guven; an.grup = r.analiz.grup; }

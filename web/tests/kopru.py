@@ -36,6 +36,7 @@ with sync_playwright() as pw:
     p.click('#onerBtn'); p.wait_for_selector('#sonucAlani .g-sonuc', timeout=8000)
     ok(p.evaluate("+localStorage.getItem('kb_jeton')") == j0 - 1, 'kombin 1 jeton düşürdü')
     p.click('#jetonHap'); p.wait_for_timeout(500)
+    p.locator('.sayfa.acik .g-pro-plan button', has_text='Aylık').click(); p.wait_for_timeout(200)
     ok('₺149,99' in p.inner_text('.sayfa.acik') and '₺41,99' in p.inner_text('.sayfa.acik'), 'PRO ve jeton fiyatları köprüden')
     once = p.evaluate("+localStorage.getItem('kb_jeton')")
     p.locator('.sayfa.acik .g-fiyat').first.click(); p.wait_for_timeout(1500)

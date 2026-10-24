@@ -15,8 +15,26 @@ okur, kodda değişiklik gerekmez.
 | `jeton_150` | Tüketilebilir | 6,49 $ | ~323 ₺ |
 | `jeton_400` | Tüketilebilir | 12,99 $ | ~646 ₺ |
 | `kombinle_pro_aylik` | Aylık abonelik | 14,99 $ | ~746 ₺ |
+| `kombinle_pro_yillik` | Yıllık abonelik | 99,99 $ | ~4.974 ₺ |
 
 Türkiye'de fiyatlar KDV dahil görünür. KDV'yi Google tahsil edip öder.
+
+Not: Play varsayılan fiyatı yerel paraya çevirirken bazı ülkelerde KDV'yi fiyatın üstüne ekler. Türkiye için
+ürünü oluştururken görünen TL fiyatıyla kontrol edilmeli. Bu belgedeki net tutarlar en kötü durum, yani KDV'nin fiyatın
+içinde olduğu durum için hesaplandı. KDV üstüne eklenirse kullanıcı ~%20 daha fazla öder, elde kalan da artar.
+
+### Türkiye'ye özel yerel fiyat (Play Console → ürün → Türkiye fiyatını elle gir)
+
+Türkiye'de alım gücü düşük olduğu için önerilen TL fiyatları (KDV dahil). Diğer ülkelerde USD fiyatları geçerli kalır.
+TL fiyatları yılda bir iki kez gözden geçirilmeli.
+
+| Ürün | TL fiyatı | Elde kalan (yaklaşık) |
+|---|---|---|
+| 50 jeton | 99,99 ₺ | 1,21 $ (jeton başı 0,024 $) |
+| 150 jeton | 249,99 ₺ | 3,03 $ (jeton başı 0,020 $) |
+| 400 jeton | 549,99 ₺ | 6,66 $ (jeton başı 0,017 $) |
+| PRO aylık | 399,99 ₺ | 4,84 $ / ay |
+| PRO yıllık | 3.999,99 ₺ | 48,40 $ / yıl (4,03 $ / ay), aylığa göre %17 ucuz |
 
 ## Kesintiler (Türkiye'deki bir kullanıcı)
 
@@ -37,6 +55,7 @@ Türkiye'de elde kalan oran yaklaşık: fiyat ÷ 1,20 × 0,85 × 0,85 ≈ **fiya
 | 150 jeton | 3,91 $ | 0,026 $ | 4,14 $ | 3,42 $ |
 | 400 jeton | 7,82 $ | 0,020 $ | 8,28 $ | 6,84 $ |
 | PRO aylık | 9,03 $ | – | 10,83 $ | 8,95 $ |
+| PRO yıllık (aylık karşılığı) | 5,02 $ | – | 6,02 $ | 4,98 $ |
 
 ## Yapay zekâ maliyeti
 
@@ -70,6 +89,7 @@ Sunucu da bu sınırları ayrıca uygular: cihaz başına günlük doğal ses en
   - Ortalama kullanıcı (günde 4 iş, 8 mesaj, 6 sesli cevap): ~2,6 $ (2027'de ~3,6 $). Kâr ~6,4 $.
   - Yoğun kullanıcı (günde 10 iş, 20 mesaj, 15 ses): ~6,6 $. Kâr ~2,4 $.
   - Her gün tüm sınırları dolduran kullanıcı: ~12,8 $. Çok nadir; Türkiye'de ~3,8 $ zarar. Sınırlar bu kuyruğu keser.
+- **PRO yıllık (99,99 $, aylık karşılığı en kötü durumda 5,02 $ net):** Ortalama kullanıcıda kârlı (maliyet ~2,6 $). Yoğun kullanıcıda hafif zarar olabilir. Yıllık plan erken ödeme ve düşük iptal oranıyla bunu dengeler.
 - **Ücretsiz kullanıcı:** Aktif bir günde en fazla ~0,03 $ (5 mesaj, 3 ses), artı ilk gün dolabını kurarken tanıma. Bu, kullanıcı kazanma maliyetidir.
 - **Takip edilecekler:**
   - 1 Ocak 2027'de doğal ses fiyatı ikiye katlanıyor. O zaman ses sınırları ya da PRO fiyatı yeniden gözden geçirilmeli.

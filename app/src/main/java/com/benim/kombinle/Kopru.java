@@ -514,7 +514,7 @@ public final class Kopru {
     @JavascriptInterface
     public void aboneligiYonet() {
         if (!guvenli) return;
-        final android.net.Uri u = android.net.Uri.parse("https://play.google.com/store/account/subscriptions?sku=" + Odeme.PRO + "&package=" + ekran.getPackageName());
+        final android.net.Uri u = android.net.Uri.parse("https://play.google.com/store/account/subscriptions?package=" + ekran.getPackageName());
         ekran.ui.post(() -> ekran.disariAc(u));
     }
 
