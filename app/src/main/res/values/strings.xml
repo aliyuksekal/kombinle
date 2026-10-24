@@ -10,6 +10,8 @@
     <string name="bn_begeni">%1$s paylaşımını beğendi</string>
     <string name="bn_yorum">%1$s paylaşımına yorum yaptı</string>
     <string name="bn_anket">%1$s anketine oy verdi</string>
+    <string name="bn_istek">%1$s seni takip etmek istiyor</string>
+    <string name="bn_kabul">%1$s takip isteğini kabul etti</string>
     <string name="bn_genel">%1$s ile ilgili yeni bir bildirimin var</string>
     <string name="bn_mesaj">%1$s sana mesaj gönderdi</string>
     <string name="bn_sayi">%1$d yeni bildirimin var</string>

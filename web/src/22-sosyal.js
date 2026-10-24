@@ -41,8 +41,10 @@ function profilSayfasi(kod, on) {
     if (benim) {
       dugmeler.appendChild(h('button', { class: 'btn ikincil', on: { click: function () { profilDuzenle(function () { profilYenile(); }); } } }, ikon('kalem', 'k'), t('profilDuzenle')));
       dugmeler.appendChild(h('button', { class: 'btn ikincil', on: { click: function () { bildirimSayfasi(); } } }, ikon('zil', 'k'), t('bildirimler')));
+      if (p.istek > 0) bas.appendChild(h('button', { class: 'pr-istek', on: { click: function () { istekSayfasi(function () { profilYenile(); }); } } },
+        ikon('kisi', 'k'), h('span', { text: t('takipIstekleri') }), h('b', { class: 'dm-sayi', text: p.istek > 99 ? '99+' : String(p.istek) })));
     } else {
-      var tk = takipDugmesi(p.kod, !!p.takipte); tk.classList.add('buyuk');
+      var tk = takipDugmesi(p.kod, !!p.takipte, !!p.istekte); tk.classList.add('buyuk');
       dugmeler.appendChild(tk);
       dugmeler.appendChild(h('button', { class: 'btn ikincil pr-mesaj', on: { click: function () { dmSohbet({ kod: p.kod, takma: p.takma, kadi: p.kadi, av: p.av }); } } }, ikon('gonder', 'k'), t('dmMesaj')));
       dugmeler.appendChild(h('button', { class: 'btn ikincil ikon-kare', 'aria-label': t('secenekler'), on: { click: function () { profilMenusu(p, s); } } }, ikon('nokta')));
@@ -139,7 +141,7 @@ function kisiSatiri(k, ac, ek) {
   return h('div', { class: 'tk-satir' },
     h('button', { class: 'tk-ac', on: { click: ac } }, avatarDoldur(h('span', { class: 'g-avatar' }), kisiAvatar(k.kod, k.av, ad), ad),
       h('div', null, h('b', { text: ad }), kadiEl(k.kadi) || h('small', { text: ' ' }), ek || null)),
-    k.benim ? null : takipDugmesi(k.kod, !!k.takipte));
+    k.benim ? null : takipDugmesi(k.kod, !!k.takipte, !!k.istekte));
 }
 
 /* Bildirimler: beğeni, yorum, yeni takipçi */
@@ -152,7 +154,7 @@ function bildirimSayi(hemen) {
     DM.okunmamis = sayiMi(v.mesaj) ? Math.max(0, v.mesaj | 0) : 0; dmRozetGuncelle();
     /* uygulama açıkken yeni takipçi / bildirim / mesaj kısa bir uyarıyla haber verilir (ilk açılışta eskiler için değil) */
     var son = v.son && sayiMi(v.son.zaman) ? v.son : null, sm = v.sonMesaj && sayiMi(v.sonMesaj.zaman) ? v.sonMesaj : null;
-    if (BILDIRIM.gorulen && son && son.zaman > BILDIRIM.gorulen) tost(son.tur === 'takip' ? t('bnYeniTakip', kirp(son.takma, 24)) : t('bnYeni'));
+    if (BILDIRIM.gorulen && son && son.zaman > BILDIRIM.gorulen) tost(son.tur === 'takip' ? t('bnYeniTakip', kirp(son.takma, 24)) : son.tur === 'istek' ? t('bnIstek', kirp(son.takma, 24)) : son.tur === 'kabul' ? t('bnKabul', kirp(son.takma, 24)) : t('bnYeni'));
     if (BILDIRIM.gorulenMesaj && sm && sm.zaman > BILDIRIM.gorulenMesaj && !DM.acik) tost(t('bnYeniMesaj', kirp(sm.takma, 24)));
     BILDIRIM.gorulen = Math.max(BILDIRIM.gorulen || 1, son ? son.zaman : 1);
     BILDIRIM.gorulenMesaj = Math.max(BILDIRIM.gorulenMesaj || 1, sm ? sm.zaman : 1);
@@ -180,12 +182,18 @@ function bildirimSayfasi() {
   if (!girisIste()) return;
   var gov = h('div', { class: 'tk-liste' }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   var s = sayfaAc({ baslik: t('bildirimler'), icerik: gov });
-  yzIste('/v1/bildirim', { oku: true, engelli: engelliler() }, 15000).then(function (v) {
+  Promise.all([yzIste('/v1/bildirim', { oku: true, engelli: engelliler() }, 15000), yzIste('/v1/istekler', {}, 15000).catch(function () { return { liste: [] }; })]).then(function (r) {
+    var v = r[0], ist = Array.isArray(r[1].liste) ? r[1].liste : [];
     if (s.kapandi) return;
     BILDIRIM.okunmamis = 0; rozetGuncelle();
     temizle(gov);
-    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip', 'anket'].indexOf(b.tur) >= 0; }) : [];
-    if (!l.length) { gov.appendChild(h('div', { class: 'g-bos-not' }, ikon('zil', 'k'), h('span', { text: t('bildirimYok') }))); return; }
+    /* takip istekleri en üstte tek satır (Instagram gibi); dokununca onay listesi */
+    if (ist.length) {
+      gov.appendChild(h('button', { class: 'pr-istek bn-istekler', on: { click: function () { istekSayfasi(function () { s.kapat(); setTimeout(bildirimSayfasi, 300); }); } } },
+        ikon('kisi', 'k'), h('span', null, h('b', { text: t('takipIstekleri') }), h('small', { text: t('istekOzet', kirp(ist[0].takma, 24), ist.length - 1) })), h('b', { class: 'dm-sayi', text: String(ist.length) })));
+    }
+    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip', 'anket', 'kabul'].indexOf(b.tur) >= 0; }) : [];
+    if (!l.length && !ist.length) { gov.appendChild(h('div', { class: 'g-bos-not' }, ikon('zil', 'k'), h('span', { text: t('bildirimYok') }))); return; }
     var bugun = [], once = [];
     l.forEach(function (b) { (Date.now() - b.zaman < 86400000 * 7 ? bugun : once).push(b); });
     [[bugun, t('bildirimBuHafta')], [once, t('bildirimDaha')]].forEach(function (grup) {
@@ -193,17 +201,17 @@ function bildirimSayfasi() {
       gov.appendChild(h('span', { class: 'g-bolum-etk', text: grup[1] }));
       grup[0].forEach(function (b) {
         var ad = kirp(b.takma, 24);
-        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : b.tur === 'anket' ? t('bnAnket') : t('bnTakip');
+        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : b.tur === 'anket' ? t('bnAnket') : b.tur === 'kabul' ? t('bnKabulMetin') : t('bnTakip');
         var ac = function () {
           s.kapat();
           setTimeout(function () {
             if (b.tur === 'anket') { S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; ANKET.sira = 'benim'; ANKET.yuklendi = false; ciz(); window.scrollTo(0, 0); }
-            else if (b.tur === 'takip' || !/^[a-z0-9]{20}$/.test(b.paylasim)) profilSayfasi(b.kod, b);
+            else if (b.tur === 'takip' || b.tur === 'kabul' || !/^[a-z0-9]{20}$/.test(b.paylasim)) profilSayfasi(b.kod, b);
             else paylasimAcId(b.paylasim);
           }, 250);
         };
         var ek = h('small', { class: 'bn-metin' }, h('span', { text: metin }), h('i', { text: ' • ' + zamanOnce(b.zaman) }));
-        var satir = kisiSatiri({ kod: b.kod, takma: ad, kadi: b.kadi, av: b.av, takipte: b.takipte, benim: b.tur !== 'takip' }, ac, ek);
+        var satir = kisiSatiri({ kod: b.kod, takma: ad, kadi: b.kadi, av: b.av, takipte: b.takipte, istekte: b.istekte, benim: b.tur !== 'takip' }, ac, ek);
         if (b.yeni) satir.classList.add('yeni');
         if (b.tur !== 'takip' && /^[a-z0-9]{20}$/.test(b.paylasim) && sunucuAdres()) {
           satir.appendChild(h('button', { class: 'bn-resim', 'aria-label': t('paylasim'), on: { click: ac } }, h('img', { src: sunucuAdres() + (b.tur === 'anket' ? '/v1/anketresim/' + b.paylasim + '/a' : '/v1/resim/' + b.paylasim), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' })));
@@ -278,4 +286,56 @@ function kaydetDugmesi(x) {
       .then(function () { mesgul = false; });
   });
   return b;
+}
+
+/* Gelen takip istekleri: Onayla / Sil; onaylayınca "Sen de takip et" */
+function istekSayfasi(kapaninca) {
+  var gov = h('div', { class: 'tk-liste' }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
+  var degisti = false;
+  var s = sayfaAc({ baslik: t('takipIstekleri'), icerik: gov, kapaninca: function () { if (degisti && kapaninca) kapaninca(); } });
+  yzIste('/v1/istekler', {}, 15000).then(function (v) {
+    if (s.kapandi) return;
+    temizle(gov);
+    var l = Array.isArray(v.liste) ? v.liste.filter(function (k) { return k && /^[a-f0-9]{12}$/.test(k.kod) && typeof k.takma === 'string'; }) : [];
+    if (!l.length) { gov.appendChild(h('div', { class: 'g-bos-not' }, ikon('kisi', 'k'), h('span', { text: t('istekYok') }))); return; }
+    gov.appendChild(h('p', { class: 'ayar-not', style: { margin: '0 2px 8px' }, text: t('istekAciklama') }));
+    l.forEach(function (k) {
+      var ad = kirp(k.takma, 24);
+      var dugmeler = h('div', { class: 'ik-dugmeler' });
+      var satir = h('div', { class: 'tk-satir' },
+        h('button', { class: 'tk-ac', on: { click: function () { s.kapat(); setTimeout(function () { profilSayfasi(k.kod, k); }, 250); } } }, avatarDoldur(h('span', { class: 'g-avatar' }), kisiAvatar(k.kod, k.av, ad), ad),
+          h('div', null, h('b', { text: ad }), kadiEl(k.kadi) || h('small', { text: zamanOnce(k.zaman) }))), dugmeler);
+      function yanit(kabul) {
+        temizle(dugmeler); dugmeler.appendChild(h('span', { class: 'yukleniyor' }));
+        yzIste('/v1/istekyanit', { kod: k.kod, kabul: kabul }, 15000).then(function () {
+          degisti = true; temizle(dugmeler);
+          if (kabul) {
+            satir.querySelector('.tk-ac small') && (satir.querySelector('.tk-ac small').textContent = t('istekOnaylandi'));
+            if (!k.takipte) dugmeler.appendChild(takipDugmesi(k.kod, false, false));   // sen de takip et
+            else dugmeler.appendChild(h('small', { class: 'ik-not', text: t('istekOnaylandi') }));
+          } else satir.remove();
+          if (BILDIRIM.okunmamis > 0) { BILDIRIM.okunmamis--; rozetGuncelle(); }
+        }).catch(function () { temizle(dugmeler); cizDugmeler(); tost(t('tpHata')); });
+      }
+      function cizDugmeler() {
+        dugmeler.appendChild(h('button', { class: 'g-takip ik-onay', on: { click: function () { yanit(true); } } }, t('istekOnayla')));
+        dugmeler.appendChild(h('button', { class: 'g-takip ik-sil', 'aria-pressed': 'true', on: { click: function () { yanit(false); } } }, t('istekSil')));
+      }
+      cizDugmeler();
+      gov.appendChild(satir);
+    });
+  }).catch(function (e) { temizle(gov); gov.appendChild(h('p', { class: 'alt-yazi', text: hesapHataMetni(e) })); });
+}
+/* Profil gizliliği: takip isteklerini onaylama (varsayılan açık) */
+function gizlilikSatiri() {
+  var kap = h('div', { class: 'ayar-grup' });
+  var ciz = function (acik) {
+    temizle(kap);
+    kap.appendChild(anahtarSatir(t('istekOnayAyar'), t('istekOnayAyarAlt'), !acik, function (v) {
+      yzIste('/v1/gizlilik', { acik: !v }, 15000).then(function (r) { tost(r.acik ? t('hesapAcildi') : t('hesapGizlendi')); }).catch(function () { tost(t('tpHata')); ciz(acik); });
+    }));
+  };
+  ciz(false);
+  yzIste('/v1/gizlilik', {}, 15000).then(function (r) { ciz(!!r.acik); }).catch(function () { });
+  return kap;
 }

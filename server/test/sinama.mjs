@@ -218,7 +218,22 @@ const elif = ks.veri.liste.find(k => k.takma === 'Elif' && k.paylasim === 1);
 ok(elif && elif.paylasim === 1, 'kişi aramada profil bulundu: ' + JSON.stringify(ks.veri).slice(0, 120));
 ok((await iste('/v1/kisiler', { ara: "%' OR 1=1 --" }, F)).durum === 200, 'arama SQL enjeksiyonuna dayanıklı');
 r = await iste('/v1/takip', { kod: elif.kod, takip: true }, F);
-ok(r.veri.takipte && r.veri.takipci === 1, 'takip edildi');
+ok(r.veri.durum === 'istek' && !r.veri.takipte && r.veri.takipci === 0, 'takip isteği gönderildi (doğrudan takip yok)');
+ak = (await iste('/v1/akis', {}, F)).veri.liste;
+ok(!ak.some(x => x.id === tkp) && ak.find(x => x.id === pub).istekte === 1, 'istek onaylanmadan takipçilere özel paylaşım görünmez; akışta istek bilgisi');
+ok((await iste('/v1/profilgor', { kod: elif.kod }, F)).veri.profil.istekte === 1, 'profilde istek gönderildi bilgisi');
+let ist = await iste('/v1/istekler', {}, E);
+ok(ist.veri.liste.length === 1 && ist.veri.liste[0].takma, 'gelen takip istekleri listesi');
+let bs = (await iste('/v1/bildirim', { sadeceSay: true }, E)).veri;
+ok(bs.istek === 1 && bs.son && bs.son.tur === 'istek', 'istek bildirimi ve sayısı');
+ok((await iste('/v1/profilgor', { kod: elif.kod }, E)).veri.profil.istek === 1, 'kendi profilimde bekleyen istek sayısı');
+const fKod = ist.veri.liste[0].kod;
+r = await iste('/v1/istekyanit', { kod: fKod, kabul: true }, E);
+ok(r.veri.kabul === true && (await iste('/v1/istekler', {}, E)).veri.liste.length === 0, 'istek onaylandı');
+ok((await iste('/v1/profilgor', { kod: elif.kod }, F)).veri.profil.takipte === 1, 'onaydan sonra takip ediyor');
+ok((await iste('/v1/bildirim', { sadeceSay: true }, F)).veri.son.tur === 'kabul', 'isteyen kişiye kabul bildirimi');
+r = await iste('/v1/takip', { kod: elif.kod, takip: true }, F);
+ok(r.veri.durum === 'takip' && r.veri.takipci === 1, 'takip edildi');
 ak = (await iste('/v1/akis', {}, F)).veri.liste;
 ok(ak.some(x => x.id === tkp) && !ak.some(x => x.id === gz), 'takipçi takipçilere özel paylaşımı görür, gizliyi görmez');
 ok(ak.find(x => x.id === pub).takipte === 1, 'akışta takip bilgisi');
@@ -400,7 +415,13 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   ok(pr.veri.profil.takma === 'Bora K' && pr.veri.profil.paylasim >= 1 && pr.veri.profil.benim === 0, 'profil sayfası: ' + JSON.stringify(pr.veri.profil));
   ok((await iste('/v1/profilgor', { kadi: '@user' }, cihazD)).veri.profil.kod === ben.kod, 'kullanıcı adıyla profil');
   ok((await iste('/v1/profilgor', { kod: ben.kod }, cihazB)).veri.profil.benim === 1, 'kendi profilim');
-  await iste('/v1/takip', { kod: ben.kod }, cihazC);
+  ok((await iste('/v1/takip', { kod: ben.kod }, cihazC)).veri.durum === 'istek', 'C istek gönderdi');
+  let gz = await iste('/v1/gizlilik', { acik: true }, cihazB);
+  ok(gz.veri.acik === true && gz.veri.istek === 0, 'hesap herkese açıldı, bekleyen istekler kabul edildi');
+  ok((await iste('/v1/profilgor', { kod: ben.kod }, cihazC)).veri.profil.takipte === 1, 'açılınca C takip ediyor');
+  await iste('/v1/takip', { kod: ben.kod, takip: false }, cihazC);
+  ok((await iste('/v1/takip', { kod: ben.kod }, cihazC)).veri.durum === 'takip', 'açık hesap isteksiz takip edilir');
+  await iste('/v1/gizlilik', { acik: false }, cihazB);
   let tl = await iste('/v1/takipler', { kod: ben.kod, tur: 'takipci' }, cihazD);
   ok(tl.veri.liste.length >= 1 && tl.veri.liste.every(x => typeof x.takma === 'string'), 'takipçi listesi');
   ok((await iste('/v1/duzenle', { id: pid, aciklama: 'Güncel açıklama' }, cihazD)).durum === 404, 'başkasının paylaşımı düzenlenemez');
@@ -434,7 +455,14 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   await iste('/v1/takip', { kod: kD, takip: false }, cihazB);
   await iste('/v1/takip', { kod: kD }, cihazB);
   const s = (await iste('/v1/bildirim', { sadeceSay: true }, cihazD)).veri;
-  ok(s.son && s.son.tur === 'takip' && s.son.takma && s.okunmamis > 0, 'takip bildirimi ve özeti geldi');
+  ok(s.son && s.son.tur === 'istek' && s.son.takma && s.okunmamis > 0 && s.istek >= 1, 'takip isteği bildirimi ve özeti geldi');
+  // isteği geri çekme ve reddetme
+  await iste('/v1/takip', { kod: kD, takip: false }, cihazB);
+  ok((await iste('/v1/istekler', {}, cihazD)).veri.liste.every(x => x.kod !== kB), 'istek geri çekildi');
+  await iste('/v1/takip', { kod: kD }, cihazB);
+  ok((await iste('/v1/istekyanit', { kod: kB, kabul: false }, cihazD)).veri.kabul === false, 'istek silindi');
+  ok((await iste('/v1/profilgor', { kod: kD }, cihazB)).veri.profil.takipte === 0, 'reddedilen istek takip başlatmaz');
+  await iste('/v1/takip', { kod: kD }, cihazB);
 }
 
 // mesajlaşma
@@ -468,6 +496,32 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   ok(r.veri.ok && r.veri.durum === 'acik' && yzIstekleri.length === 0, 'kabul edilen sohbette mesaj denetimsiz ve hızlı gider');
   r = await iste('/v1/dmoku', { kod: kD, sonra: Date.now() - 2000 }, cihazB);
   ok(r.veri.mesajlar.length >= 1 && r.veri.mesajlar.every(m => m.zaman > Date.now() - 3000), 'yalnız yeni mesajlar alınabiliyor');
+  // WhatsApp tarzı: teslim/okundu, yanıt, tepki, herkesten silme, yazıyor
+  r = await iste('/v1/dmyaz', { kod: kD, metin: 'Elbise ne renk olsun?' }, cihazB);
+  const soru = r.veri.mesaj;
+  ok(soru.teslim === 0 && soru.okundu === 0, 'yeni mesaj tek tik (gönderildi)');
+  await iste('/v1/bildirim', { sadeceSay: true }, cihazD);
+  let mb = (await iste('/v1/dmoku', { kod: kD }, cihazB)).veri.mesajlar.find(m => m.id === soru.id);
+  ok(mb.teslim === 1 && mb.okundu === 0, 'alıcının uygulaması çekince çift tik (teslim edildi)');
+  r = await iste('/v1/dmyaz', { kod: kB, metin: 'Bordo bence', yanit: soru.id }, cihazD);
+  ok(r.veri.mesaj.yanit && r.veri.mesaj.yanit.id === soru.id && r.veri.mesaj.yanit.metin === 'Elbise ne renk olsun?' && r.veri.mesaj.yanit.ben === false, 'mesaja yanıt (alıntı) gönderildi');
+  ok((await iste('/v1/dmyaz', { kod: kB, metin: 'x', yanit: 'z'.repeat(20) }, cihazD)).veri.mesaj.yanit === null, 'başka sohbetin/olmayan mesajın alıntısı eklenmez');
+  mb = (await iste('/v1/dmoku', { kod: kD }, cihazB)).veri.mesajlar.find(m => m.id === soru.id);
+  ok(mb.okundu === 1, 'cevap gelen sohbette mesaj okundu (mavi tik)');
+  ok((await iste('/v1/dmtepki', { id: soru.id, tepki: '❤️' }, cihazD)).veri.tepki.ben === '❤️', 'mesaja tepki');
+  ok((await iste('/v1/dmoku', { kod: kD }, cihazB)).veri.mesajlar.find(m => m.id === soru.id).tepki.o === '❤️', 'karşı taraf tepkiyi görür');
+  ok((await iste('/v1/dmtepki', { id: soru.id, tepki: '❤️' }, cihazD)).veri.tepki.ben === '', 'aynı tepki tekrar seçilince kalkar');
+  ok((await iste('/v1/dmtepki', { id: soru.id, tepki: '💩' }, cihazD)).veri.hata === 'girdi', 'izinsiz emoji reddedilir');
+  ok((await iste('/v1/dmtepki', { id: soru.id, tepki: '👍' }, cihazC)).durum === 404, 'sohbet dışından tepki verilemez');
+  ok((await iste('/v1/dmmsil', { id: soru.id }, cihazD)).durum === 404, 'başkasının mesajı silinemez');
+  ok((await iste('/v1/dmmsil', { id: soru.id }, cihazB)).veri.ok, 'kendi mesajını herkesten sil');
+  mb = (await iste('/v1/dmoku', { kod: kB }, cihazD)).veri.mesajlar.find(m => m.id === soru.id);
+  ok(mb.silindi === 1 && mb.metin === '', 'silinen mesajın metni karşı tarafta da yok');
+  db.prepare('UPDATE mesaj SET zaman = zaman - 3 * 3600000 WHERE id = ?').run(r.veri.mesaj.id);
+  ok((await iste('/v1/dmmsil', { id: r.veri.mesaj.id }, cihazD)).veri.hata === 'sure', '2 saatten eski mesaj herkesten silinemez');
+  await iste('/v1/dmyaziyor', { kod: kD }, cihazB);
+  ok((await iste('/v1/dmoku', { kod: kB }, cihazD)).veri.yaziyor === true, 'karşı taraf "yazıyor…" görür');
+  ok((await iste('/v1/dmoku', { kod: kD }, cihazB)).veri.yaziyor === false, 'kendi yazdığını görmez');
   ok((await iste('/v1/dmengel', { kod: kB }, cihazD)).veri.engel === true, 'engellendi');
   ok((await iste('/v1/dmyaz', { kod: kD, metin: 'hey' }, cihazB)).veri.hata === 'izin', 'engelleyene mesaj gidemez');
   ok((await iste('/v1/dmliste', {}, cihazD)).veri.liste.length === 0, 'engellenen sohbet listede yok');

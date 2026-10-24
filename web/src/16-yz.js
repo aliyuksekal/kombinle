@@ -253,22 +253,33 @@ function toplulukYukle(sifirla) {
   }).catch(function () { TOPLULUK.hata = true; }).then(function () { TOPLULUK.yukleniyor = false; toplulukCizYenile(); });
 }
 function toplulukCizYenile() { var a = $('#toplulukAlani'); if (a) toplulukDoldur(a); }
-/* takip durumunu ekrandaki tüm kartlarda eşitle */
-function takipGuncelle(kod, takipte) {
-  TOPLULUK.liste.forEach(function (x) { if (x.yazar === kod) x.takipte = takipte ? 1 : 0; });
-  $$('.g-takip[data-kod="' + kod + '"]').forEach(function (b) { b.setAttribute('aria-pressed', takipte ? 'true' : 'false'); b.textContent = takipte ? t('takiptesin') : t('takipEt'); });
+/* takip durumu: 'takip' (takip ediyorsun), 'istek' (istek onay bekliyor), 'yok'. Ekrandaki tüm düğmeler eşitlenir. */
+function takipDurumu(takipte, istekte) { return takipte ? 'takip' : istekte ? 'istek' : 'yok'; }
+function takipDugmeYaz(b, durum) {
+  b.setAttribute('data-durum', durum);
+  b.setAttribute('aria-pressed', durum === 'yok' ? 'false' : 'true');
+  b.classList.toggle('istek', durum === 'istek');
+  b.textContent = durum === 'takip' ? t('takiptesin') : durum === 'istek' ? t('istekGonderildi') : t('takipEt');
 }
-function takipDugmesi(kod, takipte) {
-  var b = h('button', { class: 'g-takip', 'data-kod': kod, 'aria-pressed': takipte ? 'true' : 'false', text: takipte ? t('takiptesin') : t('takipEt') });
+function takipGuncelle(kod, durum) {
+  if (durum === true || durum === false) durum = durum ? 'takip' : 'yok';
+  TOPLULUK.liste.forEach(function (x) { if (x.yazar === kod) { x.takipte = durum === 'takip' ? 1 : 0; x.istekte = durum === 'istek' ? 1 : 0; } });
+  $$('.g-takip[data-kod="' + kod + '"]').forEach(function (b) { takipDugmeYaz(b, durum); });
+}
+function takipDugmesi(kod, takipte, istekte) {
+  var b = h('button', { class: 'g-takip', 'data-kod': kod });
+  takipDugmeYaz(b, takipDurumu(takipte, istekte));
   var mesgul = false;
   b.addEventListener('click', function (e) {
     e.stopPropagation();
     if (mesgul || !girisIste()) return;
-    var yeni = b.getAttribute('aria-pressed') !== 'true';
-    mesgul = true; takipGuncelle(kod, yeni);
-    yzIste('/v1/takip', { kod: kod, takip: yeni }, 15000).then(function () {
-      tost(yeni ? t('takipEdildi') : t('takiptenCikildi'));
-    }).catch(function () { takipGuncelle(kod, !yeni); tost(t('tpHata')); }).then(function () { mesgul = false; });
+    var eski = b.getAttribute('data-durum'), istiyor = eski === 'yok';
+    mesgul = true; takipGuncelle(kod, istiyor ? 'istek' : 'yok');
+    yzIste('/v1/takip', { kod: kod, takip: istiyor }, 15000).then(function (v) {
+      var durum = v && (v.durum === 'takip' || v.durum === 'istek' || v.durum === 'yok') ? v.durum : (istiyor ? 'istek' : 'yok');
+      takipGuncelle(kod, durum);
+      tost(durum === 'istek' ? t('istekGonderildiTost') : durum === 'takip' ? t('takipEdildi') : eski === 'istek' ? t('istekGeriCekildi') : t('takiptenCikildi'));
+    }).catch(function (er) { takipGuncelle(kod, eski); tost(er && er.message === 'engel' ? t('takipEngel') : t('tpHata')); }).then(function () { mesgul = false; });
   });
   return b;
 }
@@ -294,7 +305,7 @@ function kisilerKarti() {
           h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad, kd, bio, k.av); } } },
             avatarDoldur(h('span', { class: 'uav' }), kisiAvatar(k.kod, k.av, ad), ad), h('b', { text: ad }), kadiEl(kd),
             h('small', { text: t('takipciSay', k.takipci | 0) + ' • ' + t('paylasimSay', k.paylasim | 0) })),
-          takipDugmesi(k.kod, !!k.takipte)));
+          takipDugmesi(k.kod, !!k.takipte, !!k.istekte)));
       });
     }).catch(function () { if (no === son) { temizle(sira); sira.appendChild(h('p', { class: 'alt-yazi', text: t('tpHata') })); } });
   }
@@ -504,7 +515,7 @@ function paylasimKarti(x, adres) {
     h('div', { class: 'g-akis-bas' },
       avatarDoldur(h('button', { class: 'g-avatar', 'aria-label': ad, on: { click: profilAc } }), kisiAvatar(x.yazar, x.av, ad), ad, A.dil === 'en' ? 'en' : 'tr'),
       h('button', { class: 'g-akis-kim', on: { click: profilAc } }, h('b', null, ad, kadiEl(x.kadi, 'yan')), h('small', null, zamanOnce(x.zaman), gor)),
-      !x.benim ? takipDugmesi(x.yazar, !!x.takipte) : null,
+      !x.benim ? takipDugmesi(x.yazar, !!x.takipte, !!x.istekte) : null,
       h('button', { class: 'ikon-btn g-akis-menu', 'aria-label': t('secenekler'), on: { click: function () { paylasimMenusu(x, kart); } } }, ikon('nokta'))),
     x.gizli ? h('p', { class: 'g-gizli-not', text: t('tpGizli') }) : null,
     resimKap,

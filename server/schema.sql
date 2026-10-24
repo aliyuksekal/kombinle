@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS profil (
   zaman INTEGER NOT NULL,
   kadi TEXT NOT NULL DEFAULT '',
   bio TEXT NOT NULL DEFAULT '',
-  hesapli INTEGER NOT NULL DEFAULT 0
+  hesapli INTEGER NOT NULL DEFAULT 0,
+  acik INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS pr_takma ON profil(takma);
 CREATE TABLE IF NOT EXISTS takip (
@@ -56,6 +57,14 @@ CREATE TABLE IF NOT EXISTS takip (
   PRIMARY KEY (takipci, takip)
 );
 CREATE INDEX IF NOT EXISTS t_takip ON takip(takip);
+-- takip istekleri: hesap herkese açık değilse takip önce istek olarak gider
+CREATE TABLE IF NOT EXISTS takip_istek (
+  isteyen TEXT NOT NULL,
+  hedef TEXT NOT NULL,
+  zaman INTEGER NOT NULL,
+  PRIMARY KEY (isteyen, hedef)
+);
+CREATE INDEX IF NOT EXISTS ti_hedef ON takip_istek(hedef);
 CREATE TABLE IF NOT EXISTS yorum (
   id TEXT PRIMARY KEY,
   paylasim TEXT NOT NULL,
@@ -186,7 +195,9 @@ CREATE TABLE IF NOT EXISTS konusma (
   son_kim TEXT NOT NULL DEFAULT '',
   istek TEXT NOT NULL DEFAULT '',
   a_sil INTEGER NOT NULL DEFAULT 0,
-  b_sil INTEGER NOT NULL DEFAULT 0
+  b_sil INTEGER NOT NULL DEFAULT 0,
+  a_yaz INTEGER NOT NULL DEFAULT 0,
+  b_yaz INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS k_a ON konusma(a, son DESC);
 CREATE INDEX IF NOT EXISTS k_b ON konusma(b, son DESC);
@@ -197,7 +208,13 @@ CREATE TABLE IF NOT EXISTS mesaj (
   alici TEXT NOT NULL,
   metin TEXT NOT NULL,
   zaman INTEGER NOT NULL,
-  okundu INTEGER NOT NULL DEFAULT 0
+  okundu INTEGER NOT NULL DEFAULT 0,
+  teslim INTEGER NOT NULL DEFAULT 0,
+  silindi INTEGER NOT NULL DEFAULT 0,
+  tepki TEXT NOT NULL DEFAULT '',
+  yanit_id TEXT NOT NULL DEFAULT '',
+  yanit_metin TEXT NOT NULL DEFAULT '',
+  yanit_kim TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS m_konusma ON mesaj(konusma, zaman DESC);
 CREATE INDEX IF NOT EXISTS m_alici ON mesaj(alici, okundu);

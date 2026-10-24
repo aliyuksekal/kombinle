@@ -64,7 +64,12 @@ function parcaDuzenle(p, yeni) {
     temizle(gov);
     var img = yeni ? h('img', { class: 'buyuk-resim', src: geciciUrl, alt: '' }) : resimEl(p.id, true, 'buyuk-resim', parcaAd(p));
     img.addEventListener('click', function () { if (img.src) goruntuleyiciAc(img.src, img.alt); });
-    gov.appendChild(img);
+    if (yeni && an.kiyafetDegil) {
+      /* kıyafet olmayan fotoğraf: ekranda şaşkın yüz tepkisi (ilk açılışta büyük, sonra köşede küçük) */
+      var kap = h('div', { class: 'resim-kap' }, img, h('span', { class: 'emoji-rozet', 'aria-hidden': 'true', text: tepkiEmojisi() }));
+      gov.appendChild(kap);
+      if (!an._tepkiGosterildi) { an._tepkiGosterildi = true; emojiTepki(tepkiEmojisi()); }
+    } else gov.appendChild(img);
     var arkaBtn = h('button', { class: 'btn ikincil kucuk', on: { click: arkaPlaniSil } }, ikon('isilti', 'k'), t('arkaSil'));
     var kirpBtn = h('button', { class: 'btn ikincil kucuk', on: { click: elleKirpAc } }, ikon('kirp', 'k'), t('kirp'));
     var araclar = h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, kirpBtn, (yeni ? yeniResim.kesik : p.kesik) ? null : arkaBtn,
@@ -75,7 +80,7 @@ function parcaDuzenle(p, yeni) {
       if (an.guven >= 0.5 && an.turlar[0]) msg = t(an.bulut ? 'yzTanidi' : an.yz ? 'tanidimYz' : 'tanidim', turAd(an.turlar[0]));
       else if (an.turlar.length) msg = t('emin');
       else msg = t('turSec');
-      if (an.kiyafetDegil) msg = t('kiyafetDegil');
+      if (an.kiyafetDegil) msg = tepkiEmojisi() + ' ' + t('kiyafetDegil');
       var tahminKutu = h('div', { class: 'tahmin' + (an.bulutHata ? ' uyari' : '') }, ikon(an.bulutHata ? 'bilgi' : 'isilti', 'k'), h('span', { text: an.bulutHata ? t('bulutHata') : msg }));
       if ((an.bulutHata || an.bulutAtlandi) && an._bulutVeri && yzAcik()) {
         var yenidenBtn = h('button', { class: 'tahmin-btn' }, ikon('yenile', 'k'), t('yenidenTani'));
@@ -280,38 +285,7 @@ function anahtarSatir(baslik, alt, deger, degisti, ik) {
 }
 
 /* ---------- Uygulama içi kamera ---------- */
-function kameraAc() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { tost(t('kameraYok')); $('#dosyaSec').click(); return; }
-  var video = h('video', { autoplay: true, playsinline: true, muted: true });
-  var akis = null;
-  var durum = h('p', { class: 'alt-yazi', style: { 'margin-top': '10px', 'text-align': 'center' }, text: t('kameraAciliyor') });
-  var deklansor = h('button', { class: 'deklansor', 'aria-label': t('fotoCek'), disabled: true, on: { click: cek } });
-  var s = sayfaAc({
-    baslik: t('fotoCek'),
-    icerik: h('div', null, h('div', { class: 'kamera' }, video, h('div', { class: 'cerceve' })), durum, deklansor),
-    kapaninca: kapatAkis
-  });
-  function kapatAkis() { if (akis) { akis.getTracks().forEach(function (tr) { try { tr.stop(); } catch (e) { } }); akis = null; } }
-  zamanAsimi(navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1600 }, height: { ideal: 1600 } }, audio: false }), 15000)
-    .then(function (st) {
-      if (s.kapandi) { st.getTracks().forEach(function (tr) { tr.stop(); }); return; }
-      akis = st; video.srcObject = st;
-      durum.textContent = t('kameraIpucu'); deklansor.disabled = false;
-    }).catch(function () {
-      durum.textContent = t('kameraIzin');
-      var g = h('button', { class: 'btn ikincil tam', style: { 'margin-top': '10px' }, on: { click: function () { s.kapat(); setTimeout(function () { $('#dosyaSec').click(); }, 300); } }, text: t('galeridenSec') });
-      durum.after(g); deklansor.remove();
-    });
-  function cek() {
-    if (!akis || !video.videoWidth) return;
-    var c = document.createElement('canvas');
-    var o = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight));
-    c.width = Math.round(video.videoWidth * o); c.height = Math.round(video.videoHeight * o);
-    c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-    s.kapat();
-    setTimeout(function () { sirayaIsle([c], 0); }, 300);
-  }
-}
+/* kameraAc: 27-kamera.js (tam ekran kamera) */
 
 /* ---------- Örnek dolap ---------- */
 var ORNEKLER = [

@@ -110,3 +110,31 @@ Object.assign(DIL.uz, {
   kirp: 'Kesish', kirpBaslik: 'Rasmni kesish', kirpAciklama: "Ramkani surib siljiting, burchaklaridan tortib kattalashtiring yoki kichraytiring.",
   kirpUygula: 'Kesish', kirpTamami: 'Hammasini tanlash', kirpildi: 'Rasm kesildi.', kirpOlmadi: "Rasm kesilmadi, qayta urinib ko'ring."
 });
+
+/* ---------- Tepki emojisi ----------
+   Kıyafet olmayan fotoğrafta 🫪 gösterilir. Telefonun emoji yazı tipi bu yeni emojiyi bilmiyorsa
+   (kutu çıkacaksa) en yakın yedeklerden biri kullanılır. */
+var TEPKI_ADAYLAR = ['🫪', '🫨', '😵‍💫', '😵'];
+var tepkiSecim = null;
+function emojiDestekli(e) {
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = 40;
+    var x = c.getContext('2d', { willReadFrequently: true });
+    x.textBaseline = 'top'; x.font = '32px sans-serif'; x.fillText(e, 2, 2);
+    var d = x.getImageData(0, 0, 40, 40).data, renkli = 0;
+    for (var i = 0; i < d.length; i += 4) if (d[i + 3] > 60 && (Math.abs(d[i] - d[i + 1]) > 30 || Math.abs(d[i + 1] - d[i + 2]) > 30)) renkli++;
+    return renkli > 20;   // renkli emoji çizildi; tanımayan yazı tipi gri/siyah kutu çizer
+  } catch (er) { return false; }
+}
+function tepkiEmojisi() {
+  if (tepkiSecim) return tepkiSecim;
+  for (var i = 0; i < TEPKI_ADAYLAR.length; i++) if (emojiDestekli(TEPKI_ADAYLAR[i])) return (tepkiSecim = TEPKI_ADAYLAR[i]);
+  return (tepkiSecim = TEPKI_ADAYLAR[0]);
+}
+function emojiTepki(e) {
+  var el = h('div', { class: 'emoji-tepki', 'aria-hidden': 'true' }, h('span', { text: e }));
+  document.body.appendChild(el);
+  try { if (navigator.vibrate) navigator.vibrate(30); } catch (er) { }
+  setTimeout(function () { el.classList.add('git'); }, 1700);
+  setTimeout(function () { el.remove(); }, 2300);
+}

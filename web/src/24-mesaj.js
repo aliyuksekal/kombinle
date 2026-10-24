@@ -17,6 +17,24 @@ function dmRozetGuncelle() {
   });
 }
 function dmKisiGecerli(k) { return k && typeof k === 'object' && typeof k.kod === 'string' && /^[a-f0-9]{12}$/.test(k.kod) && typeof k.takma === 'string'; }
+/* saat (balon içinde) ve gün ayracı (Bugün / Dün / tarih) */
+var DM_YEREL = function () { return ({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB'; };
+function dmSaat(ms) { try { return new Date(ms).toLocaleTimeString(DM_YEREL(), { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function dmGun(ms) {
+  var d = new Date(ms), b = new Date(), dun = new Date(Date.now() - 86400000);
+  if (d.toDateString() === b.toDateString()) return t('bugun');
+  if (d.toDateString() === dun.toDateString()) return t('dun');
+  try { return d.toLocaleDateString(DM_YEREL(), { day: 'numeric', month: 'long', year: d.getFullYear() === b.getFullYear() ? undefined : 'numeric' }); } catch (e) { return d.toDateString(); }
+}
+/* gönderildi ✓, ulaştı ✓✓, okundu ✓✓ (vurgulu) */
+function dmTik(m) {
+  var cift = m.okundu || m.teslim;
+  var el = h('span', { class: 'dm-tik' + (m.okundu ? ' okundu' : ''), 'aria-label': m.okundu ? t('dmGoruldu') : cift ? t('dmUlasti') : t('dmGonderildi') });
+  el.innerHTML = cift ? '<svg viewBox="0 0 20 12" width="17" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5 4.5 10 11 2"/><path d="M7.5 9 8.5 10 15 2"/></svg>'
+    : '<svg viewBox="0 0 14 12" width="13" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.5 5 10 12 2"/></svg>';
+  return el;
+}
+var DM_TEPKILER = ['❤️', '😂', '😮', '😢', '🙏', '👍'];
 function dmZaman(ms) {
   var d = new Date(ms), b = new Date();
   try {
@@ -82,12 +100,13 @@ function dmKutusu() {
 function dmSohbet(kisi, degisti) {
   if (!girisIste() || !dmKisiGecerli(kisi)) return;
   var ad = kirp(kisi.takma, 24);
-  var mesajlar = [], durum = 'yok', engelledim = false, son = 0, yukleniyor = false;
+  var mesajlar = [], durum = 'yok', engelledim = false, son = 0, yukleniyor = false, imza = '', yaziyor = false, yanitlanan = null, sonYazPing = 0;
+  var yanitCubuk = h('div', { class: 'dm-yanit-cubuk', hidden: true });
   var akis = h('div', { class: 'dm-akis', 'aria-live': 'polite' });
   var ust = h('div', { class: 'dm-ust' });
   var girdi = h('textarea', { class: 'dm-girdi', rows: '1', maxlength: '1000', placeholder: t('dmYaz'), 'aria-label': t('dmYaz') });
   var gonder = h('button', { class: 'dm-gonder', 'aria-label': t('dmGonder') }, ikon('gonder', 'k'));
-  var alt = h('div', { class: 'dm-alt' }, girdi, gonder);
+  var alt = h('div', { class: 'dm-alt-kap' }, yanitCubuk, h('div', { class: 'dm-alt' }, girdi, gonder));
   var s = sayfaAc({ baslik: ad, icerik: h('div', { class: 'dm-sayfa' }, ust, akis), altBar: alt, kapaninca: function () { clearInterval(zaman); DM.acik = null; if (degisti) degisti(); } });
   DM.acik = kisi.kod;
   /* başlık: profile git ve menü */
@@ -96,7 +115,8 @@ function dmSohbet(kisi, degisti) {
   function ustCiz() {
     temizle(ust);
     ust.appendChild(h('button', { class: 'dm-kisi', on: { click: function () { profilSayfasi(kisi.kod, kisi); } } },
-      avatarDoldur(h('span', { class: 'g-avatar' }), kisiAvatar(kisi.kod, kisi.av, ad), ad), h('div', null, h('b', { text: ad }), kadiEl(kisi.kadi))));
+      avatarDoldur(h('span', { class: 'g-avatar' }), kisiAvatar(kisi.kod, kisi.av, ad), ad), h('div', null, h('b', { text: ad }),
+        yaziyor ? h('small', { class: 'dm-yaziyor', text: t('dmYaziyor') }) : kadiEl(kisi.kadi))));
     if (durum === 'istek_gelen') {
       ust.appendChild(h('div', { class: 'dm-istek' }, h('p', { text: t('dmIstekMetin', ad) }),
         h('div', { class: 'sarili', style: { gap: '8px' } },
@@ -110,20 +130,96 @@ function dmSohbet(kisi, degisti) {
     girdi.disabled = kapali; gonder.disabled = kapali;
     alt.classList.toggle('kapali', kapali);
   }
+  /* yanıtlanacak mesaj: giriş kutusunun üstünde alıntı çubuğu (WhatsApp'taki gibi) */
+  function yanitAyarla(m) {
+    yanitlanan = m || null;
+    temizle(yanitCubuk);
+    yanitCubuk.hidden = !m;
+    if (!m) return;
+    yanitCubuk.appendChild(h('div', { class: 'dm-alinti' }, h('b', { text: m.ben ? t('dmSen') : ad }), h('span', { text: kirp(m.metin, 120) })));
+    yanitCubuk.appendChild(h('button', { class: 'ikon-btn', 'aria-label': t('kapat'), on: { click: function () { yanitAyarla(null); } } }, ikon('kapat', 'k')));
+    setTimeout(function () { try { girdi.focus(); } catch (e) { } }, 50);
+  }
+  /* uzun basınca: tepki, yanıtla, kopyala, sil / şikâyet */
+  function eylemler(m) {
+    if (m.silindi) return;
+    var g = h('div', { class: 'dm-eylem' });
+    var ms = sayfaAc({ baslik: '', icerik: g });
+    var tepkiler = h('div', { class: 'dm-tepki-sec' });
+    DM_TEPKILER.forEach(function (e) {
+      tepkiler.appendChild(h('button', { class: m.tepki && m.tepki.ben === e ? 'secili' : '', 'aria-label': e, text: e, on: { click: function () { ms.kapat(); tepkiVer(m, e); } } }));
+    });
+    g.appendChild(tepkiler);
+    var liste = h('div', { class: 'ayar-grup' });
+    liste.appendChild(menuSatir('gonder', t('dmYanitla'), '', function () { ms.kapat(); setTimeout(function () { yanitAyarla(m); }, 280); }));
+    liste.appendChild(menuSatir('kalem', t('dmKopyala'), '', function () {
+      ms.kapat();
+      try { navigator.clipboard.writeText(m.metin).then(function () { tost(t('dmKopyalandi')); }, function () { }); } catch (e) { }
+    }));
+    if (m.ben && Date.now() - m.zaman < 2 * 3600000) liste.appendChild(menuSatir('cop', t('dmHerkestenSil'), t('dmHerkestenSilAlt'), function () { ms.kapat(); setTimeout(function () { mesajSil(m); }, 280); }));
+    if (!m.ben) liste.appendChild(menuSatir('bayrak', t('sikayetEt'), '', function () { ms.kapat(); setTimeout(function () { sikayetSor(m); }, 280); }));
+    g.appendChild(liste);
+  }
+  /* yoklama mesaj listesini yeniler: işlem her zaman güncel nesneye uygulanır */
+  function guncel(m) { for (var i = 0; i < mesajlar.length; i++) if (mesajlar[i].id === m.id) return mesajlar[i]; return m; }
+  function tepkiVer(m, e) {
+    m = guncel(m);
+    var eski = m.tepki ? m.tepki.ben : '';
+    m.tepki = m.tepki || { ben: '', o: '' }; m.tepki.ben = eski === e ? '' : e; imza = ''; akisCiz(false);
+    yzIste('/v1/dmtepki', { id: m.id, tepki: e }, 15000).then(function (v) { if (v.tepki) { guncel(m).tepki = v.tepki; imza = ''; akisCiz(false); } })
+      .catch(function (er) { m.tepki.ben = eski; akisCiz(false); tost(dmHataMetni(er)); });
+  }
+  function mesajSil(m) {
+    onayla(t('dmHerkestenSil'), t('dmHerkestenSilSor'), t('sil'), true).then(function (evet) {
+      if (!evet) return;
+      yzIste('/v1/dmmsil', { id: m.id }, 15000).then(function () { var g = guncel(m); g.silindi = 1; g.metin = ''; imza = ''; akisCiz(false); })
+        .catch(function (er) { tost(er && er.message === 'sure' ? t('dmSilSure') : dmHataMetni(er)); });
+    });
+  }
   function balon(m) {
-    var b = h('div', { class: 'dm-balon' + (m.ben ? ' ben' : '') }, h('span', { class: 'dm-metin', text: m.metin }),
-      h('small', { text: dmZaman(m.zaman) + (m.ben && m.okundu ? ' • ' + t('dmGoruldu') : '') }));
-    if (!m.ben) b.addEventListener('contextmenu', function (e) { e.preventDefault(); sikayetSor(m); });
-    if (!m.ben) { var dokun = null; b.addEventListener('touchstart', function () { dokun = setTimeout(function () { sikayetSor(m); }, 650); }, { passive: true }); b.addEventListener('touchend', function () { clearTimeout(dokun); }); }
+    var ic = [];
+    if (m.yanit && !m.silindi) {
+      ic.push(h('button', { class: 'dm-alinti', on: { click: function (e) { e.stopPropagation(); var y = akis.querySelector('[data-id="' + m.yanit.id + '"]'); if (y) { y.scrollIntoView({ block: 'center', behavior: 'smooth' }); y.classList.add('vurgula'); setTimeout(function () { y.classList.remove('vurgula'); }, 1200); } } } },
+        h('b', { text: m.yanit.ben ? t('dmSen') : ad }), h('span', { text: kirp(m.yanit.metin, 120) || '…' })));
+    }
+    ic.push(m.silindi ? h('span', { class: 'dm-metin silindi', text: '🚫 ' + (m.ben ? t('dmSildin') : t('dmSilindiMesaj')) }) : h('span', { class: 'dm-metin', text: m.metin }));
+    ic.push(h('small', { class: 'dm-alt-bilgi' }, h('span', { text: dmSaat(m.zaman) }), m.ben && !m.silindi ? dmTik(m) : null));
+    var b = h('div', { class: 'dm-balon' + (m.ben ? ' ben' : '') + (m.silindi ? ' silik' : ''), 'data-id': m.id }, ic);
+    var tp = m.tepki ? [m.tepki.o, m.tepki.ben].filter(Boolean) : [];
+    if (tp.length && !m.silindi) b.appendChild(h('span', { class: 'dm-tepki', text: tp.join('') }));
+    /* uzun bas: eylemler; sağa kaydır: yanıtla */
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); eylemler(m); });
+    var dokun = null, x0 = 0, y0 = 0, kaydi = false;
+    b.addEventListener('touchstart', function (e) { var p = e.touches[0]; x0 = p.clientX; y0 = p.clientY; kaydi = false; dokun = setTimeout(function () { if (!kaydi) eylemler(m); }, 550); }, { passive: true });
+    b.addEventListener('touchmove', function (e) {
+      var p = e.touches[0], dx = p.clientX - x0, dy = Math.abs(p.clientY - y0);
+      if (Math.abs(dx) > 8 || dy > 8) { kaydi = true; clearTimeout(dokun); }
+      if (dx > 0 && dy < 30 && !m.silindi) b.style.transform = 'translateX(' + Math.min(70, dx) + 'px)';
+    }, { passive: true });
+    b.addEventListener('touchend', function (e) {
+      clearTimeout(dokun);
+      var p = e.changedTouches[0], dx = p.clientX - x0;
+      b.style.transform = '';
+      if (kaydi && dx > 60 && !m.silindi) yanitAyarla(m);
+    });
     return b;
   }
   function akisCiz(kaydir) {
     var altta = akis.scrollHeight - akis.scrollTop - akis.clientHeight < 80;
     temizle(akis);
     if (!mesajlar.length) akis.appendChild(h('p', { class: 'alt-yazi dm-bos', text: durum === 'yok' ? t('dmIlkMesaj', ad) : '' }));
-    mesajlar.forEach(function (m) { akis.appendChild(balon(m)); });
+    var gun = '', onceki = null;
+    mesajlar.forEach(function (m) {
+      var g = dmGun(m.zaman);
+      if (g !== gun) { gun = g; onceki = null; akis.appendChild(h('div', { class: 'dm-gun' }, h('span', { text: g }))); }
+      var b = balon(m);
+      if (onceki && onceki.ben === m.ben && m.zaman - onceki.zaman < 120000) b.classList.add('ardisik');   // art arda mesajlar gruplanır
+      akis.appendChild(b); onceki = m;
+    });
+    if (yaziyor) akis.appendChild(h('div', { class: 'dm-balon dm-yaziyor-balon' }, h('i'), h('i'), h('i')));
     if (kaydir || altta) setTimeout(function () { akis.scrollTop = akis.scrollHeight; }, 0);
   }
+  function mesajImzasi(l) { return l.map(function (m) { return m.id + (m.okundu ? 'o' : m.teslim ? 't' : '') + (m.silindi ? 's' : '') + (m.tepki ? m.tepki.ben + m.tepki.o : ''); }).join(',') + (yaziyor ? 'y' : ''); }
   function yukle(ilk) {
     if (yukleniyor || s.kapandi) return;
     yukleniyor = true;
@@ -131,8 +227,9 @@ function dmSohbet(kisi, degisti) {
       if (s.kapandi) return;
       if (dmKisiGecerli(v.kisi)) kisi = Object.assign({}, kisi, v.kisi);
       var yeni = Array.isArray(v.mesajlar) ? v.mesajlar.filter(function (m) { return m && typeof m.metin === 'string' && sayiMi(m.zaman); }) : [];
-      var degisti2 = yeni.length !== mesajlar.length || (yeni.length && mesajlar.length && (yeni[yeni.length - 1].id !== mesajlar[mesajlar.length - 1].id || yeni[yeni.length - 1].okundu !== mesajlar[mesajlar.length - 1].okundu));
-      var durumDegisti = durum !== v.durum || engelledim !== !!v.engelledim;
+      var yaziyorDegisti = yaziyor !== !!v.yaziyor; yaziyor = !!v.yaziyor;
+      var yeniImza = mesajImzasi(yeni), degisti2 = yeniImza !== imza; imza = yeniImza;
+      var durumDegisti = durum !== v.durum || engelledim !== !!v.engelledim || yaziyorDegisti;
       mesajlar = yeni; durum = ['acik', 'istek_gelen', 'istek_giden', 'yok'].indexOf(v.durum) >= 0 ? v.durum : 'yok'; engelledim = !!v.engelledim;
       if (ilk || durumDegisti) ustCiz();
       if (ilk || degisti2) akisCiz(ilk);
@@ -142,8 +239,9 @@ function dmSohbet(kisi, degisti) {
     var m = girdi.value.replace(/\s+$/, '').slice(0, 1000);
     if (!m.trim() || gonder.disabled) return;
     gonder.disabled = true;
-    yzIste('/v1/dmyaz', { kod: kisi.kod, metin: m }, 30000).then(function (v) {
-      if (v.mesaj && typeof v.mesaj.metin === 'string') { mesajlar.push(v.mesaj); girdi.value = ''; girdi.style.height = ''; }
+    var govde = { kod: kisi.kod, metin: m }; if (yanitlanan && yanitlanan.id) govde.yanit = yanitlanan.id;
+    yzIste('/v1/dmyaz', govde, 30000).then(function (v) {
+      if (v.mesaj && typeof v.mesaj.metin === 'string') { mesajlar.push(v.mesaj); girdi.value = ''; girdi.style.height = ''; yanitAyarla(null); imza = mesajImzasi(mesajlar); }
       if (v.durum && v.durum !== durum) { durum = v.durum; ustCiz(); }
       akisCiz(true);
     }).catch(function (e) {
@@ -180,11 +278,15 @@ function dmSohbet(kisi, degisti) {
     g.appendChild(menuSatir('kapat', engelledim ? t('dmEngelKaldir') : t('engelle'), t('dmEngelAlt'), function () { ms.kapat(); setTimeout(function () { if (engelledim) engelle(false); else engelSor(); }, 300); }));
     g.appendChild(h('p', { class: 'ayar-not', text: t('dmSikayetNot') }));
   }
-  girdi.addEventListener('input', function () { girdi.style.height = 'auto'; girdi.style.height = Math.min(120, girdi.scrollHeight) + 'px'; });
+  girdi.addEventListener('input', function () {
+    girdi.style.height = 'auto'; girdi.style.height = Math.min(120, girdi.scrollHeight) + 'px';
+    /* "yazıyor…": en fazla 3 sn'de bir, yalnız açık sohbette */
+    if (durum === 'acik' && girdi.value.trim() && Date.now() - sonYazPing > 3000) { sonYazPing = Date.now(); yzIste('/v1/dmyaziyor', { kod: kisi.kod }, 8000).catch(function () { }); }
+  });
   girdi.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); yolla(); } });
   gonder.addEventListener('click', yolla);
   ustCiz(); yukle(true);
-  var zaman = setInterval(function () { if (!document.hidden) yukle(false); }, 4000);
+  var zaman = setInterval(function () { if (!document.hidden) yukle(false); }, 3000);
 }
 
 /* ---------- Profil: takipçi ve takip edilenler sekmeleri ---------- */
@@ -293,6 +395,13 @@ function sikayetPaneli() {
 
 /* ---------- Metinler ---------- */
 Object.assign(DIL.tr, {
+  bugun: 'Bugün', dun: 'Dün', dmYaziyor: 'yazıyor…', dmSen: 'Sen', dmYanitla: 'Yanıtla', dmKopyala: 'Kopyala', dmKopyalandi: 'Kopyalandı', dmHerkestenSil: 'Herkesten sil', dmHerkestenSilAlt: 'Gönderdikten sonra 2 saat içinde', dmHerkestenSilSor: 'Bu mesaj sohbetteki herkes için silinsin mi?', dmSilSure: 'Bu mesaj artık herkesten silinemez (2 saat geçti).', dmSildin: 'Bu mesajı sildin', dmSilindiMesaj: 'Bu mesaj silindi', dmUlasti: 'Ulaştı', dmGonderildi: 'Gönderildi',
+  istekGonderildi: 'İstek gönderildi', istekGonderildiTost: 'Takip isteği gönderildi', istekGeriCekildi: 'Takip isteği geri çekildi', takipEngel: 'Bu kişiyi takip edemezsin.',
+  takipIstekleri: 'Takip istekleri', istekOzet: function (ad, n) { return n > 0 ? ad + ' ve ' + n + ' kişi daha' : ad; }, istekYok: 'Bekleyen takip isteği yok.',
+  istekAciklama: 'Onayladığın kişiler seni takip eder ve takipçilere özel paylaşımlarını görür.', istekOnayla: 'Onayla', istekSil: 'Sil', istekOnaylandi: 'Artık seni takip ediyor',
+  bnKabulMetin: 'takip isteğini kabul etti', bnIstek: function (a) { return a + ' seni takip etmek istiyor'; }, bnKabul: function (a) { return a + ' takip isteğini kabul etti'; },
+  istekOnayAyar: 'Takip isteklerini onayla', istekOnayAyarAlt: 'Açıkken seni takip etmek isteyenler önce senin onayını bekler. Kapatırsan herkes doğrudan takip edebilir.',
+  hesapAcildi: 'Artık herkes seni doğrudan takip edebilir; bekleyen istekler onaylandı.', hesapGizlendi: 'Yeni takipçiler artık onayını bekleyecek.',
   proYillikBaslik: 'Kombinle PRO, yıllık', planYillik: 'Yıllık', planAylik: 'Aylık', yilBasi: '/yıl', proYilAlt: 'Yılda bir kez ödenir; aylık plana göre belirgin şekilde daha ucuz.', aboneNot: 'Abonelik seçtiğin dönemin sonunda (aylık ya da yıllık) otomatik yenilenir; Play Store > Abonelikler bölümünden istediğin an iptal edebilirsin. "Sınırsız" adil kullanım sınırlarıyla geçerlidir.',
   proS7: function (n) { return 'Günde ' + n + ' cevap doğal insan sesiyle'; }, dogalSesBitti: 'Bugünkü doğal ses hakkın doldu; cevaplar telefonun sesiyle okunacak.', dogalSesBittiUcretsiz: function (n) { return 'Bugünkü ' + n + ' doğal sesli cevap hakkın doldu; telefonun sesiyle devam ediyorum. PRO ile günde 20.'; },
   dogalSes: 'Doğal ses', dogalSesAlt: 'Cevaplar Kombinle AI\'nin insan gibi doğal sesiyle okunur (internet gerekir). Kapalıysa telefonun kendi sesi kullanılır.',
@@ -320,6 +429,13 @@ Object.assign(DIL.tr, {
   hEpostaKodu: 'E-postadaki 6 haneli kod', hEpostaYok: 'E-postayla sıfırlama şu an kapalı; kurtarma kodunu kullan.', hEpostaHatasi: 'E-posta şu an gönderilemedi, birazdan tekrar dene.'
 });
 Object.assign(DIL.en, {
+  bugun: 'Today', dun: 'Yesterday', dmYaziyor: 'typing…', dmSen: 'You', dmYanitla: 'Reply', dmKopyala: 'Copy', dmKopyalandi: 'Copied', dmHerkestenSil: 'Delete for everyone', dmHerkestenSilAlt: 'Within 2 hours of sending', dmHerkestenSilSor: 'Delete this message for everyone in the chat?', dmSilSure: 'This message can no longer be deleted for everyone (2 hours passed).', dmSildin: 'You deleted this message', dmSilindiMesaj: 'This message was deleted', dmUlasti: 'Delivered', dmGonderildi: 'Sent',
+  istekGonderildi: 'Requested', istekGonderildiTost: 'Follow request sent', istekGeriCekildi: 'Follow request withdrawn', takipEngel: "You can't follow this person.",
+  takipIstekleri: 'Follow requests', istekOzet: function (ad, n) { return n > 0 ? ad + ' and ' + n + ' others' : ad; }, istekYok: 'No pending follow requests.',
+  istekAciklama: 'People you approve can follow you and see your followers-only posts.', istekOnayla: 'Confirm', istekSil: 'Delete', istekOnaylandi: 'Now follows you',
+  bnKabulMetin: 'accepted your follow request', bnIstek: function (a) { return a + ' wants to follow you'; }, bnKabul: function (a) { return a + ' accepted your follow request'; },
+  istekOnayAyar: 'Approve follow requests', istekOnayAyarAlt: 'When on, people who want to follow you wait for your approval. Turn it off to let anyone follow you directly.',
+  hesapAcildi: 'Anyone can now follow you directly; pending requests were approved.', hesapGizlendi: 'New followers will now wait for your approval.',
   proYillikBaslik: 'Kombinle PRO, yearly', planYillik: 'Yearly', planAylik: 'Monthly', yilBasi: '/yr', proYilAlt: 'Billed once a year; noticeably cheaper than monthly.', aboneNot: 'The subscription renews at the end of each period (monthly or yearly); cancel anytime in Play Store > Subscriptions. "Unlimited" is subject to fair-use limits.',
   proS7: function (n) { return n + ' replies a day in a natural human voice'; }, dogalSesBitti: 'Today\'s natural voice limit is used up; replies will use the phone\'s voice.', dogalSesBittiUcretsiz: function (n) { return 'You used today\'s ' + n + ' natural voice replies; continuing with the phone\'s voice. PRO gives 20 a day.'; },
   dogalSes: 'Natural voice', dogalSesAlt: 'Replies are read in Kombinle AI\'s natural, human-like voice (needs internet). When off, the phone\'s own voice is used.',
@@ -347,6 +463,13 @@ Object.assign(DIL.en, {
   hEpostaKodu: '6-digit code from the email', hEpostaYok: 'Email reset is not available right now; use your recovery code.', hEpostaHatasi: "The email couldn't be sent right now, try again shortly."
 });
 Object.assign(DIL.ru, {
+  bugun: 'Сегодня', dun: 'Вчера', dmYaziyor: 'печатает…', dmSen: 'Ты', dmYanitla: 'Ответить', dmKopyala: 'Копировать', dmKopyalandi: 'Скопировано', dmHerkestenSil: 'Удалить у всех', dmHerkestenSilAlt: 'В течение 2 часов после отправки', dmHerkestenSilSor: 'Удалить сообщение у всех в чате?', dmSilSure: 'Сообщение уже нельзя удалить у всех (прошло 2 часа).', dmSildin: 'Ты удалил(а) это сообщение', dmSilindiMesaj: 'Сообщение удалено', dmUlasti: 'Доставлено', dmGonderildi: 'Отправлено',
+  istekGonderildi: 'Запрос отправлен', istekGonderildiTost: 'Запрос на подписку отправлен', istekGeriCekildi: 'Запрос отозван', takipEngel: 'Нельзя подписаться на этого человека.',
+  takipIstekleri: 'Запросы на подписку', istekOzet: function (ad, n) { return n > 0 ? ad + ' и ещё ' + n : ad; }, istekYok: 'Нет запросов на подписку.',
+  istekAciklama: 'Одобренные люди смогут подписаться и видеть публикации только для подписчиков.', istekOnayla: 'Подтвердить', istekSil: 'Удалить', istekOnaylandi: 'Теперь подписан(а) на тебя',
+  bnKabulMetin: 'принял(а) твой запрос', bnIstek: function (a) { return a + ' хочет подписаться на тебя'; }, bnKabul: function (a) { return a + ' принял(а) твой запрос на подписку'; },
+  istekOnayAyar: 'Подтверждать подписки', istekOnayAyarAlt: 'Если включено, желающие подписаться ждут твоего одобрения. Выключи, чтобы подписываться мог любой.',
+  hesapAcildi: 'Теперь подписаться может любой; ожидающие запросы одобрены.', hesapGizlendi: 'Новые подписчики будут ждать одобрения.',
   proYillikBaslik: 'Kombinle PRO, на год', planYillik: 'Год', planAylik: 'Месяц', yilBasi: '/год', proYilAlt: 'Оплата раз в год; заметно дешевле помесячной.', aboneNot: 'Подписка продлевается в конце периода (месяц или год); отменить можно в Play Store > Подписки. «Безлимит» действует в рамках честного использования.',
   proS7: function (n) { return n + ' ответов в день естественным голосом'; }, dogalSesBitti: 'Лимит естественного голоса на сегодня исчерпан; ответы озвучит телефон.', dogalSesBittiUcretsiz: function (n) { return 'Сегодняшние ' + n + ' ответа естественным голосом использованы; дальше — голос телефона. С PRO — 20 в день.'; },
   dogalSes: 'Естественный голос', dogalSesAlt: 'Ответы озвучиваются естественным голосом Kombinle AI (нужен интернет). Если выключено — голос телефона.',
@@ -368,6 +491,13 @@ Object.assign(DIL.ru, {
   bnYeniTakip: function (a) { return a + ' подписался(-ась) на тебя'; }, bnYeni: 'У тебя новое уведомление', bnYeniMesaj: function (a) { return a + ' прислал(а) сообщение'; }
 });
 Object.assign(DIL.uz, {
+  bugun: 'Bugun', dun: 'Kecha', dmYaziyor: 'yozmoqda…', dmSen: 'Siz', dmYanitla: 'Javob berish', dmKopyala: 'Nusxalash', dmKopyalandi: 'Nusxalandi', dmHerkestenSil: "Hammadan o'chirish", dmHerkestenSilAlt: "Yuborilgandan keyin 2 soat ichida", dmHerkestenSilSor: "Xabar suhbatdagi hamma uchun o'chirilsinmi?", dmSilSure: "Bu xabarni endi hammadan o'chirib bo'lmaydi (2 soat o'tdi).", dmSildin: "Bu xabarni o'chirdingiz", dmSilindiMesaj: "Bu xabar o'chirildi", dmUlasti: 'Yetkazildi', dmGonderildi: 'Yuborildi',
+  istekGonderildi: "So'rov yuborildi", istekGonderildiTost: "Kuzatish so'rovi yuborildi", istekGeriCekildi: "So'rov bekor qilindi", takipEngel: "Bu odamni kuzata olmaysiz.",
+  takipIstekleri: "Kuzatish so'rovlari", istekOzet: function (ad, n) { return n > 0 ? ad + ' va yana ' + n + ' kishi' : ad; }, istekYok: "Kutilayotgan so'rov yo'q.",
+  istekAciklama: "Tasdiqlaganlaringiz sizni kuzatadi va faqat kuzatuvchilar uchun ulashishlarni ko'radi.", istekOnayla: 'Tasdiqlash', istekSil: "O'chirish", istekOnaylandi: 'Endi sizni kuzatmoqda',
+  bnKabulMetin: "so'rovingizni qabul qildi", bnIstek: function (a) { return a + ' sizni kuzatmoqchi'; }, bnKabul: function (a) { return a + " kuzatish so'rovingizni qabul qildi"; },
+  istekOnayAyar: "Kuzatish so'rovlarini tasdiqlash", istekOnayAyarAlt: "Yoqilganda kuzatmoqchi bo'lganlar tasdiqingizni kutadi. O'chirsangiz, hamma to'g'ridan-to'g'ri kuzata oladi.",
+  hesapAcildi: "Endi hamma to'g'ridan-to'g'ri kuzata oladi; kutilayotgan so'rovlar tasdiqlandi.", hesapGizlendi: 'Yangi kuzatuvchilar endi tasdiqingizni kutadi.',
   proYillikBaslik: 'Kombinle PRO, yillik', planYillik: 'Yillik', planAylik: 'Oylik', yilBasi: '/yil', proYilAlt: "Yiliga bir marta to'lanadi; oylikdan sezilarli arzon.", aboneNot: "Obuna davr oxirida (oylik yoki yillik) avtomatik yangilanadi; Play Store > Obunalar bo'limida istalgan payt bekor qilish mumkin. «Cheksiz» adolatli foydalanish chegaralari bilan.",
   proS7: function (n) { return 'Kuniga ' + n + ' ta javob tabiiy ovozda'; }, dogalSesBitti: "Bugungi tabiiy ovoz limiti tugadi; javoblarni telefon ovozi o'qiydi.", dogalSesBittiUcretsiz: function (n) { return 'Bugungi ' + n + " ta tabiiy ovozli javob tugadi; telefon ovozida davom etaman. PRO bilan kuniga 20 ta."; },
   dogalSes: 'Tabiiy ovoz', dogalSesAlt: "Javoblar Kombinle AI ning tabiiy ovozida o'qiladi (internet kerak). O'chiq bo'lsa, telefon ovozi ishlatiladi.",

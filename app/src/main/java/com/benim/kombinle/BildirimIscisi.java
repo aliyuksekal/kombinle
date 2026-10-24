@@ -62,7 +62,8 @@ public final class BildirimIscisi extends Worker {
                 String ad = kisa(son.optString("takma"));
                 String tur = son.optString("tur");
                 int metin = "takip".equals(tur) ? R.string.bn_takip : "begeni".equals(tur) ? R.string.bn_begeni
-                        : "yorum".equals(tur) ? R.string.bn_yorum : "anket".equals(tur) ? R.string.bn_anket : R.string.bn_genel;
+                        : "yorum".equals(tur) ? R.string.bn_yorum : "anket".equals(tur) ? R.string.bn_anket
+                        : "istek".equals(tur) ? R.string.bn_istek : "kabul".equals(tur) ? R.string.bn_kabul : R.string.bn_genel;
                 int n = v.optInt("okunmamis");
                 goster(c, NO_BILDIRIM, c.getString(metin, ad), n > 1 ? c.getString(R.string.bn_sayi, n) : c.getString(R.string.bn_ac), "bildirim");
                 a.edit().putLong("son", son.optLong("zaman")).apply();

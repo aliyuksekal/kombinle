@@ -269,7 +269,8 @@ function profilDuzenle(yenile) {
     h('label', { class: 'hesap-alan' }, h('span', { text: t('hAd') }), ad),
     kd.sar, kodSar,
     h('label', { class: 'hesap-alan' }, h('span', null, t('hakkimda'), say), bio),
-    h('p', { class: 'ayar-not', text: t('profilNot') })), altBar: btn });
+    h('p', { class: 'ayar-not', text: t('profilNot') }),
+    gizlilikSatiri()), altBar: btn });
   var gidiyor = false;
   btn.addEventListener('click', function () {
     if (gidiyor) return;

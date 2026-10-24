@@ -155,6 +155,9 @@ async function yonlendir(istek, env, ctx) {
     case 'yorumsil': hesapGerek(); return json(await yorumSil(env, govde, cihaz));
     case 'ysikayet': await kotaDus(env, ['sikayet_cihaz:' + cihaz]); hesapGerek(); return json(await yorumSikayet(env, govde, cihaz, hesap));
     case 'takip': await kotaDus(env, ['takip_cihaz:' + cihaz]); hesapGerek(); return json(await takipEt(env, govde, cihaz));
+    case 'istekler': hesapGerek(); await kotaDus(env, ['kisi_ip:' + ip]); return json(await istekler(env, cihaz));
+    case 'istekyanit': hesapGerek(); await kotaDus(env, ['takip_cihaz:' + cihaz]); return json(await istekYanit(env, govde, cihaz));
+    case 'gizlilik': hesapGerek(); await kotaDus(env, ['profil_cihaz:' + cihaz]); return json(await gizlilik(env, govde, cihaz));
     case 'avatar': hesapGerek(); await kotaDus(env, ['avatar_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi']); return json(await avatarYaz(env, govde, hesap));
     case 'reklamlar': await kotaDus(env, ['akis_ip:' + ip]); return json(await reklamlar(env, govde, hesap));
     case 'reklamsay': await kotaDus(env, ['reklam_cihaz:' + cihaz]); return json(await reklamSay(env, govde, cihaz));
@@ -170,6 +173,9 @@ async function yonlendir(istek, env, ctx) {
     case 'dmliste': hesapGerek(); await kotaDus(env, ['dm_oku:' + cihaz]); return json(await dmListe(env, hesap));
     case 'dmoku': hesapGerek(); await kotaDus(env, ['dm_oku:' + cihaz]); return json(await dmOku(env, govde, hesap));
     case 'dmyaz': hesapGerek(); await kotaDus(env, ['dm_cihaz:' + cihaz, 'dm_ip:' + ip]); return json(await dmYaz(env, govde, hesap));
+    case 'dmtepki': hesapGerek(); await kotaDus(env, ['dm_cihaz:' + cihaz]); return json(await dmTepki(env, govde, hesap));
+    case 'dmmsil': hesapGerek(); await kotaDus(env, ['dm_cihaz:' + cihaz]); return json(await dmMesajSil(env, govde, hesap));
+    case 'dmyaziyor': hesapGerek(); await kotaDus(env, ['dm_oku:' + cihaz]); return json(await dmYaziyor(env, govde, hesap));
     case 'dmkabul': hesapGerek(); return json(await dmKabul(env, govde, hesap));
     case 'dmsil': hesapGerek(); return json(await dmSil(env, govde, hesap));
     case 'dmengel': hesapGerek(); return json(await dmEngel(env, govde, hesap));
@@ -744,7 +750,7 @@ async function akis(env, g, cihaz) {
   }
   const { results } = await sorgu.all();
   const satirlar = (results || []).filter(r => engelli.indexOf(yazarKodu(r.yazar)) < 0);
-  const oylar = {}, takipte = {};
+  const oylar = {}, takipte = {}, istekte = {};
   if (satirlar.length) {
     const yer = satirlar.map(() => '?').join(',');
     const o = await env.DB.prepare('SELECT paylasim, deger FROM oy WHERE cihaz = ? AND paylasim IN (' + yer + ')').bind(cihaz, ...satirlar.map(r => r.id)).all();
@@ -752,6 +758,8 @@ async function akis(env, g, cihaz) {
     const kodlar = [...new Set(satirlar.map(r => yazarKodu(r.yazar)))];
     const t = await env.DB.prepare('SELECT takip FROM takip WHERE takipci = ? AND takip IN (' + kodlar.map(() => '?').join(',') + ')').bind(kod, ...kodlar).all();
     (t.results || []).forEach(r => { takipte[r.takip] = 1; });
+    const ti = await env.DB.prepare('SELECT hedef FROM takip_istek WHERE isteyen = ? AND hedef IN (' + kodlar.map(() => '?').join(',') + ')').bind(kod, ...kodlar).all();
+    (ti.results || []).forEach(r => { istekte[r.hedef] = 1; });
   }
   return {
     ok: true,
@@ -772,7 +780,7 @@ async function akis(env, g, cihaz) {
       gizli: r.gizli ? 1 : 0,
       gorunurluk: r.gorunurluk || 'herkes',
       yazar: yazarKodu(r.yazar),
-      takipte: takipte[yazarKodu(r.yazar)] ? 1 : 0,
+      takipte: takipte[yazarKodu(r.yazar)] ? 1 : 0, istekte: istekte[yazarKodu(r.yazar)] ? 1 : 0,
       oy: oylar[r.id] || 0
     }))
   };
@@ -914,23 +922,83 @@ async function yorumSikayet(env, g, cihaz, hesap) {
 }
 
 /* --- takip ve kişiler --------------------------------------------------- */
+/* Takip: hesap herkese açık değilse (varsayılan) takip bir istek olarak gider; karşı taraf onaylayınca takip başlar.
+   durum: 'takip' (takip ediyor), 'istek' (istek bekliyor), 'yok' */
 async function takipEt(env, g, cihaz) {
   const hedef = typeof g.kod === 'string' && /^[a-f0-9]{12}$/.test(g.kod) ? g.kod : '';
   if (!hedef) throw new Hata('girdi');
   const kod = yazarKodu(cihaz);
   if (hedef === kod) throw new Hata('kendi');
-  if (g.takip === false) await env.DB.prepare('DELETE FROM takip WHERE takipci = ? AND takip = ?').bind(kod, hedef).run();
-  else {
-    const var_ = await env.DB.prepare('SELECT 1 FROM profil WHERE kod = ? AND hesapli = 1').bind(hedef).first();
-    if (!var_) throw new Hata('yok', 404);
-    const say = await env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takipci = ?').bind(kod).first();
-    if (say && say.n >= 1000) throw new Hata('sinir');
-    await env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').bind(kod, hedef, Date.now()).run();
-    await bildir(env, hedef, 'takip', kod, '', '');
+  let durum = 'yok';
+  if (g.takip === false) {
+    // takibi bırak ya da bekleyen isteği geri çek
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM takip WHERE takipci = ? AND takip = ?').bind(kod, hedef),
+      env.DB.prepare('DELETE FROM takip_istek WHERE isteyen = ? AND hedef = ?').bind(kod, hedef),
+      env.DB.prepare("DELETE FROM bildirim WHERE tur IN ('takip', 'istek') AND kimden = ? AND alici = ?").bind(kod, hedef)
+    ]);
+  } else {
+    const pr = await env.DB.prepare('SELECT acik FROM profil WHERE kod = ? AND hesapli = 1').bind(hedef).first();
+    if (!pr) throw new Hata('yok', 404);
+    if (await env.DB.prepare('SELECT 1 FROM dm_engel WHERE engelleyen = ? AND engellenen = ?').bind(hedef, kod).first()) throw new Hata('engel', 403);
+    if (await env.DB.prepare('SELECT 1 FROM takip WHERE takipci = ? AND takip = ?').bind(kod, hedef).first()) durum = 'takip';
+    else {
+      const say = await env.DB.prepare('SELECT (SELECT COUNT(*) FROM takip WHERE takipci = ?1) + (SELECT COUNT(*) FROM takip_istek WHERE isteyen = ?1) AS n').bind(kod).first();
+      if (say && say.n >= 1000) throw new Hata('sinir');
+      if (pr.acik) {
+        await env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').bind(kod, hedef, Date.now()).run();
+        await bildir(env, hedef, 'takip', kod, '', '');
+        durum = 'takip';
+      } else {
+        const yeni = await env.DB.prepare('INSERT OR IGNORE INTO takip_istek (isteyen, hedef, zaman) VALUES (?, ?, ?)').bind(kod, hedef, Date.now()).run();
+        if (yeni && yeni.meta && yeni.meta.changes) await bildir(env, hedef, 'istek', kod, '', '');
+        durum = 'istek';
+      }
+    }
   }
-  if (g.takip === false) await env.DB.prepare("DELETE FROM bildirim WHERE tur = 'takip' AND kimden = ? AND alici = ?").bind(kod, hedef).run();
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takip = ?').bind(hedef).first();
-  return { ok: true, takipte: g.takip !== false, takipci: n ? n.n : 0 };
+  return { ok: true, durum, takipte: durum === 'takip', istekte: durum === 'istek', takipci: n ? n.n : 0 };
+}
+/* Gelen takip istekleri */
+async function istekler(env, cihaz) {
+  const kod = yazarKodu(cihaz);
+  const { results } = await env.DB.prepare('SELECT i.isteyen AS kod, i.zaman, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = i.isteyen) AS av, ' +
+    'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = i.isteyen) AS takipte FROM takip_istek i JOIN profil pr ON pr.kod = i.isteyen ' +
+    'WHERE i.hedef = ?1 AND i.isteyen NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY i.zaman DESC LIMIT 200').bind(kod).all();
+  return { ok: true, liste: (results || []).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, zaman: r.zaman, takipte: r.takipte ? 1 : 0 })) };
+}
+/* İsteği onayla ya da sil */
+async function istekYanit(env, g, cihaz) {
+  const kim = typeof g.kod === 'string' && /^[a-f0-9]{12}$/.test(g.kod) ? g.kod : '';
+  if (!kim) throw new Hata('girdi');
+  const kod = yazarKodu(cihaz);
+  const silindi = await env.DB.prepare('DELETE FROM takip_istek WHERE isteyen = ? AND hedef = ?').bind(kim, kod).run();
+  await env.DB.prepare("DELETE FROM bildirim WHERE tur = 'istek' AND kimden = ? AND alici = ?").bind(kim, kod).run();
+  if (!silindi || !silindi.meta || !silindi.meta.changes) return { ok: true, kabul: false, yok: true };
+  if (g.kabul === true) {
+    await env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').bind(kim, kod, Date.now()).run();
+    await bildir(env, kim, 'kabul', kod, '', '');
+    return { ok: true, kabul: true };
+  }
+  return { ok: true, kabul: false };
+}
+/* Hesap gizliliği: acik = herkes isteksiz takip edebilir. Açılınca bekleyen istekler kabul edilir. */
+async function gizlilik(env, g, cihaz) {
+  const kod = yazarKodu(cihaz);
+  if (typeof g.acik === 'boolean') {
+    await env.DB.prepare('UPDATE profil SET acik = ? WHERE kod = ?').bind(g.acik ? 1 : 0, kod).run();
+    if (g.acik) {
+      const { results } = await env.DB.prepare('SELECT isteyen FROM takip_istek WHERE hedef = ?').bind(kod).all();
+      const simdi = Date.now();
+      const isler = (results || []).map(r => env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').bind(r.isteyen, kod, simdi));
+      isler.push(env.DB.prepare('DELETE FROM takip_istek WHERE hedef = ?').bind(kod));
+      isler.push(env.DB.prepare("UPDATE bildirim SET tur = 'takip' WHERE tur = 'istek' AND alici = ?").bind(kod));
+      await env.DB.batch(isler);
+    }
+  }
+  const pr = await env.DB.prepare('SELECT acik FROM profil WHERE kod = ?').bind(kod).first();
+  const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(kod).first();
+  return { ok: true, acik: pr && pr.acik ? true : false, istek: n ? n.n : 0 };
 }
 
 async function kisiler(env, g, cihaz, hamCihaz) {
@@ -939,7 +1007,7 @@ async function kisiler(env, g, cihaz, hamCihaz) {
   const engelli = liste(g.engelli, 200).filter(x => typeof x === 'string' && /^[a-f0-9]{12}$/.test(x));
   const sql = 'SELECT pr.kod, pr.takma, pr.kadi, pr.bio, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, (SELECT COUNT(*) FROM takip t WHERE t.takip = pr.kod) AS takipci, ' +
     '(SELECT COUNT(*) FROM paylasim p WHERE substr(p.yazar, 1, 12) = pr.kod AND p.gizli = 0 AND p.gorunurluk = \'herkes\') AS paylasim, ' +
-    'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = pr.kod) AS takipte FROM profil pr WHERE pr.kod <> ?1 AND pr.kod <> ?3 AND pr.hesapli = 1 ' +
+    'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = pr.kod) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?1 AND ti.hedef = pr.kod) AS istekte FROM profil pr WHERE pr.kod <> ?1 AND pr.kod <> ?3 AND pr.hesapli = 1 ' +
     'AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ' +
     (ara ? 'AND (pr.takma LIKE ?2 OR pr.kadi LIKE ?2) ' : 'AND ?2 = \'\' ') + 'ORDER BY takipci DESC, pr.zaman DESC LIMIT 30';
   const q = env.DB.prepare(sql);
@@ -948,7 +1016,7 @@ async function kisiler(env, g, cihaz, hamCihaz) {
   return {
     ok: true,
     takipEdilen: takipEdilen ? takipEdilen.n : 0,
-    liste: (results || []).filter(r => engelli.indexOf(r.kod) < 0).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', av: r.av || 0, takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0 }))
+    liste: (results || []).filter(r => engelli.indexOf(r.kod) < 0).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', av: r.av || 0, takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0 }))
   };
 }
 
@@ -1277,23 +1345,26 @@ async function bildirimler(env, g, cihaz) {
   const kod = yazarKodu(cihaz);
   const say = await env.DB.prepare('SELECT COUNT(*) AS n FROM bildirim WHERE alici = ? AND okundu = 0').bind(kod).first();
   if (g.sadeceSay === true) {
-    const [son, dm] = await env.DB.batch([
+    await dmTeslim(env, kod);
+    const [son, dm, ist] = await env.DB.batch([
       env.DB.prepare('SELECT b.tur, b.zaman, pr.takma FROM bildirim b LEFT JOIN profil pr ON pr.kod = b.kimden WHERE b.alici = ? AND b.okundu = 0 ORDER BY b.zaman DESC LIMIT 1').bind(kod),
-      env.DB.prepare('SELECT COUNT(*) AS n, MAX(m.zaman) AS zaman, (SELECT pr.takma FROM profil pr WHERE pr.kod = (SELECT m2.gonderen FROM mesaj m2 WHERE m2.alici = ?1 AND m2.okundu = 0 ORDER BY m2.zaman DESC LIMIT 1)) AS takma FROM mesaj m WHERE m.alici = ?1 AND m.okundu = 0').bind(kod)
+      env.DB.prepare('SELECT COUNT(*) AS n, MAX(m.zaman) AS zaman, (SELECT pr.takma FROM profil pr WHERE pr.kod = (SELECT m2.gonderen FROM mesaj m2 WHERE m2.alici = ?1 AND m2.okundu = 0 ORDER BY m2.zaman DESC LIMIT 1)) AS takma FROM mesaj m WHERE m.alici = ?1 AND m.okundu = 0').bind(kod),
+      env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(kod)
     ]);
     const s0 = son.results && son.results[0], d0 = dm.results && dm.results[0];
-    return { ok: true, okunmamis: say ? say.n : 0, mesaj: d0 ? d0.n : 0,
+    const i0 = ist.results && ist.results[0];
+    return { ok: true, okunmamis: say ? say.n : 0, mesaj: d0 ? d0.n : 0, istek: i0 ? i0.n : 0,
       son: s0 && s0.takma ? { tur: s0.tur, zaman: s0.zaman, takma: s0.takma } : null,
       sonMesaj: d0 && d0.n && d0.takma ? { zaman: d0.zaman, takma: d0.takma } : null };
   }
   const engelli = liste(g.engelli, 200).filter(x => typeof x === 'string' && /^[a-f0-9]{12}$/.test(x));
   const { results } = await env.DB.prepare('SELECT b.id, b.tur, b.kimden, b.paylasim, b.metin, b.zaman, b.okundu, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = b.kimden) AS av, ' +
-    'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = b.kimden) AS takipte FROM bildirim b LEFT JOIN profil pr ON pr.kod = b.kimden WHERE b.alici = ?1 ORDER BY b.zaman DESC LIMIT 60').bind(kod).all();
+    'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = b.kimden) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?1 AND ti.hedef = b.kimden) AS istekte FROM bildirim b LEFT JOIN profil pr ON pr.kod = b.kimden WHERE b.alici = ?1 ORDER BY b.zaman DESC LIMIT 60').bind(kod).all();
   if (g.oku === true) await env.DB.prepare('UPDATE bildirim SET okundu = 1 WHERE alici = ? AND okundu = 0').bind(kod).run();
   return {
     ok: true, okunmamis: say ? say.n : 0,
     liste: (results || []).filter(r => r.takma && engelli.indexOf(r.kimden) < 0).map(r => ({
-      id: r.id, tur: r.tur, kod: r.kimden, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, paylasim: r.paylasim || '', metin: r.metin || '', zaman: r.zaman, yeni: r.okundu ? 0 : 1, takipte: r.takipte ? 1 : 0
+      id: r.id, tur: r.tur, kod: r.kimden, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, paylasim: r.paylasim || '', metin: r.metin || '', zaman: r.zaman, yeni: r.okundu ? 0 : 1, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0
     }))
   };
 }
@@ -1316,22 +1387,25 @@ async function profilGor(env, g, cihaz) {
   if (!hedef && !kadiGecerli(kadi)) throw new Hata('girdi');
   const kod = yazarKodu(cihaz);
   const pr = hedef
-    ? await env.DB.prepare('SELECT kod, takma, kadi, bio FROM profil WHERE kod = ?').bind(hedef).first()
-    : await env.DB.prepare('SELECT kod, takma, kadi, bio FROM profil WHERE kadi = ?').bind(kadi).first();
+    ? await env.DB.prepare('SELECT kod, takma, kadi, bio, acik FROM profil WHERE kod = ?').bind(hedef).first()
+    : await env.DB.prepare('SELECT kod, takma, kadi, bio, acik FROM profil WHERE kadi = ?').bind(kadi).first();
   if (!pr || await env.DB.prepare('SELECT 1 FROM engelli WHERE substr(cihaz, 1, 12) = ?').bind(pr.kod).first()) throw new Hata('yok', 404);
   const benim = pr.kod === kod;
-  const [a, tc, tk, ps, tt] = await env.DB.batch([
+  const [a, tc, tk, ps, tt, ti, gi] = await env.DB.batch([
     env.DB.prepare('SELECT zaman FROM avatar WHERE kod = ?').bind(pr.kod),
     env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takip = ?').bind(pr.kod),
     env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takipci = ?').bind(pr.kod),
     env.DB.prepare(benim ? 'SELECT COUNT(*) AS n FROM paylasim WHERE substr(yazar, 1, 12) = ?' : "SELECT COUNT(*) AS n FROM paylasim WHERE substr(yazar, 1, 12) = ? AND gizli = 0 AND gorunurluk = 'herkes'").bind(pr.kod),
-    env.DB.prepare('SELECT 1 AS v FROM takip WHERE takipci = ? AND takip = ?').bind(kod, pr.kod)
+    env.DB.prepare('SELECT 1 AS v FROM takip WHERE takipci = ? AND takip = ?').bind(kod, pr.kod),
+    env.DB.prepare('SELECT 1 AS v FROM takip_istek WHERE isteyen = ? AND hedef = ?').bind(kod, pr.kod),
+    env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(benim ? kod : '-')
   ]);
   const ilk = x => (x && x.results && x.results[0]) || null;
   return {
     ok: true,
     profil: { kod: pr.kod, takma: pr.takma, kadi: pr.kadi || '', bio: pr.bio || '', av: ilk(a) ? ilk(a).zaman : 0,
-      takipci: ilk(tc) ? ilk(tc).n : 0, takip: ilk(tk) ? ilk(tk).n : 0, paylasim: ilk(ps) ? ilk(ps).n : 0, takipte: ilk(tt) ? 1 : 0, benim: benim ? 1 : 0 }
+      takipci: ilk(tc) ? ilk(tc).n : 0, takip: ilk(tk) ? ilk(tk).n : 0, paylasim: ilk(ps) ? ilk(ps).n : 0, takipte: ilk(tt) ? 1 : 0, istekte: ilk(ti) ? 1 : 0, benim: benim ? 1 : 0,
+      acik: pr.acik ? 1 : 0, istek: benim && ilk(gi) ? ilk(gi).n : 0 }
   };
 }
 async function takipListesi(env, g, cihaz) {
@@ -1339,10 +1413,10 @@ async function takipListesi(env, g, cihaz) {
   if (!hedef) throw new Hata('girdi');
   const kod = yazarKodu(cihaz);
   const takipciler = g.tur !== 'takip';
-  const { results } = await env.DB.prepare('SELECT pr.kod, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, EXISTS (SELECT 1 FROM takip t2 WHERE t2.takipci = ?2 AND t2.takip = pr.kod) AS takipte ' +
+  const { results } = await env.DB.prepare('SELECT pr.kod, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, EXISTS (SELECT 1 FROM takip t2 WHERE t2.takipci = ?2 AND t2.takip = pr.kod) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?2 AND ti.hedef = pr.kod) AS istekte ' +
     'FROM takip t JOIN profil pr ON pr.kod = ' + (takipciler ? 't.takipci' : 't.takip') + ' WHERE ' + (takipciler ? 't.takip' : 't.takipci') + ' = ?1 ' +
     'AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY t.zaman DESC LIMIT 200').bind(hedef, kod).all();
-  return { ok: true, liste: (results || []).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, takipte: r.takipte ? 1 : 0, benim: r.kod === kod ? 1 : 0 })) };
+  return { ok: true, liste: (results || []).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0, benim: r.kod === kod ? 1 : 0 })) };
 }
 async function paylasimDuzenle(env, g, cihaz) {
   const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
@@ -1704,9 +1778,29 @@ async function dmProfiller(env, kodlar) {
   const o = {}; (results || []).forEach(r => { o[r.kod] = { kod: r.kod, takma: r.takma, kadi: r.kadi || '', av: r.av || 0 }; });
   return o;
 }
+/* gelen mesajlar telefona ulaştı (WhatsApp'taki çift tik) */
+async function dmTeslim(env, ben) {
+  try { await env.DB.prepare('UPDATE mesaj SET teslim = 1 WHERE alici = ? AND teslim = 0').bind(ben).run(); } catch (e) { /* eski şema */ }
+}
+const DM_TEPKI = ['❤️', '😂', '😮', '😢', '🙏', '👍'];
+function dmTepkiCoz(t, ben) {
+  let o = {};
+  try { o = JSON.parse(t || '{}') || {}; } catch (e) { o = {}; }
+  const r = { ben: '', o: '' };
+  Object.keys(o).forEach(k => { if (DM_TEPKI.indexOf(o[k]) >= 0) { if (k === ben) r.ben = o[k]; else r.o = o[k]; } });
+  return r;
+}
+function dmMesajCikti(m, ben) {
+  return {
+    id: m.id, ben: m.gonderen === ben, metin: m.silindi ? '' : m.metin, zaman: m.zaman, okundu: m.okundu ? 1 : 0, teslim: m.teslim || m.okundu ? 1 : 0,
+    silindi: m.silindi ? 1 : 0, tepki: dmTepkiCoz(m.tepki, ben),
+    yanit: m.yanit_id ? { id: m.yanit_id, metin: m.yanit_metin || '', ben: m.yanit_kim === ben } : null
+  };
+}
 function dmDurum(k, ben) { return !k ? 'yok' : !k.istek ? 'acik' : k.istek === ben ? 'istek_gelen' : 'istek_giden'; }
 async function dmListe(env, hesap) {
   const ben = hesap.kimlik.slice(0, 12);
+  await dmTeslim(env, ben);
   const { results } = await env.DB.prepare('SELECT k.id, k.a, k.b, k.son, k.son_metin, k.son_kim, k.istek, CASE WHEN k.a = ?1 THEN k.a_sil ELSE k.b_sil END AS silme, ' +
     '(SELECT COUNT(*) FROM mesaj m WHERE m.konusma = k.id AND m.alici = ?1 AND m.okundu = 0) AS okunmamis FROM konusma k WHERE (k.a = ?1 OR k.b = ?1) ' +
     'AND NOT EXISTS (SELECT 1 FROM dm_engel e WHERE e.engelleyen = ?1 AND e.engellenen = CASE WHEN k.a = ?1 THEN k.b ELSE k.a END) ORDER BY k.son DESC LIMIT 100').bind(ben).all();
@@ -1731,11 +1825,12 @@ async function dmOku(env, g, hesap) {
   if (!k) return { ok: true, durum: 'yok', kisi, mesajlar: [], engelledim };
   const silme = k.a === ben ? k.a_sil : k.b_sil;
   const sonra = Math.max(silme || 0, sayi(g.sonra, 0, 9e15, 0));
-  const { results } = await env.DB.prepare('SELECT id, gonderen, metin, zaman, okundu FROM mesaj WHERE konusma = ? AND zaman > ? ORDER BY zaman DESC LIMIT 100').bind(id, sonra).all();
-  await env.DB.prepare('UPDATE mesaj SET okundu = 1 WHERE konusma = ? AND alici = ? AND okundu = 0').bind(id, ben).run();
+  const { results } = await env.DB.prepare('SELECT id, gonderen, metin, zaman, okundu, teslim, silindi, tepki, yanit_id, yanit_metin, yanit_kim FROM mesaj WHERE konusma = ? AND zaman > ? ORDER BY zaman DESC LIMIT 100').bind(id, sonra).all();
+  await env.DB.prepare('UPDATE mesaj SET okundu = 1, teslim = 1 WHERE konusma = ? AND alici = ? AND okundu = 0').bind(id, ben).run();
+  const yaz = k.a === ben ? k.b_yaz : k.a_yaz;
   return {
-    ok: true, durum: dmDurum(k, ben), kisi, engelledim,
-    mesajlar: (results || []).reverse().map(m => ({ id: m.id, ben: m.gonderen === ben, metin: m.metin, zaman: m.zaman, okundu: m.okundu ? 1 : 0 }))
+    ok: true, durum: dmDurum(k, ben), kisi, engelledim, yaziyor: !!(yaz && Date.now() - yaz < 6000),
+    mesajlar: (results || []).reverse().map(m => dmMesajCikti(m, ben))
   };
 }
 async function dmYaz(env, g, hesap) {
@@ -1774,12 +1869,60 @@ async function dmYaz(env, g, hesap) {
   } else if (/(https?:\/\/|www\.)/i.test(yazi)) throw new Hata('baglanti');
   const mid = yeniKimlik(), zaman = Date.now();
   const [a, b] = ben < diger ? [ben, diger] : [diger, ben];
+  // yanıtlanan mesaj (aynı sohbetten, silinmemiş)
+  let yanit = null;
+  if (typeof g.yanit === 'string' && /^[a-z0-9]{20}$/.test(g.yanit)) {
+    const y = await env.DB.prepare('SELECT id, gonderen, metin FROM mesaj WHERE id = ? AND konusma = ? AND silindi = 0').bind(g.yanit, id).first();
+    if (y) yanit = { id: y.id, metin: String(y.metin).slice(0, 120), kim: y.gonderen };
+  }
   await env.DB.batch([
-    env.DB.prepare('INSERT INTO mesaj (id, konusma, gonderen, alici, metin, zaman) VALUES (?, ?, ?, ?, ?, ?)').bind(mid, id, ben, diger, yazi, zaman),
+    env.DB.prepare('INSERT INTO mesaj (id, konusma, gonderen, alici, metin, zaman, yanit_id, yanit_metin, yanit_kim) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(mid, id, ben, diger, yazi, zaman, yanit ? yanit.id : '', yanit ? yanit.metin : '', yanit ? yanit.kim : ''),
     env.DB.prepare('INSERT INTO konusma (id, a, b, son, son_metin, son_kim, istek) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET son = excluded.son, son_metin = excluded.son_metin, son_kim = excluded.son_kim, istek = excluded.istek')
-      .bind(id, a, b, zaman, yazi.slice(0, 80), ben, istek)
+      .bind(id, a, b, zaman, yazi.slice(0, 80), ben, istek),
+    env.DB.prepare('UPDATE konusma SET ' + (a === ben ? 'a_yaz' : 'b_yaz') + ' = 0 WHERE id = ?').bind(id),
+    // cevap yazan sohbeti görmüş demektir: gelen mesajlar okundu
+    env.DB.prepare('UPDATE mesaj SET okundu = 1, teslim = 1 WHERE konusma = ? AND alici = ? AND okundu = 0').bind(id, ben)
   ]);
-  return { ok: true, mesaj: { id: mid, ben: true, metin: yazi, zaman, okundu: 0 }, durum: istek ? 'istek_giden' : 'acik' };
+  return { ok: true, mesaj: dmMesajCikti({ id: mid, gonderen: ben, metin: yazi, zaman, okundu: 0, teslim: 0, silindi: 0, tepki: '', yanit_id: yanit ? yanit.id : '', yanit_metin: yanit ? yanit.metin : '', yanit_kim: yanit ? yanit.kim : '' }, ben), durum: istek ? 'istek_giden' : 'acik' };
+}
+/* Mesaja tepki: her kişi bir mesaja bir emoji; aynı emoji tekrar seçilince kalkar */
+async function dmTepki(env, g, hesap) {
+  const ben = hesap.kimlik.slice(0, 12);
+  const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
+  const e = typeof g.tepki === 'string' ? g.tepki : '';
+  if (!id || (e && DM_TEPKI.indexOf(e) < 0)) throw new Hata('girdi');
+  const m = await env.DB.prepare('SELECT id, tepki, silindi FROM mesaj WHERE id = ?1 AND (gonderen = ?2 OR alici = ?2)').bind(id, ben).first();
+  if (!m || m.silindi) throw new Hata('yok', 404);
+  let o = {}; try { o = JSON.parse(m.tepki || '{}') || {}; } catch (er) { o = {}; }
+  if (!e || o[ben] === e) delete o[ben]; else o[ben] = e;
+  await env.DB.prepare('UPDATE mesaj SET tepki = ? WHERE id = ?').bind(JSON.stringify(o), id).run();
+  return { ok: true, tepki: dmTepkiCoz(JSON.stringify(o), ben) };
+}
+/* Kendi mesajını herkesten sil (gönderildikten sonra 2 saat içinde) */
+const DM_SIL_SURE = 2 * 3600000;
+async function dmMesajSil(env, g, hesap) {
+  const ben = hesap.kimlik.slice(0, 12);
+  const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
+  if (!id) throw new Hata('girdi');
+  const m = await env.DB.prepare('SELECT id, konusma, zaman FROM mesaj WHERE id = ? AND gonderen = ? AND silindi = 0').bind(id, ben).first();
+  if (!m) throw new Hata('yok', 404);
+  if (Date.now() - m.zaman > DM_SIL_SURE) throw new Hata('sure');
+  await env.DB.batch([
+    env.DB.prepare("UPDATE mesaj SET silindi = 1, metin = '', tepki = '' WHERE id = ?").bind(id),
+    env.DB.prepare("UPDATE konusma SET son_metin = '' WHERE id = ? AND son = ?").bind(m.konusma, m.zaman)
+  ]);
+  return { ok: true };
+}
+/* "yazıyor…" göstergesi: yazan taraf birkaç saniyede bir bildirir */
+async function dmYaziyor(env, g, hesap) {
+  const ben = hesap.kimlik.slice(0, 12);
+  const diger = typeof g.kod === 'string' && DM_KOD.test(g.kod) ? g.kod : '';
+  if (!diger || diger === ben) throw new Hata('girdi');
+  const id = dmKimlik(ben, diger);
+  const [a] = ben < diger ? [ben, diger] : [diger, ben];
+  await env.DB.prepare('UPDATE konusma SET ' + (a === ben ? 'a_yaz' : 'b_yaz') + " = ? WHERE id = ? AND istek = ''").bind(Date.now(), id).run();
+  return { ok: true };
 }
 async function dmKabul(env, g, hesap) {
   const ben = hesap.kimlik.slice(0, 12);
@@ -1969,6 +2112,7 @@ async function hesapSil(env, g, hesap) {
     env.DB.prepare('DELETE FROM anket_sikayet WHERE anket IN (SELECT id FROM anket WHERE yazar = ?1)').bind(k),
     env.DB.prepare('DELETE FROM anket WHERE yazar = ?').bind(k),
     env.DB.prepare('DELETE FROM takip WHERE takipci = ?1 OR takip = ?1').bind(kod),
+    env.DB.prepare('DELETE FROM takip_istek WHERE isteyen = ?1 OR hedef = ?1').bind(kod),
     env.DB.prepare('DELETE FROM profil WHERE kod = ?').bind(kod),
     env.DB.prepare('DELETE FROM avatar WHERE kod = ?').bind(kod),
     env.DB.prepare('DELETE FROM bildirim WHERE alici = ?1 OR kimden = ?1').bind(kod),
