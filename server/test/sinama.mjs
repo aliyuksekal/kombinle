@@ -796,13 +796,17 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
 // reklam ver: başvuru → onay (fiyat) → havale bilgisi → ödendi → yayında
 {
   let t = await iste('/v1/rtarife', {}, cihazB);
-  ok(t.veri.paketler.length === 3 && t.veri.paketler[0].gun === 3 && t.veri.havale === false, 'reklam paketleri; IBAN tanımlı değil');
-  const temel = { firma: 'Lale Butik Ltd.', yetkili: 'Ayşe Lale', eposta: 'ayse@lalebutik.com', telefon: '0532 111 22 33', marka: 'Lale Butik', baslik: 'Yeni sezon', metin: 'Tüm ürünlerde %20', link: 'https://lalebutik.com', boyut: 'dikey', gun: 3, resim: jpeg };
-  ok((await iste('/v1/rtalep', Object.assign({}, temel, { gun: 5 }), cihazB)).veri.hata === 'paket', 'tanımsız paket reddedildi');
+  ok(t.veri.paketler.length === 4 && t.veri.paketler[0].id === 'g10000' && t.veri.paketler[0].gosterim === 10000 && t.veri.paketler[0].fiyat === 990 && t.veri.paketler[3].id === 'ilk1' && t.veri.paketler[3].ilk === 1 && t.veri.havale === false, 'gösterim paketleri ve "1 gün ilk sırada"; IBAN tanımlı değil');
+  env.REKLAM_INDIRIM = '50';
+  t = await iste('/v1/rtarife', {}, cihazB);
+  ok(t.veri.indirim === 50 && t.veri.paketler[0].fiyat === 495 && t.veri.paketler[0].liste === 990, 'açılış indirimi uygulanıyor');
+  delete env.REKLAM_INDIRIM;
+  const temel = { firma: 'Lale Butik Ltd.', yetkili: 'Ayşe Lale', eposta: 'ayse@lalebutik.com', telefon: '0532 111 22 33', marka: 'Lale Butik', baslik: 'Yeni sezon', metin: 'Tüm ürünlerde %20', link: 'https://lalebutik.com', boyut: 'dikey', paket: 'g10000', resim: jpeg };
+  ok((await iste('/v1/rtalep', Object.assign({}, temel, { paket: 'g5' }), cihazB)).veri.hata === 'paket', 'tanımsız paket reddedildi');
   ok((await iste('/v1/rtalep', Object.assign({}, temel, { link: 'http://x.com' }), cihazB)).veri.hata === 'link', 'güvensiz bağlantı reddedildi');
   ok((await iste('/v1/rtalep', Object.assign({}, temel, { telefon: '12' }), cihazB)).veri.hata === 'telefon', 'telefon gerekli');
   r = await iste('/v1/rtalep', temel, cihazB); if (!r.veri.ok) console.log(r);
-  ok(r.veri.ok && /^KMB-[A-Z2-9]{6}$/.test(r.veri.kod) && r.veri.fiyat === 750, 'başvuru alındı, kod ve fiyat: ' + r.veri.kod);
+  ok(r.veri.ok && /^KMB-[A-Z2-9]{6}$/.test(r.veri.kod) && r.veri.fiyat === 990 && r.veri.hedef === 10000, 'başvuru alındı, kod ve fiyat: ' + r.veri.kod);
   const tid = r.veri.id;
   const adm = (await iste('/v1/bildirim', {}, cihazC)).veri.liste;
   ok(adm.some(b => b.tur === 'rtalep'), "@admin'e yeni başvuru bildirimi");
@@ -821,12 +825,19 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   const yay = (await iste('/v1/reklamlar', {}, cihazD)).veri.liste;
   ok(yay.length === 1 && yay[0].marka === 'Lale Butik' && yay[0].boyut === 'dikey', 'reklam Keşfet\'te yayında');
   b = (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0];
-  ok(b.durum === 'yayinda' && b.bitis - Date.now() > 2.9 * 86400000 && b.bitis - Date.now() < 3.1 * 86400000 && !b.odeme, '3 günlük yayın başladı');
+  ok(b.durum === 'yayinda' && b.hedef === 10000 && b.bitis - Date.now() > 59 * 86400000 && !b.odeme, '10.000 gösterimlik yayın başladı (en geç 60 gün)');
   ag = await isci.fetch(new Request('https://x/v1/talepresim/' + tid), env, {}); ok(ag.status === 200, 'başvuru görseli');
-  db.prepare('UPDATE reklam SET bitis = ? WHERE marka = ?').run(Date.now() - 1000, 'Lale Butik');
-  db.prepare('UPDATE reklam_talep SET bitis = ? WHERE id = ?').run(Date.now() - 1000, tid);
-  ok((await iste('/v1/reklamlar', {}, cihazD)).veri.liste.length === 0 && (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0].durum === 'bitti', 'süre bitince reklam kendiliğinden kalktı');
-  r = await iste('/v1/rtalep', Object.assign({}, temel, { gun: 7 }), cihazB);
+  db.prepare('UPDATE reklam SET gosterim = 10000 WHERE marka = ?').run('Lale Butik');
+  ok((await iste('/v1/reklamlar', {}, cihazD)).veri.liste.length === 0 && (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0].durum === 'bitti', 'satın alınan gösterim dolunca reklam kendiliğinden kalktı');
+  // 1 gün ilk sırada
+  db.prepare("DELETE FROM kota WHERE anahtar LIKE 'rtalep_%'").run();
+  r = await iste('/v1/rtalep', Object.assign({}, temel, { paket: 'ilk1', marka: 'Ilk Butik' }), cihazB);
+  await iste('/v1/rtkarar', { id: r.veri.id, karar: 'odendi' }, cihazC);
+  await iste('/v1/reklamekle', { resim: jpeg, marka: 'Diger Marka', gun: 7 }, cihazC);
+  const il = (await iste('/v1/reklamlar', {}, cihazD)).veri.liste;
+  ok(il[0].marka === 'Ilk Butik' && il[0].ilk === 1 && il.length === 2, '"ilk sırada" reklam listenin başında');
+  db.prepare("DELETE FROM reklam WHERE marka IN ('Ilk Butik', 'Diger Marka')").run();
+  r = await iste('/v1/rtalep', Object.assign({}, temel, { paket: 'g30000' }), cihazB);
   ok((await iste('/v1/rtiptal', { id: r.veri.id }, cihazB)).veri.ok && (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0].durum === 'iptal', 'başvuru geri çekildi');
   delete env.REKLAM_IBAN; delete env.REKLAM_ALICI;
   db.prepare("DELETE FROM reklam WHERE marka = 'Lale Butik'").run();
@@ -845,7 +856,8 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   ok((await iste('/v1/akis', { sayfa: 1 }, cihazD)).veri.liste.every(x => x.id !== p1 || x.oneCikan === 1), 'sonraki sayfalarda da etiketli');
   ok((await iste('/v1/onecikar', { id: p1 }, cihazB)).veri.ok, 'zaten öne çıkmış gönderi tekrar istenince hak düşmez');
   const p3 = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'ikinci', gorunurluk: 'herkes' }, cihazB)).veri.id;
-  ok((await iste('/v1/onecikar', { id: p3 }, cihazB)).veri.hata === 'kota', 'günde bir gönderi öne çıkarılabilir');
+  db.prepare("UPDATE kota SET sayi = 5 WHERE anahtar LIKE 'onecikar_cihaz:%'").run();
+  ok((await iste('/v1/onecikar', { id: p3 }, cihazB)).veri.hata === 'kota', 'günde en fazla 5 gönderi öne çıkarılabilir');
   const p4 = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'takip', gorunurluk: 'takip' }, cihazD)).veri.id;
   ok((await iste('/v1/onecikar', { id: p4 }, cihazD)).veri.hata === 'gizli', 'yalnız herkese açık gönderi öne çıkar');
   db.prepare('UPDATE paylasim SET one_cikan = 0').run();

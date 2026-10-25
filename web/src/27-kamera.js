@@ -110,6 +110,7 @@ function kameraAc(sec) {
     vizor, ipucu,
     h('div', { class: 'kam-alt' }, modlar, h('div', { class: 'kam-alt-sira' }, galeriBtn, deklansor, h('div', { class: 'kam-sag' }, bittiBtn, cevirBtn))));
   document.body.appendChild(kok);
+  var katmanBirak = katmanAc([kok]);
   requestAnimationFrame(function () { kok.classList.add('acik'); });
   /* geri tuşu kamerayı kapatsın */
   var kayit = { kapandi: false };
@@ -252,6 +253,7 @@ function kameraAc(sec) {
     }
     kapandi = true; kayit.kapandi = true;
     var i = YIGIN.indexOf(kayit); if (i >= 0) YIGIN.splice(i, 1);
+    katmanBirak();
     if (geriSay) clearInterval(geriSay);
     durdur();
     kok.classList.remove('acik');

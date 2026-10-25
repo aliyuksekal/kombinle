@@ -1,11 +1,13 @@
 /* ---------- Sosyal paket, gönderiyi öne çıkar, Keşfet'te AdMob, "Reklam ver" ----------
-   Sosyal paket: tek seferlik Google Play ürünü (kombinle_sosyal). "A mı B mi?" anketi açmayı ve günde bir
-   gönderiyi 24 saat öne çıkarmayı açar. PRO'da ikisi de dahil. Anketlere oy vermek herkese ücretsiz.
+   Sosyal paket: tek seferlik Google Play ürünü (kombinle_sosyal); "A mı B mi?" anketi açmayı açar.
+   Öne çıkarma: kullandıkça biten haklar (1 / 5 / 15'li paket); PRO'da her ay 10 hak ve anket dahil.
+   Anketlere oy vermek herkese ücretsiz.
    AdMob: akıştaki bazı reklam yuvaları telefonun AdMob reklamıdır (gönderi görseliyle aynı boyut);
    sayfa yuvanın yerini bildirir, reklamı Android çizer. PRO üyelerde reklam yok.
-   Reklam ver: firmalar başvurur → @admin onaylar → havale/EFT → @admin "ödendi" der → seçilen süre yayında. */
+   Reklam ver: firmalar garanti gösterim paketi ya da "1 gün ilk sırada" seçip başvurur → @admin onaylar →
+   havale/EFT → @admin "ödendi" der → yayında; gösterim dolunca kendiliğinden kalkar. */
 
-var SOSYAL_URUN = 'kombinle_sosyal', SOSYAL_FIYAT = '$1.99';
+var SOSYAL_URUN = 'kombinle_sosyal', SOSYAL_FIYAT = '$4.99';
 function sosyalSahibi() { try { var o = odeme(); return !!(o && o.owned(SOSYAL_URUN)); } catch (e) { return false; } }
 function sosyalAcik() { return !!(S.pro || sahipMi() || A.sosyal || sosyalSahibi()); }
 function sosyalDurumuDenetle() {
@@ -13,7 +15,7 @@ function sosyalDurumuDenetle() {
   var v = sosyalSahibi();
   if (A.sosyal !== v) { A.sosyal = v; ayarKaydet(); }
 }
-/* Ücretli özelliğe dokununca: Sosyal paket sayfası (neden: 'anket' | 'onecikar') */
+/* Anket açmak isteyen ücretsiz kullanıcıya: Sosyal paket sayfası */
 function sosyalSayfasi(neden, sonra) {
   var fiyat = h('span', { text: SOSYAL_FIYAT });
   var al = h('button', { class: 'btn ana sosyal-al', style: { width: '100%' } }, ikon('zap', 'k'), h('span', { text: t('sosyalAl') }), fiyat);
@@ -26,7 +28,7 @@ function sosyalSayfasi(neden, sonra) {
     h('p', { class: 'ayar-not', text: t('sosyalOyNot') }),
     sahip ? h('p', { class: 'sosyal-sahip' }, ikon('tik', 'k'), h('span', { text: S.pro ? t('sosyalProDahil') : t('sosyalSahip') })) : al,
     sahip ? null : h('button', { class: 'g-btn-cizgi', style: { width: '100%' }, on: { click: function () { s.kapat(); setTimeout(function () { magazaSayfasi(); }, 280); } } }, ikon('tac', 'k'), t('sosyalProGec')),
-    sahip ? null : h('p', { class: 'ayar-not', text: t('sosyalProNot') }));
+    sahip ? null : h('p', { class: 'ayar-not', text: t('sosyalProNot', PRO_ONECIKAR_AYLIK) }));
   var s = sayfaAc({ baslik: '', icerik: gov });
   if (odemeHazir() && !sahip) {
     zamanAsimi(odeme().products([SOSYAL_URUN]), 10000).then(function (l) {
@@ -48,20 +50,59 @@ function sosyalSayfasi(neden, sonra) {
   return s;
 }
 
-/* ---------- Gönderiyi öne çıkar ---------- */
+/* ---------- Gönderiyi öne çıkar: kullandıkça biten haklar ---------- */
+var PRO_ONECIKAR_AYLIK = 10;
+var ONE_CIKAR_PAKETLERI = [
+  { id: 'onecikar_1', adet: 1, fiyat: '$1.99' },
+  { id: 'onecikar_5', adet: 5, fiyat: '$7.19', avantaj: 28 },
+  { id: 'onecikar_15', adet: 15, fiyat: '$17.99', avantaj: 40, populer: true }
+];
+function oneCikarHak() { var n = LS.al('onecikarHak', 0); return sayiMi(n) && n > 0 ? Math.floor(n) : 0; }
+function oneCikarProKalan() {
+  if (!S.pro) return 0;
+  var ay = new Date().toISOString().slice(0, 7), k = LS.al('onecikarPro', null);
+  var n = k && k.ay === ay && sayiMi(k.n) ? k.n : 0;
+  return Math.max(0, PRO_ONECIKAR_AYLIK - n);
+}
+function oneCikarKalan() { return sahipMi() ? 99 : oneCikarHak() + oneCikarProKalan(); }
+function oneCikarHarca() {
+  if (sahipMi()) return;
+  if (oneCikarProKalan() > 0) {
+    var ay = new Date().toISOString().slice(0, 7), k = LS.al('onecikarPro', null);
+    LS.yaz('onecikarPro', { ay: ay, n: (k && k.ay === ay && sayiMi(k.n) ? k.n : 0) + 1 });
+  } else LS.yaz('onecikarHak', Math.max(0, oneCikarHak() - 1));
+}
+/* Google Play'den gelen (tüketilmiş) öne çıkarma haklarını teslim al */
+function oneCikarTeslimAl() {
+  var n = 0;
+  try { if (YEREL && typeof YEREL.oneCikarTeslim === 'function') n = sinirla(+YEREL.oneCikarTeslim() || 0, 0, 100000) | 0; } catch (e) { n = 0; }
+  if (n > 0) LS.yaz('onecikarHak', oneCikarHak() + n);
+  return n;
+}
+function oneCikarBekle(ms) {
+  return new Promise(function (coz) {
+    var bas = Date.now(), top = 0;
+    (function dene() {
+      top += oneCikarTeslimAl();
+      if (top > 0 || Date.now() - bas > ms) { coz(top); return; }
+      setTimeout(dene, 500);
+    })();
+  });
+}
 function oneCikarSatiri(x, kapat) {
   var kalan = x.oneCikanBitis && x.oneCikanBitis > Date.now() ? Math.max(1, Math.ceil((x.oneCikanBitis - Date.now()) / 3600000)) : 0;
-  return menuSatir('zap', t('oneCikar'), x.oneCikan ? (kalan ? t('oneCikanKalan', kalan) : t('oneCikanEtiket')) : t('oneCikarAlt'), function () {
+  return menuSatir('zap', t('oneCikar'), x.oneCikan ? (kalan ? t('oneCikanKalan', kalan) : t('oneCikanEtiket')) : oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('oneCikarAlt'), function () {
     if (x.oneCikan) { tost(t('oneCikanZaten')); return; }
     if (x.gorunurluk && x.gorunurluk !== 'herkes') { tost(t('oneCikarGizli')); return; }
-    if (!sosyalAcik()) { kapat(); setTimeout(function () { sosyalSayfasi('onecikar', function () { oneCikarIste(x); }); }, 280); return; }
-    kapat(); setTimeout(function () { oneCikarIste(x); }, 280);
+    kapat();
+    setTimeout(function () { if (oneCikarKalan() > 0) oneCikarIste(x); else oneCikarPaketSayfasi(function () { oneCikarIste(x); }); }, 280);
   });
 }
 function oneCikarIste(x) {
-  onayla(t('oneCikar'), t('oneCikarSor'), t('oneCikarEvet')).then(function (evet) {
+  onayla(t('oneCikar'), t('oneCikarSor') + ' ' + t('ocKalanSor', oneCikarKalan()), t('oneCikarEvet')).then(function (evet) {
     if (!evet) return;
     yzIste('/v1/onecikar', { id: x.id }, 15000).then(function (v) {
+      if (!x.oneCikan) oneCikarHarca();
       x.oneCikan = 1; x.oneCikanBitis = sayiMi(v.bitis) ? v.bitis : Date.now() + 86400000;
       tost(t('oneCikarildi'));
       TOPLULUK.yuklendi = false; toplulukCizYenile();
@@ -69,6 +110,47 @@ function oneCikarIste(x) {
       tost(e && e.message === 'kota' ? t('oneCikarKota') : e && e.message === 'gizli' ? t('oneCikarGizli') : hesapHataMetni(e));
     });
   });
+}
+/* Öne çıkarma paketleri (1 / 5 / 15) */
+function oneCikarPaketSayfasi(sonra) {
+  oneCikarTeslimAl();
+  var fiyatEl = {};
+  var gov = h('div', { class: 'profil-duzen sosyal-sayfa' },
+    h('div', { class: 'sosyal-bas' }, h('span', { class: 'sosyal-ikon' }, ikon('zap')),
+      h('h3', { text: t('ocBaslik') }), h('p', { text: t('ocAlt') })),
+    h('p', { class: 'sosyal-neden', text: oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('ocHakYok') }));
+  ONE_CIKAR_PAKETLERI.forEach(function (pk) {
+    var btn = h('button', { class: 'g-fiyat' + (pk.populer ? ' altin' : ''), text: pk.fiyat, on: { click: function () { al(pk); } } });
+    fiyatEl[pk.id] = btn;
+    gov.appendChild(h('div', { class: 'g-paket' + (pk.populer ? ' populer' : '') },
+      pk.populer ? h('span', { class: 'g-populer', text: t('populer') }) : null,
+      h('div', null, h('b', { text: t('ocPaket', pk.adet) }), h('small', { text: t('ocPaketAlt', pk.adet) + (pk.avantaj ? ' • ' + t('avantajYuzde', pk.avantaj) : '') })), btn));
+  });
+  if (!S.pro) {
+    gov.appendChild(h('button', { class: 'g-btn-cizgi', style: { width: '100%' }, on: { click: function () { s.kapat(); setTimeout(function () { magazaSayfasi(); }, 280); } } }, ikon('tac', 'k'), t('sosyalProGec')));
+    gov.appendChild(h('p', { class: 'ayar-not', text: t('ocProNot', PRO_ONECIKAR_AYLIK) }));
+  }
+  var s = sayfaAc({ baslik: '', icerik: gov });
+  if (odemeHazir()) {
+    zamanAsimi(odeme().products(ONE_CIKAR_PAKETLERI.map(function (p) { return p.id; })), 10000).then(function (l) {
+      (l || []).forEach(function (u) { if (u && fiyatEl[u.id] && typeof u.price === 'string') fiyatEl[u.id].textContent = kirp(u.price, 24); });
+    }).catch(function () { });
+  }
+  var alimda = false;
+  function al(pk) {
+    if (alimda) return;
+    if (!odemeHazir()) { tost(t('odemeYok')); return; }
+    alimda = true;
+    zamanAsimi(odeme().buy(pk.id), 600000).then(function (ok) {
+      if (!ok) { tost(t('odemeTamamlanmadi')); return; }
+      return oneCikarBekle(15000).then(function (n) {
+        if (n <= 0) { tost(t('odemeTamamlanmadi')); return; }
+        tost(t('ocYuklendi', n)); s.kapat();
+        if (sonra) setTimeout(sonra, 300);
+      });
+    }).catch(function () { tost(t('odemeTamamlanmadi')); }).then(function () { alimda = false; });
+  }
+  return s;
 }
 
 /* ---------- Keşfet'te AdMob ---------- */
@@ -141,12 +223,14 @@ function admobGizlilikSatiri(satir) {
 
 /* ---------- Reklam ver ---------- */
 var RV_DURUMLAR = ['bekliyor', 'onaylandi', 'yayinda', 'reddedildi', 'iptal', 'bitti'];
+function sayiYaz(n) { try { return Number(n).toLocaleString(A.dil === 'en' ? 'en-US' : 'tr-TR'); } catch (e) { return String(n); } }
+function paketAdi(p) { return p.ilk ? t('rvIlk', p.gun) : p.gosterim ? t('rvGosterim', sayiYaz(p.gosterim)) : t('rvGun', p.gun); }
 function tlYaz(n) { try { return Number(n).toLocaleString('tr-TR') + ' ₺'; } catch (e) { return n + ' ₺'; } }
 function reklamVerSayfasi() {
   if (!yzKurulu()) { tost(t('yzKapali')); return; }
   if (!girisIste()) return;
   var hb = hesapBilgi() || {};
-  var tuval = null, boyut = 'dikey', gun = 7, paketler = [];
+  var tuval = null, boyut = 'dikey', secPaket = 'g30000', paketler = [], indirim = 0;
   var alan = function (etk, enFazla, ek) {
     var i = h('input', Object.assign({ class: 'metin', type: 'text', maxlength: String(enFazla), 'aria-label': etk }, ek || {}));
     return { el: i, sar: h('label', { class: 'hesap-alan' }, h('span', { text: etk }), i) };
@@ -184,15 +268,19 @@ function reklamVerSayfasi() {
   var havaleVar = false;
   function paketCiz() {
     temizle(paketKap);
+    if (indirim) paketKap.appendChild(h('p', { class: 'rv-indirim', text: t('rvIndirim', indirim) }));
     paketler.forEach(function (p) {
-      paketKap.appendChild(h('button', { class: 'rv-paket', role: 'radio', 'aria-checked': p.gun === gun ? 'true' : 'false', on: { click: function () { gun = p.gun; paketCiz(); } } },
-        h('b', { text: t('rvGun', p.gun) }), h('span', { text: tlYaz(p.fiyat) }), h('small', { text: t('rvGunluk', tlYaz(Math.round(p.fiyat / p.gun))) })));
+      paketKap.appendChild(h('button', { class: 'rv-paket' + (p.ilk ? ' ilk' : ''), role: 'radio', 'aria-checked': p.id === secPaket ? 'true' : 'false', on: { click: function () { secPaket = p.id; paketCiz(); } } },
+        h('b', { text: paketAdi(p) }),
+        h('span', null, p.liste && p.liste > p.fiyat ? h('del', { text: tlYaz(p.liste) }) : null, document.createTextNode(tlYaz(p.fiyat))),
+        h('small', { text: p.ilk ? t('rvIlkAlt') : t('rvBinGosterim', tlYaz(Math.round(p.fiyat * 1000 / p.gosterim))) })));
     });
   }
   yzIste('/v1/rtarife', {}, 15000).then(function (v) {
-    paketler = Array.isArray(v.paketler) ? v.paketler.filter(function (p) { return p && sayiMi(p.gun) && sayiMi(p.fiyat); }).slice(0, 6) : [];
+    paketler = Array.isArray(v.paketler) ? v.paketler.filter(function (p) { return p && typeof p.id === 'string' && /^[a-z]{1,3}\d{1,7}$/.test(p.id) && sayiMi(p.fiyat) && sayiMi(p.gun); }).slice(0, 8) : [];
     havaleVar = v.havale === true;
-    if (paketler.length && !paketler.some(function (p) { return p.gun === gun; })) gun = paketler[Math.min(1, paketler.length - 1)].gun;
+    indirim = sayiMi(v.indirim) && v.indirim > 0 && v.indirim <= 90 ? v.indirim : 0;
+    if (paketler.length && !paketler.some(function (p) { return p.id === secPaket; })) secPaket = paketler[Math.min(1, paketler.length - 1)].id;
     paketCiz();
   }).catch(function () { temizle(paketKap); paketKap.appendChild(h('p', { class: 'alt-yazi', text: t('tpHata') })); });
   var adimlar = h('ol', { class: 'rv-adimlar' }, ['rvAdim1', 'rvAdim2', 'rvAdim3', 'rvAdim4'].map(function (k, i) { return h('li', null, h('b', { text: String(i + 1) }), h('span', { text: t(k) })); }));
@@ -223,7 +311,7 @@ function reklamVerSayfasi() {
     var b64 = tuvaldenB64(tuval, 440 * 1024);
     if (!b64) { tost(t('dosyaBuyuk')); return; }
     gonder.disabled = true;
-    yzIste('/v1/rtalep', { resim: b64, boyut: boyut, gun: gun, marka: kirp(marka.el.value, 30), baslik: kirp(baslik.el.value, 60), metin: kirp(metin.el.value, 200), link: l,
+    yzIste('/v1/rtalep', { resim: b64, boyut: boyut, paket: secPaket, marka: kirp(marka.el.value, 30), baslik: kirp(baslik.el.value, 60), metin: kirp(metin.el.value, 200), link: l,
       dugme: kirp(dugme.el.value, 20), firma: kirp(firma.el.value, 80), yetkili: kirp(yetkili.el.value, 60), eposta: (eposta.el.value || '').trim().slice(0, 254),
       telefon: kirp(telefon.el.value, 24), vergi: kirp(vergi.el.value, 60) }, 40000).then(function (v) {
       s.kapat();
@@ -247,7 +335,7 @@ function talepKarti(x, adres, yonetim, yenile) {
   var kart = h('div', { class: 'rv-kart durum-' + durum },
     h('div', { class: 'rv-kart-bas' },
       h('img', { src: adres ? adres + '/v1/talepresim/' + x.id : '', alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }),
-      h('div', null, h('b', { text: kirp(x.marka, 30) }), h('small', { text: (x.kod || '') + ' • ' + t('rvGun', x.gun) + ' • ' + tlYaz(x.fiyat) }),
+      h('div', null, h('b', { text: kirp(x.marka, 30) }), h('small', { text: (x.kod || '') + ' • ' + paketAdi({ ilk: x.ilk, gun: x.gun, gosterim: x.hedef }) + ' • ' + tlYaz(x.fiyat) }),
         h('span', { class: 'rv-durum', text: t('rvDurum_' + durum) }))));
   if (x.baslik || x.metin) kart.appendChild(h('p', { class: 'rv-metin' }, x.baslik ? h('b', { text: kirp(x.baslik, 60) + ' ' }) : null, document.createTextNode(kirp(x.metin || '', 200))));
   if (yonetim) {
@@ -268,7 +356,7 @@ function talepKarti(x, adres, yonetim, yenile) {
     kart.appendChild(od);
   }
   if (durum === 'yayinda' || durum === 'bitti') {
-    kart.appendChild(h('small', { class: 'rv-ist', text: (sayiMi(x.gosterim) ? t('rvIstatistik', x.gosterim, x.tik | 0) + ' • ' : '') +
+    kart.appendChild(h('small', { class: 'rv-ist', text: (sayiMi(x.gosterim) ? t('rvIstatistik', sayiYaz(x.gosterim) + (x.hedef ? ' / ' + sayiYaz(x.hedef) : ''), x.tik | 0) + ' • ' : '') +
       (durum === 'yayinda' ? t('rvBitis', new Date(x.bitis).toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : undefined)) : t('rvDurum_bitti')) }));
   }
   var dugmeler = h('div', { class: 'sarili rv-dugmeler', style: { gap: '8px' } });
@@ -521,4 +609,76 @@ Object.assign(DIL.ko, {
   rtDurdur: '게재 중단', rtDurdurSor: '광고 게재를 중단할까요?', rtFiyatSor: '가격 (₺)', rtNot: '메모(신청자에게 보임)', rtYapildi: '저장했어요.',
   rtIbanYok: 'REKLAM_IBAN이 설정되지 않았어요: 결제 정보를 이메일로 보내세요.',
   bnRtalep: '님이 새 광고 신청을 보냈어요', bnRtonay: '님이 광고 신청을 승인했어요 • 결제 정보 준비됨', bnRtred: '님이 광고 신청을 승인하지 않았어요', bnRtyayin: '광고가 게재 중이에요 🎉'
+});
+
+/* fiyatlandırma güncellemesi: Sosyal paket yalnız anket; öne çıkarma ayrı paketlerle; reklam gösterimle */
+Object.assign(DIL.tr, {
+  sosyalM2: 'Anketini takipçilerine ya da herkese aç, oyları anlık izle', sosyalM3: 'Bir kez öde, sınırsız anket aç',
+  sosyalProNot: function (n) { return "PRO'da anket açmak dahil; her ay " + n + ' gönderi öne çıkarma, reklamsız Keşfet ve günlük yapay zekâ hakları da var.'; },
+  ocBaslik: 'Gönderini öne çıkar', ocAlt: "Gönderin 24 saat Keşfet'in en üstünde, \"Öne çıkan\" etiketiyle görünür.",
+  ocHak: function (n) { return n + ' öne çıkarma hakkın var'; }, ocHakYok: 'Öne çıkarma hakkın kalmadı.',
+  ocPaket: function (n) { return n === 1 ? '1 öne çıkarma' : n + ' öne çıkarma'; }, ocPaketAlt: function (n) { return n === 1 ? 'Bir gönderi, 24 saat' : n + ' gönderi, her biri 24 saat'; },
+  ocProNot: function (n) { return "PRO'da her ay " + n + ' öne çıkarma dahil.'; }, ocYuklendi: function (n) { return n + ' öne çıkarma hakkı eklendi ✨'; },
+  ocKalanSor: function (n) { return '(Kalan hakkın: ' + n + ')'; }, oneCikarKota: 'Bugün yeterince gönderi öne çıkardın; yarın yeniden deneyebilirsin.',
+  oneCikarSor: "Gönderin 24 saat boyunca Keşfet'in en üstünde, \"Öne çıkan\" etiketiyle görünecek. 1 öne çıkarma hakkın kullanılır.",
+  proS8: function (n) { return 'Sınırsız "A mı B mi?" anketi ve her ay ' + n + ' gönderi öne çıkarma'; },
+  rvPaket: 'Paket', rvKdv: 'Fiyatlara KDV dahil değildir. Gösterim paketi, gösterimler dolunca ya da en geç 60 günde biter. Kesin fiyat onayla bildirilir; fatura başvurudaki bilgilerle kesilir.',
+  rvIndirim: function (n) { return 'Açılışa özel %' + n + ' indirim'; }, rvGosterim: function (s) { return s + ' gösterim'; }, rvBinGosterim: function (f) { return '1.000 gösterim ' + f; },
+  rvIlk: function (n) { return n + " gün Keşfet'te ilk sırada"; }, rvIlkAlt: 'Akıştaki ilk reklam yeri senin'
+});
+Object.assign(DIL.en, {
+  sosyalM2: 'Open your poll to followers or everyone and watch votes live', sosyalM3: 'Pay once, unlimited polls',
+  sosyalProNot: function (n) { return 'PRO includes polls, ' + n + ' post boosts a month, ad-free Explore and daily AI credits.'; },
+  ocBaslik: 'Boost your post', ocAlt: 'Your post shows at the top of Explore for 24 hours with a "Featured" label.',
+  ocHak: function (n) { return n === 1 ? 'You have 1 boost' : 'You have ' + n + ' boosts'; }, ocHakYok: 'You have no boosts left.',
+  ocPaket: function (n) { return n === 1 ? '1 boost' : n + ' boosts'; }, ocPaketAlt: function (n) { return n === 1 ? 'One post, 24 hours' : n + ' posts, 24 hours each'; },
+  ocProNot: function (n) { return 'PRO includes ' + n + ' boosts every month.'; }, ocYuklendi: function (n) { return n + ' boosts added ✨'; },
+  ocKalanSor: function (n) { return '(Boosts left: ' + n + ')'; }, oneCikarKota: "You've boosted enough posts today; try again tomorrow.",
+  oneCikarSor: 'Your post will show at the top of Explore for 24 hours with a "Featured" label. This uses 1 boost.',
+  proS8: function (n) { return 'Unlimited "A or B?" polls and ' + n + ' post boosts a month'; },
+  rvPaket: 'Package', rvKdv: 'Prices exclude VAT. An impressions package ends when its impressions are used or after 60 days at most. The final price is confirmed on approval.',
+  rvIndirim: function (n) { return 'Launch offer: ' + n + '% off'; }, rvGosterim: function (s) { return s + ' impressions'; }, rvBinGosterim: function (f) { return f + ' per 1,000 impressions'; },
+  rvIlk: function (n) { return n === 1 ? 'First slot in Explore for 1 day' : 'First slot in Explore for ' + n + ' days'; }, rvIlkAlt: 'The first ad slot in the feed is yours'
+});
+Object.assign(DIL.ru, {
+  sosyalM2: 'Открывай опрос подписчикам или всем и следи за голосами', sosyalM3: 'Одна оплата — безлимитные опросы',
+  sosyalProNot: function (n) { return 'В PRO опросы включены, а ещё ' + n + ' продвижений в месяц, лента без рекламы и ежедневные ИИ-запросы.'; },
+  ocBaslik: 'Продвинь публикацию', ocAlt: 'Публикация 24 часа вверху «Интересного» с пометкой «Продвигается».',
+  ocHak: function (n) { return 'Продвижений: ' + n; }, ocHakYok: 'Продвижения закончились.',
+  ocPaket: function (n) { return 'Продвижений: ' + n; }, ocPaketAlt: function (n) { return n === 1 ? 'Одна публикация, 24 часа' : n + ' публикаций, по 24 часа'; },
+  ocProNot: function (n) { return 'В PRO каждый месяц ' + n + ' продвижений.'; }, ocYuklendi: function (n) { return 'Добавлено продвижений: ' + n + ' ✨'; },
+  ocKalanSor: function (n) { return '(Осталось: ' + n + ')'; }, oneCikarKota: 'На сегодня продвижений достаточно; попробуй завтра.',
+  oneCikarSor: 'Публикация 24 часа будет вверху «Интересного» с пометкой «Продвигается». Спишется 1 продвижение.',
+  proS8: function (n) { return 'Безлимитные опросы «A или B?» и ' + n + ' продвижений в месяц'; },
+  rvPaket: 'Пакет', rvKdv: 'Цены без НДС. Пакет показов завершается, когда показы израсходованы, или максимум через 60 дней.',
+  rvIndirim: function (n) { return 'Скидка к запуску ' + n + '%'; }, rvGosterim: function (s) { return s + ' показов'; }, rvBinGosterim: function (f) { return f + ' за 1000 показов'; },
+  rvIlk: function (n) { return 'Первое место в «Интересном», дней: ' + n; }, rvIlkAlt: 'Первое рекламное место в ленте — твоё'
+});
+Object.assign(DIL.uz, {
+  sosyalM2: "So'rovnomangni kuzatuvchilarga yoki hammaga och, ovozlarni jonli kuzat", sosyalM3: "Bir marta to'la, cheksiz so'rovnoma",
+  sosyalProNot: function (n) { return "PRO'da so'rovnoma, oyiga " + n + " ta ko'tarish, reklamasiz lenta va kunlik AI imkoniyatlari bor."; },
+  ocBaslik: "Ulashishingni ko'tar", ocAlt: "Ulashishing 24 soat Kashf etish tepasida «Tavsiya» belgisi bilan ko'rinadi.",
+  ocHak: function (n) { return n + " ta ko'tarish huquqing bor"; }, ocHakYok: "Ko'tarish huquqing qolmadi.",
+  ocPaket: function (n) { return n + " ta ko'tarish"; }, ocPaketAlt: function (n) { return n === 1 ? 'Bitta ulashish, 24 soat' : n + ' ta ulashish, har biri 24 soat'; },
+  ocProNot: function (n) { return "PRO'da har oy " + n + " ta ko'tarish bor."; }, ocYuklendi: function (n) { return n + " ta ko'tarish qo'shildi ✨"; },
+  ocKalanSor: function (n) { return '(Qolgan: ' + n + ')'; }, oneCikarKota: "Bugun yetarlicha ko'tarding; ertaga urin.",
+  oneCikarSor: "Ulashishing 24 soat Kashf etish tepasida «Tavsiya» belgisi bilan ko'rinadi. 1 ta ko'tarish ishlatiladi.",
+  proS8: function (n) { return "Cheksiz «A mi B mi?» so'rovnomasi va oyiga " + n + " ta ko'tarish"; },
+  rvPaket: 'Paket', rvKdv: "Narxlarga QQS kirmaydi. Ko'rish paketi ko'rishlar tugaganda yoki eng ko'pi 60 kunda tugaydi.",
+  rvIndirim: function (n) { return 'Ochilish chegirmasi %' + n; }, rvGosterim: function (s) { return s + " ko'rish"; }, rvBinGosterim: function (f) { return "1000 ko'rish " + f; },
+  rvIlk: function (n) { return n + ' kun Kashf etishda birinchi o‘rinda'; }, rvIlkAlt: "Lentadagi birinchi reklama joyi seniki"
+});
+Object.assign(DIL.ko, {
+  sosyalM2: '팔로워나 모두에게 투표를 열고 실시간으로 결과를 보세요', sosyalM3: '한 번 결제로 투표 무제한',
+  sosyalProNot: function (n) { return 'PRO에는 투표, 매달 게시물 부스트 ' + n + '회, 광고 없는 탐색, 매일 AI 이용권이 포함돼요.'; },
+  ocBaslik: '게시물 부스트', ocAlt: '게시물이 24시간 동안 "추천" 표시와 함께 탐색 맨 위에 보여요.',
+  ocHak: function (n) { return '부스트 ' + n + '회 남음'; }, ocHakYok: '남은 부스트가 없어요.',
+  ocPaket: function (n) { return '부스트 ' + n + '회'; }, ocPaketAlt: function (n) { return n === 1 ? '게시물 1개, 24시간' : '게시물 ' + n + '개, 각 24시간'; },
+  ocProNot: function (n) { return 'PRO에는 매달 부스트 ' + n + '회가 포함돼요.'; }, ocYuklendi: function (n) { return '부스트 ' + n + '회가 추가됐어요 ✨'; },
+  ocKalanSor: function (n) { return '(남은 부스트: ' + n + ')'; }, oneCikarKota: '오늘은 부스트를 충분히 했어요. 내일 다시 시도하세요.',
+  oneCikarSor: '게시물이 24시간 동안 "추천" 표시와 함께 탐색 맨 위에 보여요. 부스트 1회가 사용돼요.',
+  proS8: function (n) { return '"A 아니면 B?" 투표 무제한, 매달 게시물 부스트 ' + n + '회'; },
+  rvPaket: '패키지', rvKdv: '가격에는 부가세가 포함되지 않아요. 노출 패키지는 노출을 다 쓰거나 최대 60일이 지나면 끝나요.',
+  rvIndirim: function (n) { return '오픈 기념 ' + n + '% 할인'; }, rvGosterim: function (s) { return '노출 ' + s + '회'; }, rvBinGosterim: function (f) { return '노출 1,000회당 ' + f; },
+  rvIlk: function (n) { return '탐색 첫 자리 ' + n + '일'; }, rvIlkAlt: '피드의 첫 광고 자리가 내 거예요'
 });

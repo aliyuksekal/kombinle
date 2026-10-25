@@ -41,8 +41,9 @@ function reklamPlani(n) {
     else {
       // reklam verenler öncelikli (3'te 2), aralarda uygulamanın kendi tanıtımları
       // AdMob açıksa: reklam verenler varsa yuvaların yarısı onlara, kalanı çoğunlukla AdMob; aralarda kendi tanıtımlarımız
-      var admob = admobKullan(), zar = Math.random(), r;
-      if (havuz.length && (zar < (admob ? 0.5 : 0.67) || (!ev.length && !admob))) r = havuz[(sira + rastgeleArada(0, havuz.length - 1)) % havuz.length];
+      var admob = admobKullan(), zar = Math.random(), r, ilkler = havuz.filter(function (x) { return x.ilk; });
+      if (yer === REKLAM.ilk && ilkler.length) r = ilkler[0];   // "1 gün ilk sırada" paketi: akıştaki ilk reklam yeri
+      else if (havuz.length && (zar < (admob ? 0.5 : 0.67) || (!ev.length && !admob))) r = havuz[(sira + rastgeleArada(0, havuz.length - 1)) % havuz.length];
       else if (admob && (zar < 0.85 || !ev.length)) { r = { id: 'admob-' + (++ADMOB.sayac), admob: 1 }; ADMOB.yer[r.id] = yer; }
       else r = ev.length ? ev[rastgeleArada(0, ev.length - 1)] : null;
       if (r) plan[yer] = { r: r, boyut: r.ev ? REKLAM_BOYUTLAR[rastgeleArada(0, 3)] : r.admob ? 'kare' : r.boyut, ara: rastgeleArada(5, 8) };

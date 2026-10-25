@@ -389,6 +389,7 @@ function goruntuleyiciAc(src, alt) {
   var kapatBtn = h('button', { class: 'gk-kapat', 'aria-label': t('kapat') }, ikon('kapat'));
   var kok = h('div', { class: 'goruntuleyici', role: 'dialog', 'aria-modal': 'true' }, h('div', { class: 'gk-kap' }, img), kapatBtn, h('span', { class: 'gk-ipucu', text: t('goruntuIpucu') }));
   document.body.appendChild(kok);
+  var katmanBirak = katmanAc([kok]);
   requestAnimationFrame(function () { kok.classList.add('acik'); });
   var kayit = { kapandi: false };
   YIGIN.push(kayit);
@@ -397,6 +398,7 @@ function goruntuleyiciAc(src, alt) {
     if (kayit.kapandi) return;
     kayit.kapandi = true;
     var i = YIGIN.indexOf(kayit); if (i >= 0) YIGIN.splice(i, 1);
+    katmanBirak();
     kok.classList.remove('acik'); setTimeout(function () { kok.remove(); }, 220);
     if (!gecmistenMi) { geriKilit++; try { history.back(); } catch (e) { geriKilit--; } }
   }

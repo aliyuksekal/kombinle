@@ -543,3 +543,12 @@ html.akis-karosel .admob-yer{height:min(52vh,420px)}
 .rv-uyari{padding:10px 12px;border-radius:12px;background:#FFF1D6;color:#8A5A00}
 html[data-tema="koyu"] .durum-onaylandi .rv-durum,html[data-tema="koyu"] .rv-uyari{background:#3A2C10;color:#F5C76A}
 html[data-tema="koyu"] .durum-reddedildi .rv-durum{background:#3A1616;color:#F2A3A3}
+/* katmanlar: arkadaki sayfa ve ana ekran dokunmaya kapalı (eski WebView'lerde inert yerine) */
+[data-kilit]{pointer-events:none!important;user-select:none}
+.tost{z-index:10000}
+.bn-serit{z-index:9990}
+.emoji-tepki{z-index:9980}
+.rv-indirim{grid-column:1/-1;margin:0;padding:8px 12px;border-radius:12px;background:var(--vurgu-acik);color:var(--vurgu);font-weight:700;font-size:13px;text-align:center}
+.rv-paket del{margin-right:6px;font-size:12px;font-weight:500;color:var(--soluk)}
+.rv-paket.ilk{grid-column:1/-1}
+.rv-paket.ilk b::before{content:"★ ";color:var(--vurgu)}

@@ -27,7 +27,7 @@ const KOTA = {
   ata_cihaz: 30,    // @admin'in günlük ad atama işlemi
   paylas_cihaz: 8,
   anket_cihaz: 10,  // günlük yeni anket
-  onecikar_cihaz: 1, // günlük "gönderiyi öne çıkar" (Sosyal paket / PRO)
+  onecikar_cihaz: 5, // günlük "gönderiyi öne çıkar" (öne çıkarma hakkı uygulamada satın alınır; PRO'da ayda 10)
   rtalep_cihaz: 3,   // günlük reklam başvurusu
   rtalep_ip: 20,
   paylas_ip: 150,
@@ -821,8 +821,8 @@ async function akis(env, g, cihaz) {
 }
 
 /* --- Gönderiyi öne çıkar ---------------------------------------------------
-   Sosyal paket ya da PRO ile: kendi herkese açık gönderin 24 saat Keşfet'in en üstünde, "Öne çıkan" etiketiyle.
-   Satın alma uygulamada Google Play'den doğrulanır; sunucu ayrıca hesap başına günde 1 ile sınırlar.
+   Öne çıkarma hakkıyla (1/5/15'li paket, PRO'da ayda 10): kendi herkese açık gönderin 24 saat Keşfet'in en üstünde.
+   Hak uygulamada Google Play'den alınır ve düşülür; sunucu ayrıca hesap başına günde 5 ile sınırlar.
    (Google Cloud hizmet hesabı eklenince satın alma belirteci burada da doğrulanabilir.) */
 const ONE_CIKAR_SURE = 24 * 3600000;
 async function oneCikar(env, g, cihaz, kat) {
@@ -1779,7 +1779,7 @@ async function avatarVer(env, kod) {
    Gösterim ve tıklama sayıları reklam verene rapor için tutulur (kişisel veri tutulmaz). */
 const REKLAM_BOYUT = ['kare', 'dikey', 'hikaye', 'yatay'];
 function reklamOzet(r, yonetim) {
-  const o = { id: r.id, marka: r.marka, baslik: r.baslik, metin: r.metin, link: r.link, dugme: r.dugme, boyut: r.boyut, zaman: r.zaman };
+  const o = { id: r.id, marka: r.marka, baslik: r.baslik, metin: r.metin, link: r.link, dugme: r.dugme, boyut: r.boyut, zaman: r.zaman, ilk: r.oncelik ? 1 : 0 };
   if (yonetim) { o.gosterim = r.gosterim; o.tik = r.tik; o.bitis = r.bitis; o.aktif = r.aktif && r.bitis > Date.now() ? 1 : 0; }
   return o;
 }
@@ -1787,7 +1787,7 @@ async function reklamlar(env, g, hesap) {
   const yonetim = g.yonetim === true && hesap && hesap.kadi === 'admin';
   const { results } = yonetim
     ? await env.DB.prepare('SELECT id, marka, baslik, metin, link, dugme, boyut, zaman, gosterim, tik, bitis, aktif FROM reklam ORDER BY zaman DESC LIMIT 50').all()
-    : await env.DB.prepare('SELECT id, marka, baslik, metin, link, dugme, boyut, zaman FROM reklam WHERE aktif = 1 AND bitis > ? ORDER BY RANDOM() LIMIT 12').bind(Date.now()).all();
+    : await env.DB.prepare('SELECT id, marka, baslik, metin, link, dugme, boyut, zaman, oncelik FROM reklam WHERE aktif = 1 AND bitis > ? AND (hedef = 0 OR gosterim < hedef) ORDER BY oncelik DESC, RANDOM() LIMIT 12').bind(Date.now()).all();
   return { ok: true, liste: (results || []).map(r => reklamOzet(r, yonetim)) };
 }
 async function reklamSay(env, g, cihaz) {
@@ -1834,17 +1834,30 @@ async function reklamResmi(env, id) {
    uygulama dışında yapar (banka havalesi/EFT; açıklamaya başvuru kodu yazılır) → @admin "ödendi" der →
    reklam seçilen gün sayısı kadar Keşfet'te yayınlanır ve süresi bitince kendiliğinden kalkar.
    IBAN ve alıcı adı koda gömülmez: sunucu gizlilerinden (REKLAM_IBAN, REKLAM_ALICI) okunur.
-   Fiyatlar REKLAM_FIYAT ile değiştirilebilir ("3:750,7:1500,30:4500", TL). */
-const REKLAM_PAKET_VARSAYILAN = { 3: 750, 7: 1500, 30: 4500 };
+   Paketler garanti gösterimle satılır (g10000 = 10.000 gösterim; dolunca reklam kalkar) ya da "ilk1" =
+   1 gün Keşfet'te ilk sırada. Fiyatlar REKLAM_FIYAT ("g10000:990,g30000:2490,g100000:6990,ilk1:1990", TL),
+   açılış indirimi REKLAM_INDIRIM (yüzde, ör. 50) ile değiştirilebilir. */
+const REKLAM_PAKET_VARSAYILAN = { g10000: 990, g30000: 2490, g100000: 6990, ilk1: 1990 };
 const TALEP_DURUM = ['bekliyor', 'onaylandi', 'yayinda', 'reddedildi', 'iptal', 'bitti'];
+const GOSTERIM_EN_UZUN_GUN = 60;   // gösterim paketi en geç bu kadar günde biter
+/* g10000 = 10.000 garanti gösterim; ilk1 = 1 gün Keşfet'te ilk sırada (gösterim sınırı yok) */
+function paketBilgi(id) {
+  let m = /^g(\d{3,7})$/.exec(id);
+  if (m) return { id, gosterim: +m[1], gun: GOSTERIM_EN_UZUN_GUN, ilk: 0 };
+  m = /^ilk(\d{1,2})$/.exec(id);
+  if (m && +m[1] >= 1) return { id, gosterim: 0, gun: +m[1], ilk: 1 };
+  return null;
+}
 function reklamPaketleri(env) {
   const l = {};
   String(env.REKLAM_FIYAT || '').split(',').forEach(x => {
-    const m = /^\s*(\d{1,3})\s*:\s*(\d{1,7})\s*$/.exec(x);
-    if (m && +m[1] >= 1 && +m[1] <= 365 && +m[2] > 0) l[+m[1]] = +m[2];
+    const m = /^\s*([a-z]{1,3}\d{1,7})\s*:\s*(\d{1,7})\s*$/.exec(x);
+    if (m && paketBilgi(m[1]) && +m[2] > 0) l[m[1]] = +m[2];
   });
   return Object.keys(l).length ? l : REKLAM_PAKET_VARSAYILAN;
 }
+function reklamIndirim(env) { const n = Math.round(Number(env.REKLAM_INDIRIM || 0)); return n > 0 && n <= 90 ? n : 0; }
+function paketFiyat(env, liste) { return Math.max(1, Math.round(liste * (100 - reklamIndirim(env)) / 100)); }
 function odemeBilgisi(env) {
   const iban = String(env.REKLAM_IBAN || '').replace(/\s+/g, '').toUpperCase();
   if (!/^TR\d{24}$/.test(iban) && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return null;
@@ -1852,7 +1865,9 @@ function odemeBilgisi(env) {
 }
 function reklamTarife(env) {
   const p = reklamPaketleri(env);
-  return { ok: true, paketler: Object.keys(p).map(Number).sort((a, b) => a - b).map(g => ({ gun: g, fiyat: p[g] })), para: 'TRY', havale: !!odemeBilgisi(env) };
+  const l = Object.keys(p).map(id => Object.assign(paketBilgi(id), { liste: p[id], fiyat: paketFiyat(env, p[id]) }))
+    .sort((a, b) => (a.ilk - b.ilk) || (a.gosterim - b.gosterim) || (a.gun - b.gun));
+  return { ok: true, paketler: l, indirim: reklamIndirim(env), para: 'TRY', havale: !!odemeBilgisi(env) };
 }
 function talepKodu() {
   const harf = 'ABCDEFGHJKLMNPRSTUVYZ23456789', a = new Uint8Array(6); crypto.getRandomValues(a);
@@ -1860,8 +1875,9 @@ function talepKodu() {
 }
 function talepOzet(r, env, yonetim) {
   const o = { id: r.id, kod: r.kod, marka: r.marka, baslik: r.baslik, metin: r.metin, link: r.link, dugme: r.dugme, boyut: r.boyut, gun: r.gun,
+    paket: r.paket || '', hedef: r.gosterim_hedef || 0, ilk: r.ilk ? 1 : 0,
     fiyat: r.fiyat, durum: r.durum, not: r.yonetici_not || '', zaman: r.zaman, bitis: r.bitis || 0 };
-  if (r.durum === 'yayinda' && r.bitis && r.bitis < Date.now()) o.durum = 'bitti';
+  if (r.durum === 'yayinda' && ((r.bitis && r.bitis < Date.now()) || (r.gosterim_hedef && (r.gosterim || 0) >= r.gosterim_hedef))) o.durum = 'bitti';
   if (o.durum === 'onaylandi') o.odeme = odemeBilgisi(env);
   if (r.reklam && (o.durum === 'yayinda' || o.durum === 'bitti')) { o.gosterim = r.gosterim || 0; o.tik = r.tik || 0; }
   if (yonetim) { o.firma = r.firma; o.yetkili = r.yetkili; o.eposta = r.eposta; o.telefon = r.telefon; o.vergi = r.vergi || ''; }
@@ -1882,19 +1898,20 @@ async function reklamTalep(env, g, hesap, kota) {
   if (telefon.replace(/\D/g, '').length < 10) throw new Hata('telefon');
   if (marka.length < 2) throw new Hata('marka');
   if (link && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(link)) throw new Hata('link');
-  const paket = reklamPaketleri(env), gun = Math.round(Number(g.gun));
-  if (!paket[gun]) throw new Hata('paket');
+  const paketler = reklamPaketleri(env), pk = typeof g.paket === 'string' && paketler[g.paket] ? paketBilgi(g.paket) : null;
+  if (!pk) throw new Hata('paket');
+  const fiyat = paketFiyat(env, paketler[pk.id]);
   const resim = base64Coz(g.resim), tip = resimTuru(resim);
   if (!tip || resim.length > EN_FAZLA_RESIM) throw new Hata('resim');
   const bekleyen = await env.DB.prepare("SELECT COUNT(*) AS n FROM reklam_talep WHERE hesap = ? AND durum IN ('bekliyor', 'onaylandi')").bind(hesap.kimlik).first();
   if (bekleyen && bekleyen.n >= 3) throw new Hata('cok_talep', 429);
   await kota();   // yazım hataları hak yemesin: sayım ancak her şey geçerliyse
   const id = yeniKimlik(), kod = talepKodu(), zaman = Date.now();
-  await env.DB.prepare('INSERT INTO reklam_talep (id, kod, hesap, firma, yetkili, eposta, telefon, vergi, marka, baslik, metin, link, dugme, boyut, resim, tip, gun, fiyat, durum, zaman) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, kod, hesap.kimlik, firma, yetkili, eposta, telefon, vergi, marka, baslik, aciklama, link, dugme, REKLAM_BOYUT.indexOf(g.boyut) >= 0 ? g.boyut : 'kare', resim, tip, gun, paket[gun], 'bekliyor', zaman).run();
+  await env.DB.prepare('INSERT INTO reklam_talep (id, kod, hesap, firma, yetkili, eposta, telefon, vergi, marka, baslik, metin, link, dugme, boyut, resim, tip, gun, fiyat, durum, zaman, paket, gosterim_hedef, ilk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, kod, hesap.kimlik, firma, yetkili, eposta, telefon, vergi, marka, baslik, aciklama, link, dugme, REKLAM_BOYUT.indexOf(g.boyut) >= 0 ? g.boyut : 'kare', resim, tip, pk.gun, fiyat, 'bekliyor', zaman, pk.id, pk.gosterim, pk.ilk).run();
   const yon = await adminKodu(env);
   if (yon) await bildir(env, yon, 'rtalep', yazarKodu(hesap.kimlik), '', marka);
-  return { ok: true, id, kod, fiyat: paket[gun], gun };
+  return { ok: true, id, kod, fiyat, paket: pk.id, gun: pk.gun, hedef: pk.gosterim };
 }
 async function reklamTaleplerim(env, hesap) {
   const { results } = await env.DB.prepare('SELECT t.*, r.gosterim, r.tik FROM reklam_talep t LEFT JOIN reklam r ON r.id = t.reklam WHERE t.hesap = ? ORDER BY t.zaman DESC LIMIT 30').bind(hesap.kimlik).all();
@@ -1936,8 +1953,8 @@ async function reklamTalepKarar(env, g, hesap) {
     // ödeme alındı: reklam yayına girer, gün sayısı şimdiden başlar
     const rid = yeniKimlik(), zaman = Date.now(), bitis = zaman + t.gun * 86400000;
     await env.DB.batch([
-      env.DB.prepare('INSERT INTO reklam (id, marka, baslik, metin, link, dugme, boyut, resim, tip, zaman, bitis) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(rid, t.marka, t.baslik, t.metin, t.link, t.dugme || 'Daha fazla bilgi', t.boyut, t.resim, t.tip, zaman, bitis),
+      env.DB.prepare('INSERT INTO reklam (id, marka, baslik, metin, link, dugme, boyut, resim, tip, zaman, bitis, hedef, oncelik) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(rid, t.marka, t.baslik, t.metin, t.link, t.dugme || 'Daha fazla bilgi', t.boyut, t.resim, t.tip, zaman, bitis, t.gosterim_hedef || 0, t.ilk ? 1 : 0),
       env.DB.prepare("UPDATE reklam_talep SET durum = 'yayinda', reklam = ?, bitis = ?, odeme_zaman = ? WHERE id = ?").bind(rid, bitis, zaman, id)
     ]);
     await bildir(env, kisi, 'rtyayin', yon, id, '');

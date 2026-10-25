@@ -6,14 +6,14 @@ F = lambda ad: os.path.join(KOK, 'foto', ad)
 exec(open(os.path.join(KOK, 'reklam.py')).read().split('with sync_playwright()')[0])  # SAHTE ve JPG
 SAHTE = SAHTE.replace("aciklama: 'Kombin ' + i,", "aciklama: 'Kombin ' + i, benim: i === 2, oneCikan: i === 0 ? 1 : 0, oneCikanBitis: i === 0 ? Date.now() + 5 * 3600000 : 0, gorunurluk: 'herkes',").replace("zaman: Date.now() - i * 60000, benim: false,", "zaman: Date.now() - i * 60000,")
 SAHTE = SAHTE.replace("if (yol === '/v1/reklamlar')", """if (yol === '/v1/onecikar') return yanit(req, {ok: true, durum: 200, veri: {ok: true, bitis: Date.now() + 86400000}});
-    if (yol === '/v1/rtarife') return yanit(req, {ok: true, durum: 200, veri: {ok: true, paketler: [{gun: 3, fiyat: 750}, {gun: 7, fiyat: 1500}, {gun: 30, fiyat: 4500}], havale: true}});
+    if (yol === '/v1/rtarife') return yanit(req, {ok: true, durum: 200, veri: {ok: true, paketler: [{id: 'g10000', gosterim: 10000, gun: 60, ilk: 0, liste: 1980, fiyat: 990}, {id: 'g30000', gosterim: 30000, gun: 60, ilk: 0, liste: 4980, fiyat: 2490}, {id: 'g100000', gosterim: 100000, gun: 60, ilk: 0, liste: 13980, fiyat: 6990}, {id: 'ilk1', gosterim: 0, gun: 1, ilk: 1, liste: 3980, fiyat: 1990}], indirim: 50, havale: true}});
     if (yol === '/v1/rtalep') { window.__talep = g; return yanit(req, {ok: true, durum: 200, veri: {ok: true, id: 't'.repeat(20), kod: 'KMB-ABC234', fiyat: 1500, gun: 7}}); }
     if (yol === '/v1/rtalepler') return yanit(req, {ok: true, durum: 200, veri: {ok: true, havale: true, liste: [{id: 't'.repeat(20), kod: 'KMB-ABC234', marka: 'Lale Butik', baslik: 'Yeni sezon', metin: '%20', gun: 7, fiyat: 1500, durum: window.__talepDurum || 'bekliyor', zaman: Date.now(), not: '',
       odeme: window.__talepDurum === 'onaylandi' ? {iban: 'TR33 0006 1005 1978 6457 8413 26', alici: 'Ali Yüksekal'} : undefined}]}});
     if (yol === '/v1/rtyonetim') return yanit(req, {ok: true, durum: 200, veri: {ok: true, havale: true, liste: [{id: 't'.repeat(20), kod: 'KMB-ABC234', marka: 'Lale Butik', baslik: 'Yeni sezon', metin: '%20', gun: 7, fiyat: 1500, durum: window.__talepDurum || 'bekliyor', zaman: Date.now(), firma: 'Lale Ltd.', yetkili: 'Ayşe', eposta: 'ayse@lale.com', telefon: '05321112233', link: 'https://lale.com'}]}});
     if (yol === '/v1/rtkarar') { window.__karar = (window.__karar || []).concat([g]); window.__talepDurum = g.karar === 'onayla' ? 'onaylandi' : g.karar === 'odendi' ? 'yayinda' : 'reddedildi'; return yanit(req, {ok: true, durum: 200, veri: {ok: true}}); }
     if (yol === '/v1/reklamlar')""")
-SAHTE = SAHTE.replace("odemeAl: (req) => yanit(req, {ok: false}),", "odemeAl: (req, id) => { window.__sahip.push(id); yanit(req, {ok: true, owned: window.__sahip}); },").replace("odemeSahip: () => '[]',", "odemeSahip: () => JSON.stringify(window.__sahip),")
+SAHTE = SAHTE.replace("odemeAl: (req) => yanit(req, {ok: false}),", "odemeAl: (req, id) => { if (/^onecikar_/.test(id)) window.__oc = (window.__oc || 0) + +id.split('_')[1]; else window.__sahip.push(id); yanit(req, {ok: true, owned: window.__sahip}); }, oneCikarTeslim: () => { const n = window.__oc || 0; window.__oc = 0; return n; },").replace("odemeSahip: () => '[]',", "odemeSahip: () => JSON.stringify(window.__sahip),")
 SAHTE = SAHTE.replace("window.KombinleNative = {", """window.__sahip = []; window.__admob = [];
 window.KombinleNative = {
   admobVar: () => true, admobYer: j => window.__admob.push(JSON.parse(j)), admobGizlilikGerekli: () => true, admobGizlilik: () => { window.__admobGiz = 1; },""", 1)
@@ -50,19 +50,20 @@ with sync_playwright() as pw:
     p.evaluate("id => window.dispatchEvent(new CustomEvent('kbadmob', {detail: {id: id, durum: 'hata', h: 0}}))", aid); p.wait_for_timeout(400)
     ok(p.locator('.admob-yer[data-admob="%s"]' % aid).count() == 0, 'yüklenemeyen AdMob yuvası kendi tanıtımımıza döndü')
 
-    print('— Gönderiyi öne çıkar (Sosyal paket)')
+    print('— Gönderiyi öne çıkar (öne çıkarma paketleri)')
     benim = p.locator('#toplulukAlani .g-akis:not(.g-reklam):has-text("Kombin 2")').first
     benim.locator('.g-akis-menu').click(); p.wait_for_timeout(500)
     ok('Gönderiyi öne çıkar' in p.locator('.sayfa.acik').last.inner_text(), 'kendi gönderimin menüsünde "öne çıkar"')
     p.locator('.sayfa.acik button.satir:has-text("Gönderiyi öne çıkar")').click(); p.wait_for_timeout(700)
     sp = p.locator('.sayfa.acik').last
-    ok('Sosyal paket' in sp.inner_text() and 'öne çıkarmak' in sp.inner_text(), 'ücretsiz kullanıcıya Sosyal paket sayfası')
-    o.ekran('t2_sosyal_paket')
-    sp.locator('button.sosyal-al').click(); p.wait_for_timeout(1300)
-    ok('kombinle_sosyal' in p.evaluate('window.__sahip'), 'Sosyal paket satın alındı')
-    ok(p.locator('.pencere.acik').count() == 1 and '24 saat' in p.inner_text('.pencere.acik'), 'satın alınca öne çıkarma onayı soruldu')
+    ok('Gönderini öne çıkar' in sp.inner_text() and sp.locator('.g-paket').count() == 3 and 'kalmadı' in sp.inner_text(), 'hakkı olmayana öne çıkarma paketleri (1/5/15)')
+    o.ekran('t2_one_cikar_paket')
+    sp.locator('.g-paket').nth(1).locator('.g-fiyat').click(); p.wait_for_timeout(1500)
+    ok(p.evaluate("+localStorage.getItem('kb_onecikarHak')") == 5, '5 öne çıkarma hakkı teslim alındı')
+    ok(p.locator('.pencere.acik').count() == 1 and 'Kalan hakkın: 5' in p.inner_text('.pencere.acik'), 'satın alınca öne çıkarma onayı soruldu (kalan hak yazıyor)')
     p.locator('.pencere.acik button:has-text("Öne çıkar")').click(); p.wait_for_timeout(700)
     ok(any(a['yol'] == '/v1/onecikar' and a['g']['id'] == 'c' * 20 for a in p.evaluate('window.__api')), 'öne çıkarma isteği gitti')
+    ok(p.evaluate("+localStorage.getItem('kb_onecikarHak')") == 4, '1 hak düştü')
 
     print('— Reklam ver')
     p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(500)
@@ -70,7 +71,7 @@ with sync_playwright() as pw:
     ok(p.locator('.ayar-sekme button.satir:has-text("Reklam gizlilik seçenekleri")').count() == 1, 'ayarlarda reklam gizlilik seçenekleri (AB izni gerekince)')
     p.click('.ayar-sekme button.satir:has-text("Reklam ver")'); p.wait_for_timeout(900)
     rv = p.locator('.sayfa.acik').last
-    ok(rv.locator('.rv-paket').count() == 3 and '1.500 ₺' in rv.inner_text(), 'paketler ve fiyatlar')
+    ok(rv.locator('.rv-paket').count() == 4 and '30.000 gösterim' in rv.inner_text() and '2.490 ₺' in rv.inner_text() and '%50' in rv.inner_text() and 'ilk sırada' in rv.inner_text(), 'gösterim paketleri, indirim ve "ilk sırada"')
     o.ekran('t3_reklam_ver', tam=True)
     rv.locator('.alt-bar .btn.ana').click(); p.wait_for_timeout(300)
     ok('fotoğraf' in p.inner_text('#tost').lower() or 'görsel' in p.inner_text('#tost').lower(), 'görsel zorunlu: ' + p.inner_text('#tost'))
@@ -85,7 +86,7 @@ with sync_playwright() as pw:
     rv.locator('.rv-paket').nth(0).click()
     rv.locator('.alt-bar .btn.ana').click(); p.wait_for_timeout(1200)
     tl = p.evaluate('window.__talep')
-    ok(tl and tl['gun'] == 3 and tl['firma'] == 'Lale Ltd.' and tl['eposta'] == 'elif@ornek.com' and tl['yetkili'] == 'Elif' and len(tl['resim']) > 1000, 'başvuru gitti (e-posta ve ad hesaptan)')
+    ok(tl and tl['paket'] == 'g10000' and tl['firma'] == 'Lale Ltd.' and tl['eposta'] == 'elif@ornek.com' and tl['yetkili'] == 'Elif' and len(tl['resim']) > 1000, 'başvuru gitti (e-posta ve ad hesaptan)')
     ok('KMB-ABC234' in p.locator('.sayfa.acik').last.inner_text() and 'İnceleniyor' in p.locator('.sayfa.acik').last.inner_text(), 'başvurularım: kod ve durum')
     p.evaluate("window.__talepDurum = 'onaylandi'")
     p.locator('.sayfa.acik').last.locator('.bas .ikon-btn').first.click(); p.wait_for_timeout(500)

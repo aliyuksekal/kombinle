@@ -132,6 +132,7 @@ function sohbetAc() {
     h('div', { class: 'sh-alt' }, mik, girdi, gonderBtn),
     h('p', { class: 'ai-not sh-not', text: t('aiNot') }));
   document.body.appendChild(kok);
+  var katmanBirak = katmanAc([kok]);
   requestAnimationFrame(function () { kok.classList.add('acik'); });
 
   /* geri tuşu sohbeti kapatsın */
@@ -142,6 +143,7 @@ function sohbetAc() {
     if (kayit.kapandi) return;
     kayit.kapandi = true; SOHBET.acik = false;
     var i = YIGIN.indexOf(kayit); if (i >= 0) YIGIN.splice(i, 1);
+    katmanBirak();
     sesiKes();
     kok.classList.remove('acik');
     setTimeout(function () { kok.remove(); }, 260);

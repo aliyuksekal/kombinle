@@ -50,6 +50,7 @@ jobs:
           REKLAM_IBAN: ${{ secrets.REKLAM_IBAN }}
           REKLAM_ALICI: ${{ secrets.REKLAM_ALICI }}
           REKLAM_FIYAT: ${{ secrets.REKLAM_FIYAT }}
+          REKLAM_INDIRIM: ${{ secrets.REKLAM_INDIRIM }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$GEMINI_API_KEY" ]; then
             echo "Sunucu gizli anahtarları yok; APK yapay zekâsız derlenecek."

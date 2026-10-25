@@ -39,7 +39,7 @@ printf '%s' "$GEMINI_API_KEY" | $W secret put GEMINI_API_KEY > /dev/null
 printf '%s' "$UYGULAMA_ANAHTARI" | $W secret put UYGULAMA_ANAHTARI > /dev/null
 # isteğe bağlı: e-postayla şifre sıfırlama (Brevo). Yoksa özellik kapalı kalır.
 # Reklam ödemesi (havale/EFT): IBAN ve alıcı adı yalnız sunucu gizlisi olarak durur, uygulamaya gömülmez
-for g in REKLAM_IBAN REKLAM_ALICI REKLAM_FIYAT; do
+for g in REKLAM_IBAN REKLAM_ALICI REKLAM_FIYAT REKLAM_INDIRIM; do
   d="${!g:-}"
   if [ -n "$d" ]; then printf '%s' "$d" | $W secret put "$g" > /dev/null; fi
 done

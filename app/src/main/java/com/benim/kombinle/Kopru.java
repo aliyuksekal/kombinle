@@ -552,6 +552,11 @@ public final class Kopru {
         return guvenli ? odeme.jetonTeslim() : 0;
     }
 
+    @JavascriptInterface
+    public int oneCikarTeslim() {
+        return guvenli ? odeme.oneCikarTeslim() : 0;
+    }
+
     /** Aboneliği iptal etme / yönetme sayfası (Play Store) */
     @JavascriptInterface
     public void aboneligiYonet() {

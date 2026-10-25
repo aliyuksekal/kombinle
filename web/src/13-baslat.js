@@ -106,7 +106,7 @@ function baslat() {
   /* bildirime dokunarak açıldıysa ilgili sayfa */
   try { var ac = YEREL && typeof YEREL.acilacak === 'function' ? String(YEREL.acilacak() || '') : ''; if (ac) acilacakSayfa(ac); } catch (e) { }
   if (girisli()) setTimeout(bildirimIzniIste, 4000);
-  setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); }, 3000);
+  setTimeout(function () { var n = jetonTeslimAl(); if (n > 0) tost(t('jetonYuklendi', n)); var oc = oneCikarTeslimAl(); if (oc > 0) setTimeout(function () { tost(t('ocYuklendi', oc)); }, n > 0 ? 2500 : 0); }, 3000);
   window.addEventListener('apkshortcut', function (e) { try { e.preventDefault(); } catch (x) { } });
   bildirimZamanlayici();
   acilisKapat();

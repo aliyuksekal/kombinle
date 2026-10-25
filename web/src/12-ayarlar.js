@@ -71,6 +71,7 @@ function ayarIcerik(gov) {
         A.pro ? satir('ayar', t('aboneligiYonet'), null, function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } }) : null,
         satir('yenile', t('geriYukle'), null, satinAlimlariGeriYukle),
         satir('isilti', t('sosyalBaslik'), sosyalAcik() ? (S.pro ? t('sosyalProDahil') : t('sosyalSahip')) : t('sosyalAlt'), function () { sosyalSayfasi(); }),
+        yzKurulu() ? satir('zap', t('ocBaslik'), oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('oneCikarAlt'), function () { oneCikarPaketSayfasi(); }) : null,
         yzKurulu() ? satir('grafik', t('rvBaslik'), t('rvAlt'), reklamVerSayfasi) : null,
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */

@@ -36,7 +36,7 @@ final class Odeme implements PurchasesUpdatedListener {
     static final String PRO_YIL = "kombinle_pro_yillik";
     /** abonelikler: sahiplik her açılışta Google Play'den yenilenir (iptal/iade düşer) */
     private static final Set<String> KALICI = new HashSet<>(Arrays.asList(PRO, PRO_YIL));
-    /** tek seferlik kalıcı ürünler: "Sosyal paket" (A mı B mi anketi + gönderiyi öne çıkarma) */
+    /** tek seferlik kalıcı ürünler: "Sosyal paket" (A mı B mi anketi açma) */
     static final String SOSYAL = "kombinle_sosyal";
     private static final Set<String> TEK = new HashSet<>(Collections.singletonList(SOSYAL));
     private static final Map<String, Integer> JETON = new HashMap<>();
@@ -45,7 +45,15 @@ final class Odeme implements PurchasesUpdatedListener {
         JETON.put("jeton_150", 150);
         JETON.put("jeton_400", 400);
     }
-    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_50", "jeton_150", "jeton_400"));
+    /** "Gönderiyi öne çıkar" hakları (tüketilen ürün) */
+    private static final Map<String, Integer> ONE_CIKAR = new HashMap<>();
+    static {
+        ONE_CIKAR.put("onecikar_1", 1);
+        ONE_CIKAR.put("onecikar_5", 5);
+        ONE_CIKAR.put("onecikar_15", 15);
+    }
+    private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_50", "jeton_150", "jeton_400",
+            "onecikar_1", "onecikar_5", "onecikar_15"));
 
     private static boolean sahiplik(String id) {
         return KALICI.contains(id) || TEK.contains(id);
@@ -155,12 +163,15 @@ final class Odeme implements PurchasesUpdatedListener {
                 // Jeton yalnızca Google Play tüketimi onayladıktan sonra deftere yazılır;
                 // sayfa jetonTeslim() ile alır. Böylece uygulama kapalıyken biten alım da kaybolmaz.
                 if (r.getResponseCode() != BillingClient.BillingResponseCode.OK) return;
-                int toplam = 0;
+                int toplam = 0, hak = 0;
                 for (String id : urunler) {
                     Integer n = JETON.get(id);
                     if (n != null) toplam += n * adet;
+                    Integer h = ONE_CIKAR.get(id);
+                    if (h != null) hak += h * adet;
                 }
                 if (toplam > 0) jetonYaz(toplam);
+                if (hak > 0) defterYaz("oneCikarBekleyen", hak);
             });
             return false;
         }
@@ -168,6 +179,18 @@ final class Odeme implements PurchasesUpdatedListener {
             istemci.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.getPurchaseToken()).build(), r -> { });
         }
         return true;
+    }
+
+    private synchronized void defterYaz(String ad, int n) {
+        long v = Math.min(100_000L, (long) ayar.getInt(ad, 0) + n);
+        ayar.edit().putInt(ad, (int) v).commit();
+    }
+
+    /** Teslim edilmemiş öne çıkarma haklarını verir ve sıfırlar. */
+    synchronized int oneCikarTeslim() {
+        int v = ayar.getInt("oneCikarBekleyen", 0);
+        if (v > 0) ayar.edit().putInt("oneCikarBekleyen", 0).commit();
+        return Math.max(0, v);
     }
 
     private synchronized void jetonYaz(int n) {

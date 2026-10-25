@@ -98,6 +98,9 @@ with sync_playwright() as pw:
     ok(p.get_attribute('.ai-orta', 'aria-label') == 'AI Stilist', 'alt menüdeki asistan düğmesi de AI Stilist')
     p.evaluate("(() => { const a = JSON.parse(localStorage.getItem('kb_ayar')); a.kimin = 'kadin'; localStorage.setItem('kb_ayar', JSON.stringify(a)); location.reload(); })()")
     p.wait_for_timeout(1500)
+    try: p.click('#acilis', timeout=1500)
+    except Exception: pass
+    p.wait_for_selector('.ai-orta', state='attached', timeout=10000)
     ok(p.get_attribute('.ai-orta', 'aria-label') == 'AI Prenses', 'kadına dönünce asıl ad (AI Prenses) geri geldi')
     hatalar = [h for h in o.hatalar if 'pageerror' in h]
     ok(not hatalar, 'sayfa hatası yok ' + str(hatalar[:2]))

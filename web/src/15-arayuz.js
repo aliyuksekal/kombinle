@@ -572,7 +572,7 @@ function magazaSayfasi(oz) {
     h('div', { class: 'g-pro-bas' }, h('div', null, h('span', { class: 'g-pro-rozet', text: S.pro ? t('proAktif') : t('enAvantajli') }), proBaslik), proFiyat),
     S.pro ? null : proAlt,
     h('p', { class: 'g-pro-kiyas', text: t('proKiyas', PRO_GUNLUK * 30) }),
-    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS7', SES_GUNLUK.pro), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
+    h('ul', null, [t('proS1', PRO_GUNLUK), t('proS2', SOHBET_GUNLUK.pro), t('proS7', SES_GUNLUK.pro), t('proS8', PRO_ONECIKAR_AYLIK), t('proS3'), t('proS5'), t('proS6')].map(function (k) { return h('li', { text: '✓ ' + k }); })),
     proBtn,
     h('p', { class: 'g-pro-not', text: t('aboneNot') })));
   gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('jetonPaketleri') }));

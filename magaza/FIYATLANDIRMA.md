@@ -16,6 +16,10 @@ okur, kodda değişiklik gerekmez.
 | `jeton_400` | Tüketilebilir | 12,99 $ | ~646 ₺ |
 | `kombinle_pro_aylik` | Aylık abonelik | 14,99 $ | ~746 ₺ |
 | `kombinle_pro_yillik` | Yıllık abonelik | 99,99 $ | ~4.974 ₺ |
+| `kombinle_sosyal` | Tek seferlik, tüketilmeyen (A mı B mi anketi açma) | 4,99 $ | ~248 ₺ |
+| `onecikar_1` | Tüketilebilir (1 gönderi öne çıkarma) | 1,99 $ | ~99 ₺ |
+| `onecikar_5` | Tüketilebilir (5 öne çıkarma) | 7,19 $ | ~358 ₺ |
+| `onecikar_15` | Tüketilebilir (15 öne çıkarma) | 17,99 $ | ~895 ₺ |
 
 Türkiye'de fiyatlar KDV dahil görünür. KDV'yi Google tahsil edip öder.
 
@@ -35,6 +39,26 @@ TL fiyatları yılda bir iki kez gözden geçirilmeli.
 | 400 jeton | 549,99 ₺ | 6,66 $ (jeton başı 0,017 $) |
 | PRO aylık | 399,99 ₺ | 4,84 $ / ay |
 | PRO yıllık | 3.999,99 ₺ | 48,40 $ / yıl (4,03 $ / ay), aylığa göre %17 ucuz |
+| Sosyal paket | 179,99 ₺ | 2,18 $ (bir kez) |
+| 1 öne çıkarma | 49,99 ₺ | 0,61 $ |
+| 5 öne çıkarma | 179,99 ₺ | 2,18 $ (%28 avantajlı) |
+| 15 öne çıkarma | 449,99 ₺ | 5,44 $ (%40 avantajlı) |
+
+PRO'da anket açma ve her ay 10 öne çıkarma dahildir.
+
+### Reklam ver (uygulama dışında havale/EFT, Google kesintisi yok)
+
+Sunucu gizlisi `REKLAM_FIYAT` ile değişir, `REKLAM_INDIRIM` (yüzde) açılış indirimi uygular. KDV hariç.
+
+| Paket | Varsayılan fiyat |
+|---|---|
+| `g10000` – 10.000 garanti gösterim | 990 ₺ |
+| `g30000` – 30.000 garanti gösterim | 2.490 ₺ |
+| `g100000` – 100.000 garanti gösterim | 6.990 ₺ |
+| `ilk1` – 1 gün Keşfet'te ilk reklam yeri | 1.990 ₺ |
+
+Gösterim paketi gösterimler dolunca ya da en geç 60 günde biter. Karşılaştırma (2026): Instagram Keşfet reklamı
+1.000 gösterim başına 35–80 ₺; nano influencer gönderisi 500–3.000 ₺.
 
 ## Kesintiler (Türkiye'deki bir kullanıcı)
 
