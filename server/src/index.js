@@ -365,7 +365,8 @@ const TUR_IPUCU = {
   terlik: 'slides / flip-flops / slippers', canta: 'handbag / backpack / clutch / tote', esarp: 'large headscarf or shawl (woven, square/rectangle)',
   atki: 'long knitted or wool scarf', bere: 'hat / beanie / cap', eldiven: 'gloves', gozluk: 'sunglasses', kemer: 'belt', kupe: 'earrings',
   kolye: 'necklace', bileklik: 'bracelet or ring', saat: 'wristwatch', taki: 'other jewelry / brooch / hair accessory',
-  kulot: 'underwear briefs', sutyen: 'bra', corap: 'socks', kulotlu: 'tights / pantyhose'
+  kulot: 'underwear briefs', sutyen: 'bra', corap: 'socks', kulotlu: 'tights / pantyhose',
+  polo: 'polo shirt with collar and short button placket', takim: 'suit jacket (part of a matching suit)', kravat: 'necktie or bow tie'
 };
 const KATEGORI = ['ust', 'alt', 'tek', 'dis', 'ayk', 'aks', 'ic', 'yok'];
 function turSatiri(x) {
@@ -983,6 +984,8 @@ async function istekYanit(env, g, cihaz) {
   return { ok: true, kabul: false };
 }
 /* Hesap gizliliği: acik = herkes isteksiz takip edebilir. Açılınca bekleyen istekler kabul edilir. */
+const DM_IZIN = ['herkes', 'takip', 'kimse'];
+const DM_SIKAYET_SINIR = 3;   // 30 günde bu kadar farklı kişi şikâyet ederse tanımadıklarına yazamaz
 async function gizlilik(env, g, cihaz) {
   const kod = yazarKodu(cihaz);
   if (typeof g.acik === 'boolean') {
@@ -996,9 +999,11 @@ async function gizlilik(env, g, cihaz) {
       await env.DB.batch(isler);
     }
   }
-  const pr = await env.DB.prepare('SELECT acik FROM profil WHERE kod = ?').bind(kod).first();
+  // bana kimler mesaj yazabilir: herkes (tanımadıklar istek olarak) / yalnız takip ettiklerim / kimse
+  if (DM_IZIN.indexOf(g.dm) >= 0) await env.DB.prepare('UPDATE profil SET dm_izin = ? WHERE kod = ?').bind(g.dm, kod).run();
+  const pr = await env.DB.prepare('SELECT acik, dm_izin FROM profil WHERE kod = ?').bind(kod).first();
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(kod).first();
-  return { ok: true, acik: pr && pr.acik ? true : false, istek: n ? n.n : 0 };
+  return { ok: true, acik: pr && pr.acik ? true : false, istek: n ? n.n : 0, dm: pr && DM_IZIN.indexOf(pr.dm_izin) >= 0 ? pr.dm_izin : 'herkes' };
 }
 
 async function kisiler(env, g, cihaz, hamCihaz) {
@@ -1059,12 +1064,18 @@ async function sohbet(env, g) {
     required: ['yanit', 'parcalar', 'oneriler']
   };
   const selam = selamSec(dil, saat);
+  // kullanıcının seçtiği "kimin için" ayarı: kadın (varsayılan, AI Prenses) / erkek / belirtmek istemiyor
+  const kimin = g.kimin === 'erkek' || g.kimin === 'notr' ? g.kimin : 'kadin';
+  const kimlik = kimin === 'kadin'
+    ? 'Sen "AI Prenses"sin: Kombinle uygulamasında kadınlara yardım eden, moda bilgisi güçlü, sıcak ve içten bir stil arkadaşı. Bir yapay zekâ gibi değil, zevkli bir arkadaş gibi konuşursun.'
+    : 'Sen "AI Stilist"sin: Kombinle uygulamasında ' + (kimin === 'erkek' ? 'erkeklere' : 'herkese') + ' yardım eden, moda bilgisi güçlü, samimi bir stil arkadaşı. Bir yapay zekâ gibi değil, zevkli bir arkadaş gibi konuşursun. ' +
+      '"prenses", "canım", "güzelim" gibi hitaplar KULLANMA' + (kimin === 'notr' ? '; kullanıcının cinsiyetini varsayma, cinsiyetsiz bir dil kullan.' : '; erkek giyimine göre öneri yap.');
   const yonerge = [
-    'Sen "AI Prenses"sin: Kombinle uygulamasında kadınlara yardım eden, moda bilgisi güçlü, sıcak ve içten bir stil arkadaşı. Bir yapay zekâ gibi değil, zevkli bir arkadaş gibi konuşursun.',
+    kimlik,
     'ÜSLUP: Mesajlaşır gibi doğal, kısa ve akıcı cümleler kur. Kullanıcının söylediğine gerçekten tepki ver (heyecanını paylaş, kararsızlığını anla), sonra somut öneri ver. ' +
       '"Harika bir soru!", "Size yardımcı olmaktan mutluluk duyarım", "Tabii ki!" gibi kalıp ve resmî ifadeler kullanma; her cevaba aynı şekilde başlama. Sen diye hitap et.',
     ilk
-      ? 'SELAM: Bu, konuşmanın ilk cevabı. Cevabına "' + selam + '" ile başla (kullanıcının saatine uygun selam), sonra hemen konuya geç. "prenses" hitabını bu cevapta en fazla bir kez kullanabilirsin.'
+      ? 'SELAM: Bu, konuşmanın ilk cevabı. Cevabına "' + selam + '" ile başla (kullanıcının saatine uygun selam), sonra hemen konuya geç.' + (kimin === 'kadin' ? ' "prenses" hitabını bu cevapta en fazla bir kez kullanabilirsin.' : '')
       : 'SELAM: Konuşma zaten sürüyor. Cevabına ASLA selamla (selam, merhaba, günaydın, iyi akşamlar…) ya da hitapla ("prenses", "canım"…) başlama; doğrudan konuya gir. "prenses" kelimesini bu cevapta kullanma.',
     'Yalnızca moda, giyim, kombin, renk, aksesuar, bakım, alışveriş ve özgüven konularında yardım et; başka konularda kibarca stile geri dön.',
     'Cevabın kısa ve uygulanabilir olsun (en fazla 4-5 cümle). Cevap sesli de okunacağı için madde işaretini yalnız gerçekten liste gerekiyorsa kullan. En fazla bir emoji kullan.',
@@ -1387,25 +1398,28 @@ async function profilGor(env, g, cihaz) {
   if (!hedef && !kadiGecerli(kadi)) throw new Hata('girdi');
   const kod = yazarKodu(cihaz);
   const pr = hedef
-    ? await env.DB.prepare('SELECT kod, takma, kadi, bio, acik FROM profil WHERE kod = ?').bind(hedef).first()
-    : await env.DB.prepare('SELECT kod, takma, kadi, bio, acik FROM profil WHERE kadi = ?').bind(kadi).first();
+    ? await env.DB.prepare('SELECT kod, takma, kadi, bio, acik, dm_izin FROM profil WHERE kod = ?').bind(hedef).first()
+    : await env.DB.prepare('SELECT kod, takma, kadi, bio, acik, dm_izin FROM profil WHERE kadi = ?').bind(kadi).first();
   if (!pr || await env.DB.prepare('SELECT 1 FROM engelli WHERE substr(cihaz, 1, 12) = ?').bind(pr.kod).first()) throw new Hata('yok', 404);
   const benim = pr.kod === kod;
-  const [a, tc, tk, ps, tt, ti, gi] = await env.DB.batch([
+  const [a, tc, tk, ps, tt, ti, gi, beniTakip] = await env.DB.batch([
     env.DB.prepare('SELECT zaman FROM avatar WHERE kod = ?').bind(pr.kod),
     env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takip = ?').bind(pr.kod),
     env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takipci = ?').bind(pr.kod),
     env.DB.prepare(benim ? 'SELECT COUNT(*) AS n FROM paylasim WHERE substr(yazar, 1, 12) = ?' : "SELECT COUNT(*) AS n FROM paylasim WHERE substr(yazar, 1, 12) = ? AND gizli = 0 AND gorunurluk = 'herkes'").bind(pr.kod),
     env.DB.prepare('SELECT 1 AS v FROM takip WHERE takipci = ? AND takip = ?').bind(kod, pr.kod),
     env.DB.prepare('SELECT 1 AS v FROM takip_istek WHERE isteyen = ? AND hedef = ?').bind(kod, pr.kod),
-    env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(benim ? kod : '-')
+    env.DB.prepare('SELECT COUNT(*) AS n FROM takip_istek WHERE hedef = ?').bind(benim ? kod : '-'),
+    env.DB.prepare('SELECT 1 AS v FROM takip WHERE takipci = ? AND takip = ?').bind(pr.kod, kod)
   ]);
   const ilk = x => (x && x.results && x.results[0]) || null;
   return {
     ok: true,
     profil: { kod: pr.kod, takma: pr.takma, kadi: pr.kadi || '', bio: pr.bio || '', av: ilk(a) ? ilk(a).zaman : 0,
       takipci: ilk(tc) ? ilk(tc).n : 0, takip: ilk(tk) ? ilk(tk).n : 0, paylasim: ilk(ps) ? ilk(ps).n : 0, takipte: ilk(tt) ? 1 : 0, istekte: ilk(ti) ? 1 : 0, benim: benim ? 1 : 0,
-      acik: pr.acik ? 1 : 0, istek: benim && ilk(gi) ? ilk(gi).n : 0 }
+      acik: pr.acik ? 1 : 0, istek: benim && ilk(gi) ? ilk(gi).n : 0,
+      // mesaj yazılabilir mi (karşı tarafın mesaj ayarı)
+      dm: benim ? 1 : (pr.dm_izin === 'kimse' || (pr.dm_izin === 'takip' && !ilk(beniTakip)) ? 0 : 1) }
   };
 }
 async function takipListesi(env, g, cihaz) {
@@ -1846,6 +1860,19 @@ async function dmYaz(env, g, hesap) {
   const id = dmKimlik(ben, diger);
   const k = await env.DB.prepare('SELECT * FROM konusma WHERE id = ?').bind(id).first();
   let istek = k ? k.istek : '';
+  /* yeni sohbet ya da cevaplanmamış istek: alıcının mesaj ayarı ve gönderenin şikâyet geçmişi */
+  if (!k || k.istek === diger) {
+    const al = await env.DB.prepare('SELECT dm_izin FROM profil WHERE kod = ?').bind(diger).first();
+    const izin = al && DM_IZIN.indexOf(al.dm_izin) >= 0 ? al.dm_izin : 'herkes';
+    if (izin === 'kimse') throw new Hata('dm_kapali', 403);
+    const takipEdiyor = await env.DB.prepare('SELECT 1 FROM takip WHERE takipci = ? AND takip = ?').bind(diger, ben).first();
+    if (izin === 'takip' && !takipEdiyor) throw new Hata('dm_kapali', 403);
+    if (!takipEdiyor) {
+      const sk = await env.DB.prepare('SELECT COUNT(DISTINCT s.cihaz) AS n FROM dm_sikayet s JOIN mesaj m ON m.id = s.mesaj WHERE m.gonderen = ? AND s.zaman > ?')
+        .bind(ben, Date.now() - 30 * 86400000).first();
+      if (sk && sk.n >= DM_SIKAYET_SINIR) throw new Hata('dm_kisitli', 403);
+    }
+  }
   if (!k) {
     const takipEdiyor = await env.DB.prepare('SELECT 1 FROM takip WHERE takipci = ? AND takip = ?').bind(diger, ben).first();
     istek = takipEdiyor ? '' : diger;

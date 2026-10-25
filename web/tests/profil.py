@@ -54,7 +54,7 @@ with sync_playwright() as pw:
     ok('Zeynep' in p.inner_text('#tost'), 'atama bildirildi')
     p.click(S + 'button:has-text("Geri al")'); p.wait_for_timeout(400); p.click('.sayfa.acik .alt-bar .btn.tehlike'); p.wait_for_timeout(600)
     ok([a for a in p.evaluate('window.__api') if a['yol'] == '/v1/ata'][-1]['g'].get('geriAl') is True, 'geri alındı')
-    p.click('.sayfa.acik button[aria-label="Kapat"]'); p.wait_for_timeout(400)
+    p.click('.sayfa.acik :is(button[aria-label="Kapat"],button[aria-label="Geri"])'); p.wait_for_timeout(400)
     print('— Toplulukta kullanıcı adı')
     p.click('nav.alt-menu button[data-sekme="kesfet"]'); p.wait_for_timeout(1200)
     ok('@user' in p.inner_text('.g-kisiler'), 'kişi listesinde @kullanıcı adı')

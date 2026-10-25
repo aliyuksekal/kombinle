@@ -18,7 +18,7 @@ def kapat_hepsi(p):
         if p.locator('.sohbet.acik').count():
             p.locator('.sohbet .sh-ust-btn').last.click(); p.wait_for_timeout(400); continue
         if p.locator('.sayfa.acik').count():
-            p.locator('.sayfa.acik .bas .ikon-btn').last.click(); p.wait_for_timeout(400); continue
+            p.locator('.sayfa.acik .bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(400); continue
         break
 
 

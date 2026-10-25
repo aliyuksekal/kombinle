@@ -47,6 +47,8 @@ function dmHataMetni(e) {
   if (k === 'izin') return t('dmIzin');
   if (k === 'engelledin') return t('dmEngelledin');
   if (k === 'istek_bekliyor') return t('dmIstekBekliyor');
+  if (k === 'dm_kapali') return t('dmKapali');
+  if (k === 'dm_kisitli') return t('dmKisitli');
   if (k === 'baglanti') return t('dmBaglanti');
   if (k === 'denetim') return t('dmDenetim');
   if (k === 'kota') return t('dmKota');
@@ -60,7 +62,7 @@ function dmKutusu() {
   var seg = h('div', { class: 'g-haplar' });
   var liste = h('div', { class: 'tk-liste dm-liste' });
   var gov = h('div', null, seg, liste);
-  var s = sayfaAc({ baslik: t('dmBaslik'), icerik: gov });
+  var s = sayfaAc({ tam: true, baslik: t('dmBaslik'), icerik: gov });
   var veri = [];
   function segCiz() {
     temizle(seg);
@@ -107,7 +109,7 @@ function dmSohbet(kisi, degisti) {
   var girdi = h('textarea', { class: 'dm-girdi', rows: '1', maxlength: '1000', placeholder: t('dmYaz'), 'aria-label': t('dmYaz') });
   var gonder = h('button', { class: 'dm-gonder', 'aria-label': t('dmGonder') }, ikon('gonder', 'k'));
   var alt = h('div', { class: 'dm-alt-kap' }, yanitCubuk, h('div', { class: 'dm-alt' }, girdi, gonder));
-  var s = sayfaAc({ baslik: ad, icerik: h('div', { class: 'dm-sayfa' }, ust, akis), altBar: alt, kapaninca: function () { clearInterval(zaman); DM.acik = null; if (degisti) degisti(); } });
+  var s = sayfaAc({ tam: true, dolu: true, baslik: ad, icerik: h('div', { class: 'dm-sayfa' }, ust, akis), altBar: alt, kapaninca: function () { clearInterval(zaman); DM.acik = null; if (degisti) degisti(); } });
   DM.acik = kisi.kod;
   /* başlık: profile git ve menü */
   var bas = $('.bas', s.sayfa);
@@ -318,7 +320,7 @@ window.addEventListener('kbac', function (e) { var d = e && e.detail; if (d && t
 function sikayetPaneli() {
   var hb = hesapBilgi(); if (!hb || !hb.yonetici) return;
   var gov = h('div', { class: 'profil-duzen' }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
-  var s = sayfaAc({ baslik: t('ykBaslik'), icerik: gov });
+  var s = sayfaAc({ tam: true, baslik: t('ykBaslik'), icerik: gov });
   function islem(govde, satir, mesaj) {
     return yzIste('/v1/yonetim', govde, 20000).then(function () { tost(mesaj); if (satir) satir.remove(); }).catch(function (e) { tost(hesapHataMetni(e)); });
   }

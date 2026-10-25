@@ -279,6 +279,12 @@ r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 
 ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('"İyi akşamlar" ile başla'), 'akşam ilk cevap İyi akşamlar');
 r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 13, ilk: true });
 ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('"Selam" ile başla'), 'öğlen ilk cevap Selam');
+ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('AI Prenses'), 'varsayılan kişilik AI Prenses');
+r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 13, ilk: true, kimin: 'erkek' });
+syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
+ok(syz.includes('AI Stilist') && syz.includes('erkek giyimine') && !syz.includes('"prenses" hitabını bu cevapta en fazla'), 'erkek kullanıcıya AI Stilist, prenses hitabı yok');
+r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 13, ilk: true, kimin: 'notr' });
+ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('cinsiyetini varsayma'), 'belirtmek istemeyene cinsiyetsiz dil');
 yzYanit = () => ({ yanit: 'Selam prenses! 💜 bence lacivert pantolon olur.', parcalar: [], oneriler: [] });
 r = await iste('/v1/sohbet', { mesaj: 'peki alta?', dil: 'tr', gecmis: [{ r: 'k', m: 'ne giysem' }, { r: 'a', m: 'Merhaba prenses! Krem kazak.' }], saat: 13, ilk: false });
 syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
@@ -471,6 +477,32 @@ ok((await iste('/v1/reklamsil', { id: rid }, cihazC)).veri.ok && (await iste('/v
   const kD = (await iste('/v1/ben', {}, cihazD)).veri.hesap.kod;
   await iste('/v1/takip', { kod: kB, takip: false }, cihazD);
   ok((await iste('/v1/dmyaz', { kod: kB, metin: 'selam' }, cihazB)).veri.hata === 'girdi', 'kendine mesaj yazılamaz');
+  // mesaj ayarı: kimse / yalnız takip ettiklerim / herkes
+  {
+    const kC = (await iste('/v1/ben', {}, cihazC)).veri.hesap.kod;
+    await iste('/v1/takip', { kod: kC, takip: false }, cihazD);
+    ok((await iste('/v1/gizlilik', {}, cihazD)).veri.dm === 'herkes', 'varsayılan mesaj ayarı: herkes (tanımadıklar istek olarak)');
+    ok((await iste('/v1/gizlilik', { dm: 'kimse' }, cihazD)).veri.dm === 'kimse', 'mesaj ayarı kaydedildi');
+    ok((await iste('/v1/dmyaz', { kod: kD, metin: 'merhaba' }, cihazC)).veri.hata === 'dm_kapali', 'mesajları kapalı kişiye yazılamaz');
+    ok((await iste('/v1/profilgor', { kod: kD }, cihazC)).veri.profil.dm === 0, 'profilde mesaj yazılamayacağı görünüyor');
+    await iste('/v1/gizlilik', { dm: 'takip' }, cihazD);
+    ok((await iste('/v1/dmyaz', { kod: kD, metin: 'merhaba' }, cihazC)).veri.hata === 'dm_kapali', 'yalnız takip ettikleri: takip edilmeyen yazamaz');
+    await iste('/v1/gizlilik', { acik: true }, cihazC);
+    await iste('/v1/takip', { kod: kC }, cihazD);
+    ok((await iste('/v1/profilgor', { kod: kD }, cihazC)).veri.profil.dm === 1, 'takip edilince mesaj düğmesi açılır');
+    const r1 = await iste('/v1/dmyaz', { kod: kD, metin: 'selam Deniz' }, cihazC);
+    ok(r1.veri.ok && r1.veri.durum === 'acik', 'takip ettiği kişi doğrudan yazabildi');
+    ok((await iste('/v1/gizlilik', { dm: 'gecersiz' }, cihazD)).veri.dm === 'takip', 'geçersiz ayar yok sayıldı');
+    await iste('/v1/gizlilik', { dm: 'herkes' }, cihazD);
+    await iste('/v1/takip', { kod: kC, takip: false }, cihazD);
+    await iste('/v1/gizlilik', { acik: false }, cihazC);
+    // çok şikâyet alan tanımadıklarına yazamaz
+    for (const sc of ['s1'.padEnd(64, 'x'), 's2'.padEnd(64, 'x'), 's3'.padEnd(64, 'x')]) db.prepare('INSERT INTO dm_sikayet (mesaj, cihaz, zaman) VALUES (?, ?, ?)').run(r1.veri.mesaj.id, sc, Date.now());
+    ok((await iste('/v1/dmyaz', { kod: kB, metin: 'selam' }, cihazC)).veri.hata === 'dm_kisitli', '3 farklı kişiden şikâyet alan tanımadıklarına yazamaz');
+    db.prepare('DELETE FROM dm_sikayet WHERE mesaj = ?').run(r1.veri.mesaj.id);
+    db.prepare('DELETE FROM mesaj WHERE gonderen = ? OR alici = ?').run(kC, kC);
+    db.prepare('DELETE FROM konusma WHERE a = ? OR b = ?').run(kC, kC);
+  }
   ok((await iste('/v1/dmyaz', { kod: kD, metin: 'selam' }, cihazB, { oturumsuz: true, ip: '7.7.7.7' })).durum === 401, 'mesaj hesap ister');
   yzIstekleri = [];
   let r = await iste('/v1/dmyaz', { kod: kD, metin: 'Merhaba, ceketin çok güzel-DM1' }, cihazB);

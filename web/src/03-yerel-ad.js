@@ -1,7 +1,7 @@
 /* Kıyafet türü, renk, ortam, grup ve mevsim adlarının Rusça ve Özbekçe karşılıkları */
 var AD_DIL = {
   ru: {
-    tur: { tisort: 'Футболка', bluz: 'Блузка', gomlek: 'Рубашка', askili: 'Майка', kazak: 'Свитер', sweat: 'Свитшот', tunik: 'Туника', kumas: 'Брюки', kot: 'Джинсы', etek: 'Юбка', uzunetek: 'Длинная юбка',
+    tur: { polo: 'Поло', takim: 'Пиджак от костюма', kravat: 'Галстук / бабочка', tisort: 'Футболка', bluz: 'Блузка', gomlek: 'Рубашка', askili: 'Майка', kazak: 'Свитер', sweat: 'Свитшот', tunik: 'Туника', kumas: 'Брюки', kot: 'Джинсы', etek: 'Юбка', uzunetek: 'Длинная юбка',
       sort: 'Шорты', tayt: 'Леггинсы', esofman: 'Спортивные брюки', elbise: 'Платье', uzunelbise: 'Макси-платье', tulum: 'Комбинезон', ferace: 'Абайя', hirka: 'Кардиган', yelek: 'Жилет', blazer: 'Блейзер', ceket: 'Жакет',
       tren: 'Тренч', yagmurluk: 'Дождевик', mont: 'Пуховик / парка', kaban: 'Шерстяное пальто', spor: 'Кроссовки', babet: 'Балетки', loafer: 'Лоферы', topuklu: 'Туфли на каблуке', bot: 'Ботинки / сапоги', sandalet: 'Сандалии', terlik: 'Шлёпанцы',
       canta: 'Сумка', esarp: 'Платок / палантин', atki: 'Шарф', bere: 'Шапка / берет', eldiven: 'Перчатки', gozluk: 'Солнцезащитные очки', kemer: 'Ремень', kupe: 'Серьги', kolye: 'Колье', bileklik: 'Браслет / кольцо', saat: 'Часы', taki: 'Другие украшения',
@@ -14,7 +14,7 @@ var AD_DIL = {
     mevsim: { i: 'Весна', y: 'Лето', s: 'Осень', k: 'Зима' }
   },
   uz: {
-    tur: { tisort: 'Futbolka', bluz: 'Bluzka', gomlek: "Ko'ylak (erkakcha)", askili: 'Mayka', kazak: 'Sviter', sweat: 'Svitshot', tunik: 'Tunika', kumas: 'Shim', kot: 'Jinsi', etek: 'Yubka', uzunetek: 'Uzun yubka',
+    tur: { polo: 'Polo futbolka', takim: 'Kostyum pidjagi', kravat: "Galstuk / bo'yinbog'", tisort: 'Futbolka', bluz: 'Bluzka', gomlek: "Ko'ylak (erkakcha)", askili: 'Mayka', kazak: 'Sviter', sweat: 'Svitshot', tunik: 'Tunika', kumas: 'Shim', kot: 'Jinsi', etek: 'Yubka', uzunetek: 'Uzun yubka',
       sort: 'Shorti', tayt: 'Legginsi', esofman: 'Sport shim', elbise: "Ko'ylak", uzunelbise: "Uzun ko'ylak", tulum: 'Kombinezon', ferace: 'Abaya', hirka: 'Kardigan', yelek: 'Jilet', blazer: 'Blezer', ceket: 'Jaket',
       tren: 'Trench', yagmurluk: "Yomg'irpo'sh", mont: 'Kurtka / parka', kaban: 'Jun palto', spor: 'Krossovka', babet: 'Balet tufli', loafer: 'Lofer', topuklu: 'Poshnali tufli', bot: 'Etik / botinka', sandalet: 'Sandal', terlik: 'Shippak',
       canta: 'Sumka', esarp: "Ro'mol / shol", atki: 'Sharf', bere: 'Shapka / beret', eldiven: "Qo'lqop", gozluk: "Quyosh ko'zoynagi", kemer: 'Kamar', kupe: "Sirg'a", kolye: 'Marjon', bileklik: 'Bilaguzuk / uzuk', saat: 'Soat', taki: 'Boshqa taqinchoq',

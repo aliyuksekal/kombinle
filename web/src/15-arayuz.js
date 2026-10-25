@@ -471,7 +471,7 @@ function baglantiylaEkle() {
   var grup = h('select', { class: 'g-girdi' });
   GRUPLAR.forEach(function (g) { grup.appendChild(h('option', { value: g.id, text: grupAd(g.id) })); });
   var tur = h('select', { class: 'g-girdi' });
-  var turDoldur = function () { temizle(tur); TURLER.filter(function (x) { return x.g === grup.value; }).forEach(function (x) { tur.appendChild(h('option', { value: x.id, text: turAd(x.id) })); }); };
+  var turDoldur = function () { temizle(tur); TURLER.filter(function (x) { return x.g === grup.value && turGoster(x); }).forEach(function (x) { tur.appendChild(h('option', { value: x.id, text: turAd(x.id) })); }); };
   grup.addEventListener('change', turDoldur); turDoldur();
   var mevsim = h('select', { class: 'g-girdi' });
   mevsim.appendChild(h('option', { value: '', text: t('dortMevsim') }));
@@ -513,7 +513,7 @@ function kesfetEkrani() {
   });
   if (S.kesfetSekme === 'topluluk') {
     bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sTopluluk') }), h('p', { text: t('kural1') })),
-      h('button', { class: 'g-ekle', on: { click: function () { paylasSayfasi(null, null); } } }, ikon('paylas', 'k'), t('paylas'))));
+      h('button', { class: 'g-ekle', 'aria-label': t('yeniPaylasim'), on: { click: function () { paylasSayfasi(null, null); } } }, ikon('arti', 'k'), t('paylas'))));
     bol.appendChild(seg);
     bol.appendChild(toplulukBolumu());
     return bol;

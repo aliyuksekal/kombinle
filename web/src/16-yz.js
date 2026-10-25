@@ -35,7 +35,7 @@ function yzHataMetni(e, varsayilan) {
 
 /* ---------- Tanıma ---------- */
 function yzTurListesi() {
-  return TURLER.filter(function (x) { return /^[a-z0-9_]{1,24}$/.test(x.id); }).slice(0, 160)
+  return TURLER.filter(function (x) { return /^[a-z0-9_]{1,24}$/.test(x.id) && turGoster(x); }).slice(0, 160)
     .map(function (x) { return [x.id, kirp(turAd(x.id), 30), kirp(x.en || '', 30), x.g || '']; });
 }
 function yzRenkListesi() { return RENKLER.map(function (r) { return [r[0], renkAd(r[0])]; }); }

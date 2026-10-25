@@ -426,7 +426,7 @@ function yapayZekaBirlestir(an, etiketler) {
   if (en.tur) {
     liste = [en.tur].concat(liste.filter(function (x) { return x !== en.tur; }));
   } else if (an.grup !== en.grup) {
-    liste = TURLER.filter(function (x) { return x.g === en.grup; }).map(function (x) { return x.id; }).slice(0, 3);
+    liste = TURLER.filter(function (x) { return x.g === en.grup && turGoster(x); }).map(function (x) { return x.id; }).slice(0, 3);
   }
   an.turlar = liste.slice(0, 4);
   an.grup = en.grup;
@@ -526,7 +526,7 @@ function modelBirlestir(an, m) {
   /* alt türünü bilmediği sınıflarda (ör. ayakkabı) cihaz içi analizin sırası korunur */
   var ayni = (an.turlar || []).filter(function (x) { return TUR[x] && TUR[x].g === s.grup && adaylar.indexOf(x) < 0; });
   var liste = adaylar.concat(ayni);
-  if (!liste.length) liste = TURLER.filter(function (x) { return x.g === s.grup; }).map(function (x) { return x.id; }).slice(0, 3);
+  if (!liste.length) liste = TURLER.filter(function (x) { return x.g === s.grup && turGoster(x); }).map(function (x) { return x.id; }).slice(0, 3);
   /* ML Kit aynı grupta kesin bir tür gördüyse (ör. Jeans) o öne geçer */
   if (an.yzTur && TUR[an.yzTur] && TUR[an.yzTur].g === s.grup && an.yzTurC >= 0.75) {
     liste = [an.yzTur].concat(liste.filter(function (x) { return x !== an.yzTur; }));

@@ -383,7 +383,7 @@ function alsamSonuc(gov, sn, f, geri, sayfa) {
     turSec.appendChild(h('option', { value: '', text: t('turSec') }));
     GRUPLAR.forEach(function (g) {
       var og = h('optgroup', { label: grupAd(g.id) });
-      TURLER.filter(function (x) { return x.g === g.id && g.id !== 'ic'; }).forEach(function (x) { var o = h('option', { value: x.id, text: turAd(x.id) }); if (x.id === aday.tur) o.selected = true; og.appendChild(o); });
+      TURLER.filter(function (x) { return x.g === g.id && g.id !== 'ic' && turGoster(x, aday.tur); }).forEach(function (x) { var o = h('option', { value: x.id, text: turAd(x.id) }); if (x.id === aday.tur) o.selected = true; og.appendChild(o); });
       if (og.childNodes.length) turSec.appendChild(og);
     });
     turSec.addEventListener('change', function () { aday.tur = turSec.value; ciz3(); });

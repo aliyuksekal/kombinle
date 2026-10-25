@@ -83,7 +83,7 @@ with sync_playwright() as pw:
     o.ekran('d2_sohbet')
     p.wait_for_timeout(4500)
     ok(len([a for a in p.evaluate('window.__api') if a['yol'] == '/v1/dmoku']) >= 2, 'açık sohbet kendiliğinden yenileniyor')
-    sh.locator('.bas .ikon-btn').first.click(); p.wait_for_timeout(400)
+    sh.locator('.bas [aria-label="Seçenekler"]').click(); p.wait_for_timeout(400)
     ok('engelle' in p.locator('.sayfa.acik').last.inner_text(), 'sohbet menüsünde engelle')
     o.kapat()
 

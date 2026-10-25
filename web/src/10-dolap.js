@@ -128,7 +128,7 @@ function parcaDuzenle(p, yeni) {
     });
     turB.appendChild(grp);
     var turl = h('div', { class: 'sarili' });
-    TURLER.filter(function (x) { return x.g === acikGrup; }).forEach(function (x) { turl.appendChild(turCip(x.id)); });
+    TURLER.filter(function (x) { return x.g === acikGrup && turGoster(x, tas.tur); }).forEach(function (x) { turl.appendChild(turCip(x.id)); });
     turl.appendChild(h('button', { class: 'cip', on: { click: function () { ozelTurEkle(acikGrup, function (id) { tas.tur = id; ciz2(); }); } } }, ikon('arti', 'k'), t('yeniTur')));
     turB.appendChild(turl);
     gov.appendChild(turB);

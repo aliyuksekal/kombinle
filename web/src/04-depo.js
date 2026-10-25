@@ -16,6 +16,7 @@ function ayarYukle() {
     dil: ['tr', 'en', 'ru', 'uz'].indexOf(x.dil) >= 0 ? x.dil : '',
     konum: konumGecerli(x.konum) ? x.konum : null,
     tesettur: x.tesettur === true,
+    kimin: x.kimin === 'erkek' || x.kimin === 'notr' ? x.kimin : 'kadin',
     isi: x.isi === -1 || x.isi === 1 ? x.isi : 0,
     karsilandi: x.karsilandi === true,
     pro: x.pro === true,
@@ -27,6 +28,7 @@ function ayarYukle() {
   };
   try { A.renkAnaliz = renkAnaliziTemizle(x.renkAnaliz); } catch (e) { A.renkAnaliz = null; }
   ozelTurKaydet(A.ozelTur);
+  kiminUygula();
   if (!A.dil) { var nl = String(navigator.language || 'tr').slice(0, 2).toLowerCase(); A.dil = ['tr', 'en', 'ru', 'uz'].indexOf(nl) >= 0 ? nl : 'en'; }
 }
 function ayarKaydet() { LS.yaz('ayar', A); }

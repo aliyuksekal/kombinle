@@ -13,44 +13,47 @@ var GRUPLAR = [
 ];
 var TURLER = [
   { id: 'tisort', g: 'ust', tr: 'Tişört', en: 'T-shirt', s: 'gp', w: 1, k: 1 },
-  { id: 'bluz', g: 'ust', tr: 'Bluz', en: 'Blouse', s: 'gs', w: 1, k: 1 },
+  { id: 'bluz', c: 'k', g: 'ust', tr: 'Bluz', en: 'Blouse', s: 'gs', w: 1, k: 1 },
   { id: 'gomlek', g: 'ust', tr: 'Gömlek', en: 'Shirt', s: 'gsr', w: 1.5, k: 2 },
+  { id: 'polo', c: 'e', g: 'ust', tr: 'Polo yaka tişört', en: 'Polo shirt', s: 'gsp', w: 1.1, k: 1 },
   { id: 'askili', g: 'ust', tr: 'Askılı / atlet', en: 'Tank top', s: 'gp', w: 0.3, k: 0 },
   { id: 'kazak', g: 'ust', tr: 'Kazak', en: 'Sweater', s: 'gs', w: 3, k: 2 },
   { id: 'sweat', g: 'ust', tr: 'Sweatshirt', en: 'Sweatshirt', s: 'gp', w: 2.5, k: 2 },
-  { id: 'tunik', g: 'ust', tr: 'Tunik', en: 'Tunic', s: 'gs', w: 1.6, k: 2 },
+  { id: 'tunik', c: 'k', g: 'ust', tr: 'Tunik', en: 'Tunic', s: 'gs', w: 1.6, k: 2 },
   { id: 'kumas', g: 'alt', tr: 'Kumaş pantolon', en: 'Trousers', s: 'sr', w: 1, k: 2 },
   { id: 'kot', g: 'alt', tr: 'Kot pantolon', en: 'Jeans', s: 'g', w: 1.1, k: 2 },
-  { id: 'etek', g: 'alt', tr: 'Etek', en: 'Skirt', s: 'gs', w: 0.5, k: 1 },
-  { id: 'uzunetek', g: 'alt', tr: 'Uzun etek', en: 'Long skirt', s: 'gsr', w: 1, k: 2 },
+  { id: 'etek', c: 'k', g: 'alt', tr: 'Etek', en: 'Skirt', s: 'gs', w: 0.5, k: 1 },
+  { id: 'uzunetek', c: 'k', g: 'alt', tr: 'Uzun etek', en: 'Long skirt', s: 'gsr', w: 1, k: 2 },
   { id: 'sort', g: 'alt', tr: 'Şort', en: 'Shorts', s: 'gp', w: 0.1, k: 0 },
   { id: 'tayt', g: 'alt', tr: 'Tayt', en: 'Leggings', s: 'pg', w: 1, k: 2 },
   { id: 'esofman', g: 'alt', tr: 'Eşofman altı', en: 'Joggers', s: 'p', w: 1.2, k: 2 },
-  { id: 'elbise', g: 'tek', tr: 'Elbise', en: 'Dress', s: 'gs', w: 1.3, k: 1 },
-  { id: 'uzunelbise', g: 'tek', tr: 'Uzun elbise', en: 'Maxi dress', s: 'gsr', w: 2, k: 2 },
+  { id: 'elbise', c: 'k', g: 'tek', tr: 'Elbise', en: 'Dress', s: 'gs', w: 1.3, k: 1 },
+  { id: 'uzunelbise', c: 'k', g: 'tek', tr: 'Uzun elbise', en: 'Maxi dress', s: 'gsr', w: 2, k: 2 },
   { id: 'tulum', g: 'tek', tr: 'Tulum', en: 'Jumpsuit', s: 'gs', w: 2.1, k: 2 },
-  { id: 'ferace', g: 'tek', tr: 'Ferace / abaya', en: 'Abaya', s: 'gsr', w: 3, k: 2 },
+  { id: 'ferace', c: 'k', g: 'tek', tr: 'Ferace / abaya', en: 'Abaya', s: 'gsr', w: 3, k: 2 },
   { id: 'hirka', g: 'dis', tr: 'Hırka', en: 'Cardigan', s: 'g', w: 1.5, k: 2, kat: 1 },
   { id: 'yelek', g: 'dis', tr: 'Yelek', en: 'Vest', s: 'gs', w: 0.7, k: 1, kat: 1 },
   { id: 'blazer', g: 'dis', tr: 'Blazer ceket', en: 'Blazer', s: 'sr', w: 1.4, k: 2, kat: 1 },
+  { id: 'takim', c: 'e', g: 'dis', tr: 'Takım elbise ceketi', en: 'Suit jacket', s: 'sr', w: 1.5, k: 2, kat: 1 },
   { id: 'ceket', g: 'dis', tr: 'Ceket', en: 'Jacket', s: 'gs', w: 2, k: 2 },
   { id: 'tren', g: 'dis', tr: 'Trençkot / pardösü', en: 'Trench coat', s: 'gsr', w: 2.5, k: 2, su: 1 },
   { id: 'yagmurluk', g: 'dis', tr: 'Yağmurluk', en: 'Raincoat', s: 'gp', w: 1.3, k: 2, su: 1 },
   { id: 'mont', g: 'dis', tr: 'Mont', en: 'Puffer / parka', s: 'gp', w: 4, k: 2, su: 1 },
   { id: 'kaban', g: 'dis', tr: 'Kaban', en: 'Wool coat', s: 'gsr', w: 4.5, k: 2 },
   { id: 'spor', g: 'ayk', tr: 'Spor ayakkabı', en: 'Sneakers', s: 'pg' },
-  { id: 'babet', g: 'ayk', tr: 'Babet', en: 'Ballet flats', s: 'gs' },
+  { id: 'babet', c: 'k', g: 'ayk', tr: 'Babet', en: 'Ballet flats', s: 'gs' },
   { id: 'loafer', g: 'ayk', tr: 'Loafer / makosen', en: 'Loafers', s: 'gsr' },
-  { id: 'topuklu', g: 'ayk', tr: 'Topuklu', en: 'Heels', s: 'sr' },
+  { id: 'topuklu', c: 'k', g: 'ayk', tr: 'Topuklu', en: 'Heels', s: 'sr' },
   { id: 'bot', g: 'ayk', tr: 'Bot / çizme', en: 'Boots', s: 'gs', su: 1 },
   { id: 'sandalet', g: 'ayk', tr: 'Sandalet', en: 'Sandals', s: 'gs', ac: 1 },
   { id: 'terlik', g: 'ayk', tr: 'Terlik', en: 'Slides', s: 'g', ac: 1 },
   { id: 'canta', g: 'aks', tr: 'Çanta', en: 'Bag', s: 'gspr' },
-  { id: 'esarp', g: 'aks', tr: 'Eşarp / şal', en: 'Headscarf / shawl', s: 'gsr' },
+  { id: 'esarp', c: 'k', g: 'aks', tr: 'Eşarp / şal', en: 'Headscarf / shawl', s: 'gsr' },
   { id: 'atki', g: 'aks', tr: 'Atkı', en: 'Scarf', s: 'gs' },
   { id: 'bere', g: 'aks', tr: 'Bere / şapka', en: 'Hat / beanie', s: 'gp' },
   { id: 'eldiven', g: 'aks', tr: 'Eldiven', en: 'Gloves', s: 'gs' },
   { id: 'gozluk', g: 'aks', tr: 'Güneş gözlüğü', en: 'Sunglasses', s: 'gs' },
+  { id: 'kravat', c: 'e', g: 'aks', tr: 'Kravat / papyon', en: 'Tie / bow tie', s: 'sr' },
   { id: 'kemer', g: 'aks', tr: 'Kemer', en: 'Belt', s: 'gsr' },
   { id: 'kupe', g: 'aks', tr: 'Küpe', en: 'Earrings', s: 'gsr' },
   { id: 'kolye', g: 'aks', tr: 'Kolye', en: 'Necklace', s: 'gsr' },
@@ -58,11 +61,18 @@ var TURLER = [
   { id: 'saat', g: 'aks', tr: 'Saat', en: 'Watch', s: 'gsrp' },
   { id: 'taki', g: 'aks', tr: 'Diğer takı', en: 'Other jewelry', s: 'gsr' },
   { id: 'kulot', g: 'ic', tr: 'Külot', en: 'Briefs' },
-  { id: 'sutyen', g: 'ic', tr: 'Sütyen', en: 'Bra' },
+  { id: 'sutyen', c: 'k', g: 'ic', tr: 'Sütyen', en: 'Bra' },
   { id: 'corap', g: 'ic', tr: 'Çorap', en: 'Socks' },
-  { id: 'kulotlu', g: 'ic', tr: 'Külotlu çorap', en: 'Tights' }
+  { id: 'kulotlu', c: 'k', g: 'ic', tr: 'Külotlu çorap', en: 'Tights' }
 ];
 var TUR = Object.create(null); TURLER.forEach(function (x) { TUR[x.id] = x; });
+/* "Kimin için" ayarına göre seçicilerde gösterilen türler (c: 'k' kadına, 'e' erkeğe özgü). Seçili tür her zaman görünür. */
+function turGoster(x, secili) {
+  if (!x) return false;
+  if (secili && x.id === secili) return true;
+  var k = A.kimin || 'kadin';
+  return !x.c || k === 'notr' || (k === 'kadin' ? x.c === 'k' : x.c === 'e');
+}
 var TARZLAR = ['g', 's', 'r', 'p'];
 
 /* ---------- Renk paleti ---------- */

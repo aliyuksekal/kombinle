@@ -16,12 +16,18 @@ var YIGIN = [];
 var geriKilit = 0;
 function sayfaAc(o) {
   var perde = h('div', { class: 'perde' });
-  var bas = h('div', { class: 'bas' },
-    h('h2', { class: 'baslik', id: 'sb' + YIGIN.length, text: o.baslik || '' }),
-    h('button', { class: 'ikon-btn', 'aria-label': t('kapat'), on: { click: function () { kapat(); } } }, ikon('kapat')));
+  /* o.tam: tam ekran sayfa (profil, mesajlar, bildirimler): üstten iner, solda geri düğmesi */
+  var bas = o.tam
+    ? h('div', { class: 'bas' },
+      h('button', { class: 'ikon-btn geri-btn', 'aria-label': t('geri'), on: { click: function () { kapat(); } } }, ikon('sol')),
+      h('h2', { class: 'baslik', id: 'sb' + YIGIN.length, text: o.baslik || '' }),
+      h('span', { class: 'bas-sag' }))
+    : h('div', { class: 'bas' },
+      h('h2', { class: 'baslik', id: 'sb' + YIGIN.length, text: o.baslik || '' }),
+      h('button', { class: 'ikon-btn', 'aria-label': t('kapat'), on: { click: function () { kapat(); } } }, ikon('kapat')));
   var icerik = h('div', { class: 'icerik' }, o.icerik);
-  var sayfa = h('div', { class: 'sayfa', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sb' + YIGIN.length },
-    h('div', { class: 'tutamak' }), bas, icerik, o.altBar ? h('div', { class: 'alt-bar' }, o.altBar) : null);
+  var sayfa = h('div', { class: 'sayfa' + (o.tam ? ' tam' : '') + (o.dolu ? ' dolu' : ''), role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sb' + YIGIN.length },
+    o.tam ? null : h('div', { class: 'tutamak' }), bas, icerik, o.altBar ? h('div', { class: 'alt-bar' }, o.altBar) : null);
   document.body.appendChild(perde); document.body.appendChild(sayfa);
   var kayit = { sayfa: sayfa, perde: perde, kapaninca: o.kapaninca, kapandi: false, icerik: icerik };
   YIGIN.push(kayit);

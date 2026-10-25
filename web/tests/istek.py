@@ -62,9 +62,9 @@ with sync_playwright() as pw:
     ok(s.locator('.tk-satir', has_text='Selin').locator('.g-takip').inner_text() == 'Takip et' and 'geri çekildi' in p.inner_text('#tost'), 'tekrar dokununca istek geri çekildi')
     s.locator('.tk-satir', has_text='Merve').locator('.ik-sil').click(); p.wait_for_timeout(700)
     ok(s.locator('.tk-satir', has_text='Merve').count() == 0, 'silinen istek listeden kalktı')
-    s.locator('.bas .ikon-btn').last.click(); p.wait_for_timeout(500)
+    s.locator('.bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(500)
     while p.locator('.sayfa.acik').count():
-        son(p).locator('.bas .ikon-btn').last.click(); p.wait_for_timeout(400)
+        son(p).locator('.bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(400)
     print('— Profil düzenle: takip isteklerini onayla ayarı')
     p.click('.g-hesap'); p.wait_for_timeout(900)
     son(p).locator('button', has_text='Profili düzenle').click(); p.wait_for_timeout(900)

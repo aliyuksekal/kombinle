@@ -201,7 +201,7 @@ function sohbetAc() {
     }
     var hv = null; try { hv = aktifHava(); } catch (e) { hv = null; }
     yzIste('/v1/sohbet', {
-      mesaj: m, dil: A.dil, tesettur: !!A.tesettur, ilk: ilk, saat: new Date().getHours(),
+      mesaj: m, dil: A.dil, tesettur: !!A.tesettur, kimin: A.kimin || 'kadin', ilk: ilk, saat: new Date().getHours(),
       gecmis: gecmis.slice(-11, -1).map(function (x) { return { r: x.r, m: kirp(x.m, 600) }; }),
       parcalar: yzParcaListesi(), hava: hv ? yzHava(hv) : null
     }, 45000).then(function (v) {

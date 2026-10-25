@@ -395,3 +395,21 @@ html[data-tema="koyu"] .g-pro{background:#0E0C0F!important;border-color:var(--al
 .kam-bitti[hidden]{display:none}
 .kam-cevir{width:48px;height:48px;padding:0}
 .kam [hidden]{display:none!important}
+
+/* ---------- Tam ekran sayfa (profil, mesajlar, bildirimler): üstten iner ---------- */
+.sayfa.tam{top:0;bottom:0;max-height:none;height:100%;border-radius:0;transform:translateY(-100%);padding-top:env(safe-area-inset-top);transition:transform 280ms cubic-bezier(.2,.8,.2,1)}
+.sayfa.tam.acik{transform:none}
+.sayfa.tam .bas{padding:8px 10px 8px 6px;gap:4px;border-bottom:1px solid var(--cizgi);justify-content:flex-start}
+.sayfa.tam .bas h2.baslik{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:19px}
+.sayfa.tam .bas .bas-sag{display:flex;align-items:center;gap:2px}
+.sayfa.tam .icerik{flex:1;min-height:0;padding-top:12px}
+.sayfa.tam.dolu .icerik{display:flex;flex-direction:column;padding-bottom:8px}
+.sayfa.tam.dolu .dm-sayfa{flex:1;min-height:0}
+.sayfa.tam.dolu .dm-akis{max-height:none;min-height:0}
+@media (min-width:600px){.sayfa.tam{border-left:1px solid var(--cizgi);border-right:1px solid var(--cizgi)}}
+.kimin-karsilama{display:flex;flex-direction:column;gap:8px;align-items:center;margin:4px 0 14px;width:100%}
+.kimin-karsilama b{font-size:14px;font-weight:600}
+.kimin-seg{flex-wrap:wrap;justify-content:center}
+.kimin-seg button{white-space:nowrap}
+.dm-izin-satir .seg{margin-top:8px}
+.pr-mesaj[aria-disabled=true]{opacity:.45}

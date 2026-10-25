@@ -30,6 +30,7 @@ function karsilamaEkrani() {
     h('div', { class: 'vitrin' }, vitrin),
     h('h1', { text: t('karsilamaBaslik') }),
     h('p', { text: t('karsilamaMetin') }),
+    h('div', { class: 'kimin-karsilama' }, h('b', { text: t('kiminBaslik') }), kiminSeg(function () { ciz(); })),
     h('button', { class: 'btn ana tam', on: { click: function () { A.karsilandi = true; ayarKaydet(); ciz(); havaYukle(); } }, text: t('basla') }),
     h('button', { class: 'btn ikincil tam', on: { click: function () { A.karsilandi = true; ayarKaydet(); ciz(); havaYukle(); ornekDolapYukle(); } }, text: t('ornekleDene') }));
 }

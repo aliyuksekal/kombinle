@@ -58,7 +58,8 @@ function ayarIcerik(gov) {
       h('div', { class: 'ayar-grup' },
         satir('konum', t('konum'), A.konum ? A.konum.ad : t('otomatikKonum'), sehirSec),
         h('div', { class: 'satir', style: { 'flex-wrap': 'wrap' } }, h('span', { class: 'sol' }, ikon('termometre'), h('div', null, t('isiHissi'), h('small', { text: t('isiHissiAlt') }))), isiSeg),
-        anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; }, 'esarp'),
+        h('div', { class: 'satir', style: { 'flex-wrap': 'wrap' } }, h('span', { class: 'sol' }, ikon('kisi'), h('div', null, t('kiminBaslik'), h('small', { text: t('kiminAlt') }))), kiminSeg(function () { ciz3(); })),
+        A.kimin === 'erkek' ? null : anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; }, 'esarp'),
         (yzKurulu() ? anahtarSatir(t('yzAc'), t('yzAcAlt'), A.yz, function (v) { A.yz = v; ayarKaydet(); S.sonuc = null; }, 'isilti') : null),
         anahtarSatir(t('kendiMod'), t('kendiModAlt'), A.kendiMod, function (v) { A.kendiMod = v; ayarKaydet(); S.sonuc = null; }, 'kalp'),
         satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi))));
