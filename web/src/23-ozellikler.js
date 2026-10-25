@@ -46,18 +46,17 @@ function renkAnaliziSayfasi() {
   if (!yzKurulu()) { tost(t('yzKapali')); return; }
   var gov = h('div', { class: 'profil-duzen' });
   var s = sayfaAc({ baslik: t('renkBaslik'), icerik: gov });
-  var dosya = h('input', { type: 'file', accept: 'image/*', capture: 'user', class: 'gizli', 'aria-hidden': 'true' });
   var galeri = h('input', { type: 'file', accept: 'image/*', class: 'gizli', 'aria-hidden': 'true' });
   function ciz2() {
     temizle(gov);
-    gov.appendChild(dosya); gov.appendChild(galeri);
+    gov.appendChild(galeri);
     var r = renkAnalizi();
     if (r) gov.appendChild(paletKarti(r));
     else gov.appendChild(h('p', { class: 'alt-yazi', text: t('renkMetin') }));
     gov.appendChild(h('ul', { class: 'renk-ipucu' }, ['renkIp1', 'renkIp2', 'renkIp3'].map(function (k) { return h('li', null, ikon('tik', 'k'), h('span', { text: t(k) })); })));
     var cek = h('button', { class: 'btn ana', style: { width: '100%' } }, ikon('kamera', 'k'), r ? t('renkYenile') : t('renkSelfie'));
     var sec = h('button', { class: 'btn ikincil', style: { width: '100%' } }, ikon('galeri', 'k'), t('renkGaleri'));
-    cek.addEventListener('click', function () { if (ozIzin('renk')) dosya.click(); });
+    cek.addEventListener('click', function () { if (ozIzin('renk')) fotografCek({ mod: 'selfie' }).then(isle); });
     sec.addEventListener('click', function () { if (ozIzin('renk')) galeri.click(); });
     gov.appendChild(cek); gov.appendChild(sec);
     if (!S.pro && !sahipMi()) gov.appendChild(h('p', { class: 'hak', text: t('jetonBilgi', 1, jeton()) }));
@@ -86,7 +85,6 @@ function renkAnaliziSayfasi() {
       ciz2();
     }).catch(function (e) { tost(yzHataMetni(e, t('renkHata'))); ciz2(); });
   }
-  dosya.addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; isle(f); });
   galeri.addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; isle(f); });
   ciz2();
   return s;
@@ -319,17 +317,16 @@ function giyimCevresiKaydet(kayitId) {
 function alsamMiSayfasi() {
   var gov = h('div', { class: 'profil-duzen' });
   var s = sayfaAc({ baslik: t('alsamBaslik'), icerik: gov });
-  var kamera = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'gizli', 'aria-hidden': 'true' });
   var galeri = h('input', { type: 'file', accept: 'image/*', class: 'gizli', 'aria-hidden': 'true' });
   var fiyat = h('input', { class: 'metin', type: 'text', inputmode: 'decimal', maxlength: '9', placeholder: t('alsamFiyatYer'), 'aria-label': t('alsamFiyat') });
   if (S.alsamFiyat) fiyat.value = S.alsamFiyat;
   fiyat.addEventListener('input', function () { S.alsamFiyat = kirp(fiyat.value, 9); });
   function bas() {
     temizle(gov);
-    gov.appendChild(kamera); gov.appendChild(galeri);
+    gov.appendChild(galeri);
     gov.appendChild(h('p', { class: 'alt-yazi', text: t('alsamMetin') }));
     gov.appendChild(h('label', { class: 'hesap-alan' }, h('span', { text: t('alsamFiyat') }), fiyat));
-    gov.appendChild(h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { kamera.click(); } } }, ikon('kamera', 'k'), t('alsamCek')));
+    gov.appendChild(h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: function () { fotografCek({ mod: 'urun' }).then(isle); } } }, ikon('kamera', 'k'), t('alsamCek')));
     gov.appendChild(h('button', { class: 'btn ikincil', style: { width: '100%' }, on: { click: function () { galeri.click(); } } }, ikon('galeri', 'k'), t('alsamGaleri')));
     if (S.parcalar.filter(function (p) { return !p.ornek; }).length < 3) gov.appendChild(h('p', { class: 'ayar-not', text: t('alsamAzParca') }));
   }
@@ -339,7 +336,6 @@ function alsamMiSayfasi() {
     gov.appendChild(h('div', { class: 'g-yukleniyor', style: { padding: '40px 0' } }, h('span', { class: 'yukleniyor' }), h('p', { class: 'alt-yazi', text: t('taniniyor') })));
     fotografIsle(f).then(function (sn) { alsamSonuc(gov, sn, f, bas, s); }).catch(function () { tost(t('fotoHata')); bas(); });
   }
-  kamera.addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; isle(f); });
   galeri.addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; isle(f); });
   bas();
   return s;

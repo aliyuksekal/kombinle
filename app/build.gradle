@@ -100,4 +100,11 @@ dependencies {
     implementation 'com.google.ai.edge.litert:litert:1.4.0'
     // Uygulama kapalıyken yeni takipçi ve mesajları kontrol edip telefon bildirimi gösterir
     implementation 'androidx.work:work-runtime:2.9.1'
+    // Kombinle kamerası: telefonun kamera donanımıyla dokunarak odak, yakınlaştırma, flaş
+    def kameraSurum = '1.4.1'
+    implementation "androidx.camera:camera-core:$kameraSurum"
+    implementation "androidx.camera:camera-camera2:$kameraSurum"
+    implementation "androidx.camera:camera-lifecycle:$kameraSurum"
+    implementation "androidx.camera:camera-view:$kameraSurum"
+    implementation 'androidx.activity:activity:1.9.3'
 }

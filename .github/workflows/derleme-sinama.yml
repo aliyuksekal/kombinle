@@ -1,0 +1,47 @@
+name: Derleme sınaması
+
+# main dışındaki dallarda Android kodunu derler (sürüm yayınlamaz, sunucuya dokunmaz).
+# Hatalar iş özetinde ve satır açıklaması olarak görünür.
+on:
+  push:
+    branches-ignore: [main, apk]
+    paths: ['app/**', 'build.gradle', 'settings.gradle', 'gradle.properties', '.github/workflows/derleme-sinama.yml']
+
+concurrency:
+  group: derleme-sinama-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  derle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+      - name: Derle (küçültülmüş)
+        run: |
+          set +e
+          gradle assembleRelease --no-daemon 2>&1 | tee derleme.log
+          durum=${PIPESTATUS[0]}
+          # javac hataları: dosya:satır: error: ileti
+          grep -E '\.java:[0-9]+: error:' derleme.log | head -n 40 | while IFS= read -r l; do
+            dosya=$(printf '%s' "$l" | sed -E 's#^(.*\.java):([0-9]+): error: (.*)$#\1#' | sed "s#^$GITHUB_WORKSPACE/##")
+            satir=$(printf '%s' "$l" | sed -E 's#^(.*\.java):([0-9]+): error: (.*)$#\2#')
+            ileti=$(printf '%s' "$l" | sed -E 's#^(.*\.java):([0-9]+): error: (.*)$#\3#')
+            echo "::error file=$dosya,line=$satir::$ileti"
+          done
+          # diğer hatalar (kaynak, manifest, R8)
+          grep -E '^(ERROR|e:|> |Missing class|AAPT: error|error:)' derleme.log | grep -v '\.java:[0-9]*: error' | head -n 25 | while IFS= read -r l; do
+            echo "::error::$(printf '%s' "$l" | cut -c1-400)"
+          done
+          if [ "$durum" -eq 0 ]; then
+            ls -la app/build/outputs/apk/release/
+            echo "::notice::Derleme başarılı"
+          fi
+          exit "$durum"

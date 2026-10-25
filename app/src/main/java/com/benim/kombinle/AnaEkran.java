@@ -60,7 +60,7 @@ public class AnaEkran extends Activity {
     static final String KOK = "https://appassets.androidplatform.net";
     static final String SAYFA = KOK + "/assets/www/index.html";
 
-    private static final int ISTEK_DOSYA = 11, ISTEK_SES = 12, ISTEK_KAYDET = 13;
+    private static final int ISTEK_DOSYA = 11, ISTEK_SES = 12, ISTEK_KAYDET = 13, ISTEK_KAMERA = 14;
     private static final int IZIN_KONUM = 21, IZIN_KAMERA = 22, IZIN_KONUM_YEREL = 23, IZIN_BILDIRIM = 24;
     /* bildirime dokunarak açıldıysa sayfanın açacağı yer (bildirim / mesaj) */
     volatile String acilacak = "";
@@ -74,7 +74,7 @@ public class AnaEkran extends Activity {
     private GeolocationPermissions.Callback konumGeriDonus;
     private String konumKaynak;
     private PermissionRequest bekleyenIzin;
-    private String sesIstek, kaydetIstek;
+    private String sesIstek, kaydetIstek, kameraIstek;
     private byte[] kaydetVeri;
     private long sonGeri = 0;
     private boolean koyuCubuk;
@@ -438,9 +438,50 @@ public class AnaEkran extends Activity {
         }
     }
 
+    /* ---------------- Kombinle kamerası ---------------- */
+
+    void kameraBaslat(String istek, String secenek) {
+        if (kameraIstek != null) kopru.gonder(kameraIstek, false, "iptal", true);
+        kameraIstek = istek;
+        kameraKlasoruTemizle();
+        Intent i = new Intent(this, KameraEkrani.class);
+        i.putExtra(KameraEkrani.SECENEK, secenek);
+        try {
+            startActivityForResult(i, ISTEK_KAMERA);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        } catch (Exception e) {
+            kameraIstek = null;
+            kopru.gonder(istek, false, "hata", "kamera");
+        }
+    }
+
+    void kameraKlasoruTemizle() {
+        java.io.File[] l = new java.io.File(getCacheDir(), "kamera").listFiles();
+        if (l == null) return;
+        for (java.io.File f : l) //noinspection ResultOfMethodCallIgnored
+            f.delete();
+    }
+
     @Override
     protected void onActivityResult(int kod, int sonuc, Intent veri) {
         super.onActivityResult(kod, sonuc, veri);
+        if (kod == ISTEK_KAMERA) {
+            String istek = kameraIstek;
+            kameraIstek = null;
+            if (istek == null) return;
+            String[] d = veri == null ? null : veri.getStringArrayExtra(KameraEkrani.SONUC_DOSYALAR);
+            if (sonuc == RESULT_OK && d != null && d.length > 0) {
+                org.json.JSONArray a = new org.json.JSONArray();
+                for (String x : d) a.put(x);
+                kopru.gonder(istek, true, "dosyalar", a);
+            } else if (sonuc == RESULT_OK && veri != null && veri.getBooleanExtra(KameraEkrani.SONUC_GALERI, false)) {
+                kopru.gonder(istek, true, "galeri", true);
+            } else {
+                String h = veri == null ? null : veri.getStringExtra(KameraEkrani.SONUC_HATA);
+                kopru.gonder(istek, false, h != null ? "hata" : "iptal", h != null ? h : (Object) true);
+            }
+            return;
+        }
         if (kod == ISTEK_DOSYA) {
             if (dosyaGeriDonus == null) return;
             Uri[] secilen = null;

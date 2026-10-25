@@ -575,6 +575,42 @@ public final class Kopru {
         odeme.geriYukle(req);
     }
 
+    /* ---------------- Kombinle kamerası (CameraX) ---------------- */
+
+    /** Kamerayı açar. secenek: {mod, modlar[], tek, etiket{...}} (metinler sayfanın dilinden). */
+    @JavascriptInterface
+    public void kameraAc(final String req, final String secenek) {
+        if (!guvenli || !istekGecerli(req)) return;
+        final String s = secenek == null || secenek.length() > 20000 ? "{}" : secenek;
+        ekran.ui.post(() -> ekran.kameraBaslat(req, s));
+    }
+
+    /** Çekilen fotoğrafı base64 JPEG olarak verir (yalnız uygulamanın kamera klasöründen). */
+    @JavascriptInterface
+    public String kameraDosya(final String yol) {
+        if (!guvenli || yol == null || yol.length() > 400) return "";
+        try {
+            java.io.File klasor = new java.io.File(ekran.getCacheDir(), "kamera").getCanonicalFile();
+            java.io.File f = new java.io.File(yol).getCanonicalFile();
+            if (!klasor.equals(f.getParentFile()) || !f.getName().matches("kare_[0-9_]+\\.jpg") || !f.isFile() || f.length() > 12_000_000) return "";
+            byte[] b = new byte[(int) f.length()];
+            try (java.io.FileInputStream g = new java.io.FileInputStream(f)) {
+                int o = 0, n;
+                while (o < b.length && (n = g.read(b, o, b.length - o)) > 0) o += n;
+            }
+            return Base64.encodeToString(b, Base64.NO_WRAP);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Kamera klasörünü boşaltır (fotoğraflar sayfaya alındıktan sonra). */
+    @JavascriptInterface
+    public void kameraTemizle() {
+        if (!guvenli) return;
+        ekran.kameraKlasoruTemizle();
+    }
+
     /* ---------------- sayfaya yanıt ---------------- */
 
     void gonder(String req, boolean ok, String anahtar, Object deger) {

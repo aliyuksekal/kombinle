@@ -4,14 +4,91 @@
    yaslayıp geri çekilerek üzerindeki kombini çekmek için; sonra hangi parçaların ekleneceği sorulur).
    Art arda birkaç parça çekilebilir, "Bitti" ile hepsi sırayla tanınır. İki parmakla yakınlaştırma. */
 
+/* ---------- Kombinle kamerası (telefonun kendi kamera donanımı, CameraX) ----------
+   Uygulamada her kamera girişi buradan geçer. Telefonda yerel kamera açılır: gerçek dokunarak odak,
+   optik yakınlaştırma (0.5× / 1× / 2×), flaş, ses tuşuyla çekim, 3:4 kare = çekilen kare.
+   Tarayıcıda (ya da yerel kamera açılamazsa) aşağıdaki web kamerası kullanılır.
+   sec: { mod: 'kiyafet'|'boydan'|'gonderi'|'selfie'|'urun', modlar: [...], tek, sonuc(tuval), bloblar(liste), galeri(), iptal() } */
+var KAMERA_MODLARI = { kiyafet: ['kamModKiyafet', 'kamIpucuKiyafet'], boydan: ['kamModBoydan', 'kamIpucuBoydan'], gonderi: ['kamModGonderi', 'kamIpucuGonderi'],
+  selfie: ['kamModSelfie', 'kamIpucuSelfie'], urun: ['kamModUrun', 'kamIpucuUrun'] };
+function yerelKameraVar() { return !!(YEREL && typeof YEREL.kameraAc === 'function' && typeof YEREL.kameraDosya === 'function'); }
+function kameraEtiketleri(modlar) {
+  var n = '{n}';
+  var e = {
+    kapat: t('kapat'), flas: t('kamFlas'), zamanlayici: t('kamZamanlayici'), izgara: t('kamIzgara'), cevir: t('kamCevir'), galeri: t('galeridenSec'),
+    cek: t('fotoCek'), bitti: t('kamBitti', n), cekilen: t('kamCekilen', n), enFazla: t('kamEnFazla', n), kapatBaslik: t('kamKapatBaslik'),
+    kapatSor: t('kamKapatSor', n), atKapat: t('kamAtVeKapat'), vazgec: t('vazgec'), flasAcik: t('kamFlasAcik'), flasKapali: t('kamFlasKapali'),
+    flasOto: t('kamFlasOto'), zamanKapali: t('kamZamanKapali'), hata: t('kamHata'), sonSilindi: t('kamSonSilindi')
+  };
+  modlar.forEach(function (m) { var k = KAMERA_MODLARI[m]; if (k) { e['mod_' + m] = t(k[0]); e['ipucu_' + m] = t(k[1]); } });
+  return e;
+}
+function yerelDosyaBlob(yol) {
+  var b64 = '';
+  try { b64 = YEREL.kameraDosya(String(yol)) || ''; } catch (e) { b64 = ''; }
+  if (!b64) return null;
+  try {
+    var ikili = atob(b64), u = new Uint8Array(ikili.length);
+    for (var i = 0; i < ikili.length; i++) u[i] = ikili.charCodeAt(i);
+    return new Blob([u], { type: 'image/jpeg' });
+  } catch (e) { return null; }
+}
+function blobTuval(b, enUzun) {
+  return resimCoz(b).then(function (bmp) { var c = tuvaleCiz(bmp, enUzun || 1440); bmpKapat(bmp); return c; });
+}
+function yerelKamera(sec) {
+  var modlar = (sec.modlar || (sec.tek ? [sec.mod || 'gonderi'] : ['kiyafet', 'boydan'])).filter(function (m) { return KAMERA_MODLARI[m]; });
+  if (!modlar.length) modlar = ['kiyafet'];
+  var mod = modlar.indexOf(sec.mod) >= 0 ? sec.mod : modlar[0];
+  var secenek = { mod: mod, modlar: modlar, tek: !!sec.tek, etiket: kameraEtiketleri(modlar) };
+  yerelCagir('kameraAc', [JSON.stringify(secenek)], 3 * 3600000).then(function (d) {
+    if (d && d.ok && d.galeri) { if (sec.galeri) sec.galeri(); else $('#dosyaSec').click(); return; }
+    if (!d || !d.ok) {
+      if (d && d.hata === 'izin') tost(t('kameraIzin'));
+      else if (d && d.hata === 'kamera') { kameraAc(Object.assign({}, sec, { web: true })); return; }   // CameraX açılamadı: web kamerası
+      if (sec.iptal) sec.iptal();
+      return;
+    }
+    var bloblar = (Array.isArray(d.dosyalar) ? d.dosyalar : []).slice(0, KAMERA_EN_FAZLA).map(yerelDosyaBlob).filter(Boolean);
+    try { YEREL.kameraTemizle(); } catch (e) { }
+    if (!bloblar.length) { tost(t('kamHata')); if (sec.iptal) sec.iptal(); return; }
+    if (sec.bloblar) { sec.bloblar(bloblar); return; }
+    if (sec.tek) {
+      blobTuval(bloblar[0], sec.enUzun).then(function (c) { if (sec.sonuc) sec.sonuc(c); }).catch(function () { tost(t('kamHata')); });
+      return;
+    }
+    sirayaIsle(bloblar, 0);
+  });
+}
+/* Tek fotoğraf çek: Blob (JPEG) ya da vazgeçilirse null. Galeri düğmesi seçilirse galeriden seçilen dosya. */
+function fotografCek(sec) {
+  sec = sec || {};
+  return new Promise(function (coz) {
+    var bitti = false;
+    function son(x) { if (!bitti) { bitti = true; coz(x || null); } }
+    function galeridenDosya() {
+      var inp = h('input', { type: 'file', accept: 'image/*', style: { display: 'none' } });
+      document.body.appendChild(inp);
+      inp.addEventListener('change', function () { var f = inp.files && inp.files[0]; inp.remove(); son(f); });
+      inp.click();
+    }
+    kameraAc({ tek: true, mod: sec.mod || 'urun', modlar: [sec.mod || 'urun'], web: sec.web,
+      bloblar: function (l) { son(l[0]); },
+      sonuc: function (c) { c.toBlob(function (b) { son(b); }, 'image/jpeg', 0.9); },
+      galeri: galeridenDosya, iptal: function () { son(null); } });
+  });
+}
+
 var KAMERA_EN_FAZLA = 10;
 /* sec.tek: gönderi kamerası — tek kare çekilir, sec.sonuc(tuval) çağrılır; galeri düğmesi sec.galeri() */
 function kameraAc(sec) {
   sec = sec || {};
+  if (typeof sec !== 'object' || sec instanceof Event) sec = {};
+  if (!sec.web && yerelKameraVar()) { yerelKamera(sec); return; }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { tost(t('kameraYok')); if (sec.tek) { if (sec.galeri) sec.galeri(); } else $('#dosyaSec').click(); return; }
   var ayar = LS.al('kamera', null) || {};
-  var yon = 'environment', mod = 'kiyafet', zamanlayici = 0, izgara = ayar.izgara !== false, flas = false;
-  var akis = null, iz = null, yetenek = {}, cekimler = [], geriSay = null, kapandi = false, yakin = 1;
+  var yon = sec.mod === 'selfie' ? 'user' : 'environment', mod = 'kiyafet', zamanlayici = 0, izgara = ayar.izgara !== false, flas = false;
+  var akis = null, iz = null, yetenek = {}, cekimler = [], geriSay = null, kapandi = false, yakin = 1, teslim = false;
   var video = h('video', { autoplay: true, playsinline: true, muted: true });
   var izgaraEl = h('div', { class: 'kam-izgara' });
   var sayac = h('div', { class: 'kam-sayac', hidden: true });
@@ -59,7 +136,7 @@ function kameraAc(sec) {
   function izgaraCiz() { izgaraEl.hidden = !izgara; izgaraBtn.setAttribute('aria-pressed', izgara ? 'true' : 'false'); }
   function modCiz() {
     temizle(modlar);
-    if (sec.tek) { modlar.appendChild(h('button', { 'aria-pressed': 'true', text: t('kamModGonderi') })); ipucu.textContent = t('kamIpucuGonderi'); return; }
+    if (sec.tek) { var km = KAMERA_MODLARI[sec.mod] || KAMERA_MODLARI.gonderi; modlar.appendChild(h('button', { 'aria-pressed': 'true', text: t(km[0]) })); ipucu.textContent = t(km[1]); return; }
     [['kiyafet', t('kamModKiyafet')], ['boydan', t('kamModBoydan')]].forEach(function (x) {
       modlar.appendChild(h('button', { 'aria-pressed': mod === x[0] ? 'true' : 'false', text: x[1], on: { click: function () { modSec(x[0]); } } }));
     });
@@ -134,7 +211,7 @@ function kameraAc(sec) {
     c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);   // ön kamerada da yazılar ters çıkmasın: ayna uygulanmaz
     if (sec.tek) {   // gönderi: çekilen kare düzenlemeye gider
       flasPerde.classList.remove('cak'); void flasPerde.offsetWidth; flasPerde.classList.add('cak');
-      kapat(); setTimeout(function () { if (sec.sonuc) sec.sonuc(c); }, 320);
+      teslim = true; kapat(); setTimeout(function () { if (sec.sonuc) sec.sonuc(c); }, 320);
       return;
     }
     cekimler.push(c);
@@ -158,13 +235,13 @@ function kameraAc(sec) {
     temizle(bittiBtn); bittiBtn.appendChild(document.createTextNode(t('kamBitti', cekimler.length)));
   }
   function galeri() {
-    if (sec.tek) { kapat(); setTimeout(function () { if (sec.galeri) sec.galeri(); }, 300); return; }
+    if (sec.tek) { teslim = true; kapat(); setTimeout(function () { if (sec.galeri) sec.galeri(); }, 300); return; }
     if (cekimler.length) { onayla(t('kamCekilenler'), t('kamSonuSil'), t('sil'), true).then(function (evet) { if (evet) { cekimler.pop(); galeriCiz(); } }); return; }
-    kapat(); setTimeout(function () { $('#dosyaSec').click(); }, 300);
+    teslim = true; kapat(); setTimeout(function () { $('#dosyaSec').click(); }, 300);
   }
   function bitti() {
     var l = cekimler.slice(); cekimler = [];
-    kapat();
+    teslim = true; kapat();
     if (l.length) setTimeout(function () { sirayaIsle(l, 0); }, 320);
   }
   function kapat(gecmisten) {
@@ -180,6 +257,7 @@ function kameraAc(sec) {
     kok.classList.remove('acik');
     setTimeout(function () { kok.remove(); }, 250);
     if (!gecmisten) { geriKilit++; try { history.back(); } catch (e) { geriKilit--; } }
+    if (!teslim && sec.iptal) setTimeout(sec.iptal, 300);
   }
   zamanCiz(); izgaraCiz(); modCiz(); galeriCiz();
   baslat();
@@ -216,4 +294,30 @@ Object.assign(DIL.uz, {
   kamBitti: function (n) { return 'Tayyor (' + n + ')'; }, kamCekilen: function (n) { return n + ' ta surat olindi'; }, kamCekilenler: 'Oxirgi surat',
   kamSonuSil: "Oxirgi surat o'chirilsinmi?", kamEnFazla: function (n) { return 'Bir martada ' + n + ' tagacha surat; «Tayyor»ni bosing.'; },
   kamKapatBaslik: 'Kameradan chiqish', kamKapatSor: function (n) { return "Olingan " + n + " ta surat o'chiriladi."; }, kamAtVeKapat: "O'chirib chiqish"
+});
+
+Object.assign(DIL.tr, {
+  kamModSelfie: 'Selfie', kamIpucuSelfie: 'Yüzün pencereye dönük, doğal ışıkta; filtresiz ve tek başına.', kamModUrun: 'Ürün',
+  kamIpucuUrun: 'Kıyafeti çerçeveye sığdır; askıda ya da üzerinde olabilir.', kamFlasAcik: 'Flaş açık', kamFlasKapali: 'Flaş kapalı', kamFlasOto: 'Flaş otomatik',
+  kamZamanKapali: 'Zamanlayıcı kapalı', kamHata: 'Fotoğraf çekilemedi, tekrar dene.', kamSonSilindi: 'Son fotoğraf silindi'
+});
+Object.assign(DIL.en, {
+  kamModSelfie: 'Selfie', kamIpucuSelfie: 'Face a window in natural light; no filter, just you.', kamModUrun: 'Item',
+  kamIpucuUrun: 'Fit the item in the frame, on the hanger or on you.', kamFlasAcik: 'Flash on', kamFlasKapali: 'Flash off', kamFlasOto: 'Flash auto',
+  kamZamanKapali: 'Timer off', kamHata: "Couldn't take the photo, try again.", kamSonSilindi: 'Last photo deleted'
+});
+Object.assign(DIL.ru, {
+  kamModSelfie: 'Селфи', kamIpucuSelfie: 'Лицом к окну, при дневном свете; без фильтров и одна.', kamModUrun: 'Вещь',
+  kamIpucuUrun: 'Помести вещь в кадр: на вешалке или на тебе.', kamFlasAcik: 'Вспышка вкл.', kamFlasKapali: 'Вспышка выкл.', kamFlasOto: 'Авто-вспышка',
+  kamZamanKapali: 'Таймер выкл.', kamHata: 'Не удалось сделать фото, попробуй ещё раз.', kamSonSilindi: 'Последнее фото удалено'
+});
+Object.assign(DIL.uz, {
+  kamModSelfie: 'Selfi', kamIpucuSelfie: "Derazaga qarab, tabiiy yorug'likda; filtrsiz va yolg'iz.", kamModUrun: 'Kiyim',
+  kamIpucuUrun: "Kiyimni kadrga sig'dir: ilgichda yoki ustingda.", kamFlasAcik: 'Chiroq yoqiq', kamFlasKapali: "Chiroq o'chiq", kamFlasOto: 'Chiroq avtomatik',
+  kamZamanKapali: "Taymer o'chiq", kamHata: "Surat olinmadi, qayta urinib ko'ring.", kamSonSilindi: "Oxirgi surat o'chirildi"
+});
+Object.assign(DIL.ko, {
+  kamModSelfie: '셀카', kamIpucuSelfie: '창문을 바라보고 자연광에서, 필터 없이 혼자 찍으세요.', kamModUrun: '아이템',
+  kamIpucuUrun: '옷을 프레임에 맞추세요. 옷걸이에 걸거나 입은 채로 괜찮아요.', kamFlasAcik: '플래시 켬', kamFlasKapali: '플래시 끔', kamFlasOto: '플래시 자동',
+  kamZamanKapali: '타이머 끔', kamHata: '사진을 찍지 못했어요. 다시 시도하세요.', kamSonSilindi: '마지막 사진을 삭제했어요'
 });
