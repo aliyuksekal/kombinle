@@ -13,7 +13,7 @@ var A = {};
 function ayarYukle() {
   var x = LS.al('ayar', {}) || {};
   A = {
-    dil: ['tr', 'en', 'ru', 'uz'].indexOf(x.dil) >= 0 ? x.dil : '',
+    dil: ['tr', 'en', 'ru', 'uz', 'ko'].indexOf(x.dil) >= 0 ? x.dil : '',
     konum: konumGecerli(x.konum) ? x.konum : null,
     tesettur: x.tesettur === true,
     kimin: x.kimin === 'erkek' || x.kimin === 'notr' ? x.kimin : 'kadin',
@@ -29,7 +29,7 @@ function ayarYukle() {
   try { A.renkAnaliz = renkAnaliziTemizle(x.renkAnaliz); } catch (e) { A.renkAnaliz = null; }
   ozelTurKaydet(A.ozelTur);
   kiminUygula();
-  if (!A.dil) { var nl = String(navigator.language || 'tr').slice(0, 2).toLowerCase(); A.dil = ['tr', 'en', 'ru', 'uz'].indexOf(nl) >= 0 ? nl : 'en'; }
+  if (!A.dil) { var nl = String(navigator.language || 'tr').slice(0, 2).toLowerCase(); A.dil = ['tr', 'en', 'ru', 'uz', 'ko'].indexOf(nl) >= 0 ? nl : 'en'; }
 }
 function ayarKaydet() { LS.yaz('ayar', A); }
 function konumGecerli(k) {

@@ -3,7 +3,7 @@ function katla(s) {
   return s.replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/â/g, 'a').replace(/î/g, 'i').replace(/û/g, 'u');
 }
 function kelimeler(metin) {
-  var ham = String(metin || '').slice(0, 400).toLocaleLowerCase('tr').replace(/[ʻʼ‘’`]/g, "'").replace(/[^a-zçğıöşüâîûа-яё0-9'\s-]/g, ' ').split(/[\s'-]+/).filter(Boolean);
+  var ham = String(metin || '').slice(0, 400).toLocaleLowerCase('tr').replace(/[ʻʼ‘’`]/g, "'").replace(/[^a-zçğıöşüâîûа-яё\uac00-\ud7a30-9'\s-]/g, ' ').split(/[\s'-]+/).filter(Boolean);
   return { ham: ham, katli: ham.map(katla) };
 }
 function kelimeEsler(k, kw) {

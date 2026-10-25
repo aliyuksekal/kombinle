@@ -82,7 +82,7 @@ export default {
       env.DB.prepare('DELETE FROM paylasim WHERE gizli = 1 AND zaman < ?').bind(Date.now() - 30 * 86400000),
       env.DB.prepare('DELETE FROM anket_oy WHERE anket IN (SELECT id FROM anket WHERE zaman < ?)').bind(Date.now() - 60 * 86400000),
       env.DB.prepare('DELETE FROM anket WHERE zaman < ?').bind(Date.now() - 60 * 86400000)
-    ]));
+    ]).then(() => hayaletTemizle(env, true)));
   }
 };
 
@@ -123,11 +123,16 @@ async function yonlendir(istek, env, ctx) {
   if (await env.DB.prepare('SELECT 1 FROM engelli WHERE cihaz = ?1 OR cihaz = substr(?1, 1, 12)').bind(cihaz).first()) throw new Hata('engelli', 403);
 
   switch (islem[1]) {
-    case 'kayit': await kotaDus(env, ['giris_ip:' + ip]); return json(await kayit(env, govde));
-    case 'giris': await kotaDus(env, ['giris_ip:' + ip]); return json(await giris(env, govde));
+    case 'kayit': await kotaDus(env, ['giris_ip:' + ip]); return json(await kayit(env, govde, dogrulama.cihaz));
+    case 'giris': await kotaDus(env, ['giris_ip:' + ip]); return json(await giris(env, govde, dogrulama.cihaz));
     case 'sifre': await kotaDus(env, ['giris_ip:' + ip]); return json(await sifreSifirla(env, govde));
     case 'cikis': return json(await cikis(env, govde));
-    case 'ben': hesapGerek(); await profilHesapli(env, hesap); return json({ ok: true, hesap: hesapOzet(hesap) });
+    case 'ben': hesapGerek(); await profilHesapli(env, hesap); await eskiProfiliTasi(env, hesap, dogrulama.cihaz); await cihazYaz(env, hesap, dogrulama.cihaz); await hayaletTemizle(env, false);
+      { // bu telefonda başka bir hesap da varsa (eski sürümlerde açılmış) kullanıcıya söylenir
+        const c = yazarKodu(dogrulama.cihaz || '');
+        const d = c ? await env.DB.prepare('SELECT eposta FROM hesap WHERE cihaz = ? AND id <> ?').bind(c, hesap.id).first() : null;
+        return json({ ok: true, hesap: hesapOzet(hesap), ikinciHesap: d ? epostaGizle(d.eposta) : '' });
+      }
     case 'profil': hesapGerek(); await kotaDus(env, ['profil_cihaz:' + cihaz]); return json(await profilGuncelle(env, govde, hesap));
     case 'kadi': await kotaDus(env, ['kisi_ip:' + ip]); return json(await kadiBak(env, govde, hesap));
     case 'ata': hesapGerek(); await kotaDus(env, ['ata_cihaz:' + cihaz]); return json(await adAta(env, govde, hesap));
@@ -389,7 +394,7 @@ async function tani(env, g) {
   const turler = liste(g.turler, 160).map(x => Array.isArray(x) ? [kimlik(x[0]), metin(x[1], 30), metin(x[2], 30), KATEGORI.indexOf(x[3]) >= 0 ? x[3] : ''] : null).filter(x => x && x[0]);
   const renkler = sozluk(g.renkler, 60);
   if (!turler.length || !renkler.length) throw new Hata('girdi');
-  const dil = ['tr', 'en', 'ru', 'uz'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
+  const dil = ['tr', 'en', 'ru', 'uz', 'ko'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
   const kimlikler = turler.map(x => x[0]);
   // kullanıcının önceki düzeltmeleri (yalnız ipucu): "model X dedi, doğrusu Y"
   const duzeltmeler = liste(g.duzeltmeler, 12).map(x => Array.isArray(x) && kimlikler.indexOf(x[0]) >= 0 && kimlikler.indexOf(x[1]) >= 0 && x[0] !== x[1] ? x[0] + '→' + x[1] : '').filter(Boolean);
@@ -519,7 +524,7 @@ async function kombin(env, g) {
   const parcalar = liste(g.parcalar, 300).map(parcaTemizle).filter(Boolean);
   if (parcalar.length < 2) throw new Hata('az');
   const hava = havaTemizle(g.hava);
-  const dil = ['tr', 'en', 'ru', 'uz'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
+  const dil = ['tr', 'en', 'ru', 'uz', 'ko'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
   const kimlikler = parcalar.map(p => p.i);
   const palet = liste(g.palet, 12).map(kimlik).filter(Boolean);
   const tekrar = liste(g.tekrar, 60).filter(i => typeof i === 'string' && kimlikler.indexOf(i) >= 0);
@@ -613,7 +618,7 @@ async function analiz(env, g) {
   const parcalar = liste(g.parcalar, 300).map(parcaTemizle).filter(Boolean);
   if (parcalar.length < 3) throw new Hata('az');
   const turler = sozluk(g.turler, 160);
-  const dil = ['tr', 'en', 'ru', 'uz'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
+  const dil = ['tr', 'en', 'ru', 'uz', 'ko'].indexOf(g.dil) >= 0 ? g.dil : 'tr';
   const gunler = liste(g.gunler, 7).map(x => x && typeof x === 'object' ? { g: metin(x.g, 12), min: sayi(x.min, -60, 60, 0), max: sayi(x.max, -60, 60, 0), y: sayi(x.y, 0, 100, 0) } : null).filter(Boolean);
   const gecmis = liste(g.gecmis, 60).map(x => x && typeof x === 'object' ? { o: kimlik(x.o), p: liste(x.p, 8).filter(i => typeof i === 'string' && /^[A-Za-z0-9_-]{4,40}$/.test(i)), d: sayi(x.d, -60, 60, null) } : null).filter(Boolean);
   const kimlikler = parcalar.map(p => p.i);
@@ -1027,7 +1032,7 @@ async function kisiler(env, g, cihaz, hamCihaz) {
   const q = takipModu
     ? env.DB.prepare('SELECT pr.kod, pr.takma, pr.kadi, pr.bio, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, 0 AS takipci, 0 AS paylasim, 1 AS takipte, 0 AS istekte, ' +
       "(SELECT MAX(p.zaman) FROM paylasim p WHERE substr(p.yazar, 1, 12) = pr.kod AND p.gizli = 0 AND p.gorunurluk IN ('herkes', 'takip')) AS son " +
-      'FROM takip t JOIN profil pr ON pr.kod = t.takip WHERE t.takipci = ?1 AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY son IS NULL, son DESC, t.zaman DESC LIMIT 40').bind(kod)
+      'FROM takip t JOIN profil pr ON pr.kod = t.takip WHERE t.takipci = ?1 AND pr.hesapli = 1 AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY son IS NULL, son DESC, t.zaman DESC LIMIT 40').bind(kod)
     : env.DB.prepare(sql).bind(kod, ara ? '%' + ara + '%' : '', eskiKod);
   const { results } = await q.all();
   const satirlar = (results || []).filter(r => engelli.indexOf(r.kod) < 0);
@@ -1048,17 +1053,17 @@ async function kisiler(env, g, cihaz, hamCihaz) {
 }
 
 /* --- AI Prenses sohbeti ------------------------------------------------- */
-const DIL_AD = { tr: 'Türkçe', en: 'English', ru: 'русский (Russian)', uz: "o'zbekcha (Uzbek, Latin script)" };
+const DIL_AD = { tr: 'Türkçe', en: 'English', ru: 'русский (Russian)', uz: "o'zbekcha (Uzbek, Latin script)", ko: '한국어 (Korean)' };
 /* selamlaşma: yalnız konuşmanın ilk cevabında, kullanıcının saatine göre */
-const SELAMLAR = { tr: ['Günaydın', 'Selam', 'İyi akşamlar', 'Merhaba'], en: ['Good morning', 'Hi', 'Good evening', 'Hi'], ru: ['Доброе утро', 'Привет', 'Добрый вечер', 'Привет'], uz: ['Xayrli tong', 'Salom', 'Xayrli kech', 'Salom'] };
+const SELAMLAR = { tr: ['Günaydın', 'Selam', 'İyi akşamlar', 'Merhaba'], en: ['Good morning', 'Hi', 'Good evening', 'Hi'], ru: ['Доброе утро', 'Привет', 'Добрый вечер', 'Привет'], uz: ['Xayrli tong', 'Salom', 'Xayrli kech', 'Salom'] , ko: ['좋은 아침이에요', '안녕하세요', '좋은 저녁이에요', '안녕하세요'] };
 function selamSec(dil, saat) {
   const l = SELAMLAR[dil] || SELAMLAR.tr;
   if (!Number.isInteger(saat) || saat < 0 || saat > 23) return l[3];
   return saat >= 5 && saat < 11 ? l[0] : saat >= 11 && saat < 17 ? l[1] : saat >= 17 ? l[2] : l[3];
 }
 /* cevabın başındaki selam / hitap kalıbını ayıklar ("Selam prenses! 💜 ..." → "...") */
-const HITAP = '(?:canım|tatlım|güzelim|prenses(?:im)?|princess|dear|darling|принцесса|дорогая|malika(?:m)?|azizam)';
-const SELAM_BASI = new RegExp('^\\s*(?:(?:selam(?:lar)?|merhaba(?:lar)?|günaydın|[iİ]yi (?:akşamlar|geceler|günler)|hey|hello|hi|good (?:morning|afternoon|evening)|привет|здравствуй(?:те)?|доброе утро|добрый (?:день|вечер)|salom|assalomu alaykum|xayrli (?:tong|kun|kech))(?:[\\s,]+' + HITAP + ')?|' + HITAP + ')\\s*(?:[!,.…:]+|(?=\\p{Extended_Pictographic}))\\s*(?:[\\p{Extended_Pictographic}\\u200d\\ufe0f]+\\s*)*', 'iu');
+const HITAP = '(?:canım|tatlım|güzelim|prenses(?:im)?|princess|dear|darling|принцесса|дорогая|malika(?:m)?|azizam|프린세스(?:님)?|공주님)';
+const SELAM_BASI = new RegExp('^\\s*(?:(?:selam(?:lar)?|merhaba(?:lar)?|günaydın|[iİ]yi (?:akşamlar|geceler|günler)|hey|hello|hi|good (?:morning|afternoon|evening)|привет|здравствуй(?:те)?|доброе утро|добрый (?:день|вечер)|salom|assalomu alaykum|xayrli (?:tong|kun|kech)|안녕하세요|안녕|좋은 (?:아침|저녁)(?:이에요|입니다)?)(?:[\\s,]+' + HITAP + ')?|' + HITAP + ')\\s*(?:[!,.…:]+|(?=\\p{Extended_Pictographic}))\\s*(?:[\\p{Extended_Pictographic}\\u200d\\ufe0f]+\\s*)*', 'iu');
 function selamAyikla(m, dil) {
   if (typeof m !== 'string') return '';
   const y = m.replace(SELAM_BASI, '');
@@ -1125,7 +1130,8 @@ const SES_STILI = {
   tr: 'Sıcak, samimi, gülümseyerek konuşan genç bir kadın; arkadaşıyla sohbet eder gibi rahat ve doğal, acele etmeden.',
   en: 'A warm, friendly young woman talking to a close friend; relaxed, natural and smiling, not rushed.',
   ru: 'Тёплая, дружелюбная молодая женщина, говорит с подругой непринуждённо и естественно, с улыбкой, без спешки.',
-  uz: "Iliq, samimiy yosh ayol; dugonasi bilan suhbatlashgandek tabiiy va shoshilmasdan, tabassum bilan gapiradi."
+  uz: "Iliq, samimiy yosh ayol; dugonasi bilan suhbatlashgandek tabiiy va shoshilmasdan, tabassum bilan gapiradi.",
+  ko: '따뜻하고 다정하게 웃으며 말하는 젊은 여성. 친구와 이야기하듯 편안하고 자연스럽게, 서두르지 않고.'
 };
 function sesMetni(m) {
   return String(m || '')
@@ -1248,11 +1254,69 @@ async function hesapKimlik(env, id) { return (await sha256('hesap:' + env.UYGULA
 const OTURUM_OMRU = 365 * 86400000;
 /* pro: 0 yok, -1 süresiz hediye, yoksa hediyenin bittiği an (ms) */
 function proDurum(bitis) { return bitis === 0 ? -1 : bitis > Date.now() ? bitis : 0; }
+/* --- Herkesin tek profili --------------------------------------------------
+   Hesap öncesi sürümlerde profil telefona bağlıydı; hesap açınca ikinci bir profil oluşuyordu.
+   (1) Giriş yapan kişinin bu telefondaki eski profili hesabına taşınır: takipçiler, takip ettikleri, paylaşımları.
+   (2) Hiçbir hesaba ait olmayan profiller gizlenir, takip ilişkileri silinir (aramada, listelerde görünmez). */
+async function eskiProfiliTasi(env, hesap, hamCihaz) {
+  const yeni = hesap.kimlik.slice(0, 12), eski = yazarKodu(hamCihaz || '');
+  if (!eski || eski === yeni || !/^[a-z0-9]{12}$/i.test(eski)) return;
+  try {
+    const pr = await env.DB.prepare('SELECT kod, takma FROM profil WHERE kod = ?').bind(eski).first();
+    if (!pr) return;
+    // başka bir hesabın kodu ya da başka bir hesabın telefonu değilse taşınır
+    if (await env.DB.prepare('SELECT 1 FROM hesap WHERE kod = ?1 OR (cihaz = ?1 AND id <> ?2)').bind(eski, hesap.id || '').first()) return;
+    // yalnız hesabın kendi telefonundaki ya da aynı adla açılmış eski profil (eşinin telefonunda giriş yapınca onun profili taşınmasın)
+    const ayniAd = String(pr.takma || '').toLocaleLowerCase('tr').trim() === String(hesap.ad || '').toLocaleLowerCase('tr').trim();
+    if (hesap.cihaz !== eski && !(hesap.cihaz === '' && ayniAd) && !(hesap.cihaz === undefined && ayniAd)) return;
+    const z = Date.now();
+    await env.DB.batch([
+      env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) SELECT takipci, ?2, zaman FROM takip WHERE takip = ?1 AND takipci <> ?2').bind(eski, yeni),
+      env.DB.prepare('INSERT OR IGNORE INTO takip (takipci, takip, zaman) SELECT ?2, takip, zaman FROM takip WHERE takipci = ?1 AND takip <> ?2').bind(eski, yeni),
+      env.DB.prepare('DELETE FROM takip WHERE takip = ?1 OR takipci = ?1').bind(eski),
+      env.DB.prepare('DELETE FROM takip_istek WHERE isteyen = ?1 OR hedef = ?1').bind(eski),
+      env.DB.prepare('UPDATE paylasim SET yazar = ?1 WHERE yazar = ?2').bind(hesap.kimlik, hamCihaz),
+      env.DB.prepare('UPDATE yorum SET yazar = ?1 WHERE yazar = ?2').bind(hesap.kimlik, hamCihaz),
+      env.DB.prepare('UPDATE bildirim SET kimden = ?2 WHERE kimden = ?1').bind(eski, yeni),
+      env.DB.prepare('DELETE FROM profil WHERE kod = ?').bind(eski),
+      env.DB.prepare('INSERT INTO bakim (ad, zaman) VALUES (?, ?) ON CONFLICT(ad) DO UPDATE SET zaman = excluded.zaman').bind('tasima:' + eski, z)
+    ]);
+  } catch (e) { console.warn('tasima', String(e && e.message)); }
+}
+async function hayaletTemizle(env, zorla) {
+  try {
+    if (!zorla) {
+      const b = await env.DB.prepare("SELECT zaman FROM bakim WHERE ad = 'hayalet'").first();
+      if (b && Date.now() - b.zaman < 6 * 3600000) return 0;
+    }
+    await env.DB.prepare("INSERT INTO bakim (ad, zaman) VALUES ('hayalet', ?) ON CONFLICT(ad) DO UPDATE SET zaman = excluded.zaman").bind(Date.now()).run();
+    // kodu henüz yazılmamış hesapların kodu hesaplanır
+    const { results: eksik } = await env.DB.prepare("SELECT id FROM hesap WHERE kod = '' LIMIT 2000").all();
+    for (let i = 0; i < (eksik || []).length; i += 50) {
+      const parca = eksik.slice(i, i + 50);
+      const kodlar = await Promise.all(parca.map(h => hesapKimlik(env, h.id)));
+      await env.DB.batch(parca.map((h, j) => env.DB.prepare('UPDATE hesap SET kod = ? WHERE id = ?').bind(kodlar[j].slice(0, 12), h.id)));
+    }
+    if (await env.DB.prepare("SELECT 1 FROM hesap WHERE kod = '' LIMIT 1").first()) return 0;   // hepsi bitmeden kimse gizlenmez
+    const { results: hayalet } = await env.DB.prepare("SELECT kod FROM profil WHERE kod NOT IN (SELECT kod FROM hesap) AND (hesapli = 1 OR EXISTS (SELECT 1 FROM takip t WHERE t.takip = profil.kod OR t.takipci = profil.kod)) LIMIT 2000").all();
+    const l = (hayalet || []).map(x => x.kod);
+    for (let i = 0; i < l.length; i += 50) {
+      const p = l.slice(i, i + 50), yer = p.map(() => '?').join(',');
+      await env.DB.batch([
+        env.DB.prepare('UPDATE profil SET hesapli = 0 WHERE kod IN (' + yer + ')').bind(...p),
+        env.DB.prepare('DELETE FROM takip WHERE takip IN (' + yer + ') OR takipci IN (' + yer + ')').bind(...p, ...p),
+        env.DB.prepare('DELETE FROM takip_istek WHERE hedef IN (' + yer + ') OR isteyen IN (' + yer + ')').bind(...p, ...p)
+      ]);
+    }
+    return l.length;
+  } catch (e) { console.warn('hayalet', String(e && e.message)); return 0; }
+}
 /* hesabın profil satırı hep var ve "hesaplı" işaretli olsun (eski sürümlerden kalan eksikler tamamlanır) */
 async function profilHesapli(env, h) {
   try {
     await env.DB.prepare('INSERT INTO profil (kod, takma, zaman, kadi, bio, hesapli) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(kod) DO UPDATE SET hesapli = 1')
       .bind(h.kimlik.slice(0, 12), h.ad, Date.now(), h.kadi || '', h.bio || '').run();
+    if (h.id) await env.DB.prepare("UPDATE hesap SET kod = ? WHERE id = ? AND kod = ''").bind(h.kimlik.slice(0, 12), h.id).run();
   } catch (e) { /* profil yazılamasa da giriş sürer */ }
 }
 function hesapOzet(h) { return { ad: h.ad, eposta: h.eposta, kod: h.kimlik.slice(0, 12), kadi: h.kadi || '', bio: h.bio || '', yonetici: h.kadi === 'admin', av: h.av || 0, pro: h.pro_bitis === null || h.pro_bitis === undefined ? 0 : proDurum(h.pro_bitis) }; }
@@ -1267,7 +1331,7 @@ async function oturumAc(env, hesapId) {
 }
 async function oturumBul(env, belirtec) {
   if (typeof belirtec !== 'string' || !/^[a-f0-9]{64}$/.test(belirtec)) return null;
-  const h = await env.DB.prepare('SELECT h.id, h.ad, h.eposta, h.kadi, h.bio, h.zaman AS kayit_zaman, o.zaman AS oturum_zaman, (SELECT bitis FROM pro_hediye WHERE hesap = h.id) AS pro_bitis FROM oturum o JOIN hesap h ON h.id = o.hesap WHERE o.ozet = ?')
+  const h = await env.DB.prepare('SELECT h.id, h.ad, h.eposta, h.kadi, h.bio, h.cihaz, h.zaman AS kayit_zaman, o.zaman AS oturum_zaman, (SELECT bitis FROM pro_hediye WHERE hesap = h.id) AS pro_bitis FROM oturum o JOIN hesap h ON h.id = o.hesap WHERE o.ozet = ?')
     .bind(await sha256('oturum:' + belirtec)).first();
   if (!h) return null;
   if (Date.now() - h.oturum_zaman > OTURUM_OMRU) { await env.DB.prepare('DELETE FROM oturum WHERE ozet = ?').bind(await sha256('oturum:' + belirtec)).run(); return null; }
@@ -1286,7 +1350,17 @@ function kurtarmaKodu() {
   return s;
 }
 
-async function kayit(env, g) {
+/* telefonun (tuzlanmış) kimliği hesaba yazılır: aynı telefondan ikinci hesap açılamaz */
+async function cihazYaz(env, hesap, hamCihaz) {
+  const c = yazarKodu(hamCihaz || '');
+  if (!c || !hesap || !hesap.id) return;
+  try { await env.DB.prepare("UPDATE hesap SET cihaz = ? WHERE id = ? AND cihaz = ''").bind(c, hesap.id).run(); } catch (e) { }
+}
+function epostaGizle(e) {
+  const [a, b] = String(e).split('@');
+  return (a.length <= 2 ? a.charAt(0) : a.slice(0, 2)) + '***@' + (b || '');
+}
+async function kayit(env, g, hamCihaz) {
   const ad = metin(g.ad, 24), eposta = metin(g.eposta, 254).toLowerCase();
   if (ad.length < 2) throw new Hata('ad');
   if (LINK.test(ad)) throw new Hata('baglanti');
@@ -1299,22 +1373,28 @@ async function kayit(env, g) {
     if (AYRILMIS.has(kadi)) throw new Hata('ayrilmis', 409);
   }
   if (await env.DB.prepare('SELECT 1 FROM hesap WHERE eposta = ?').bind(eposta).first()) throw new Hata('kayitli', 409);
+  const cihazKod = yazarKodu(hamCihaz || '');
+  if (cihazKod) {
+    const var_ = await env.DB.prepare('SELECT eposta FROM hesap WHERE cihaz = ?').bind(cihazKod).first();
+    if (var_) return { ok: false, hata: 'cihaz_hesap', eposta: epostaGizle(var_.eposta) };
+  }
   if (kadi && await env.DB.prepare('SELECT 1 FROM hesap WHERE kadi = ?').bind(kadi).first()) throw new Hata('alinmis', 409);
   const id = rastgeleHex(16), tuz = rastgeleHex(16), kurtarma = kurtarmaKodu();
   const kurtarmaTuz = rastgeleHex(8);
   try {
-    await env.DB.prepare('INSERT INTO hesap (id, eposta, ad, tuz, ozet, kurtarma, zaman, kadi) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, eposta, ad, tuz, await sifreOzeti(env, g.sifre, tuz), kurtarmaTuz + ':' + await sifreOzeti(env, kurtarma, kurtarmaTuz), Date.now(), kadi).run();
+    await env.DB.prepare('INSERT INTO hesap (id, eposta, ad, tuz, ozet, kurtarma, zaman, kadi, kod, cihaz) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, eposta, ad, tuz, await sifreOzeti(env, g.sifre, tuz), kurtarmaTuz + ':' + await sifreOzeti(env, kurtarma, kurtarmaTuz), Date.now(), kadi,
+        (await hesapKimlik(env, id)).slice(0, 12), cihazKod).run();
   } catch (e) { throw new Hata(/kadi/i.test(String(e && e.message)) ? 'alinmis' : 'kayitli', 409); }   // aynı anda iki kayıt yarışı
   const kimlik = await hesapKimlik(env, id);
   await profilYaz(env, kimlik, ad, kadi || '').run();
   return { ok: true, oturum: await oturumAc(env, id), kurtarma, hesap: { ad, eposta, kod: kimlik.slice(0, 12), kadi: kadi || '', bio: '', yonetici: false } };
 }
 
-async function giris(env, g) {
+async function giris(env, g, hamCihaz) {
   const eposta = metin(g.eposta, 254).toLowerCase();
   if (!EPOSTA.test(eposta) || !sifreGecerli(g.sifre)) throw new Hata('yanlis', 401);
-  const h = await env.DB.prepare('SELECT id, ad, eposta, tuz, ozet, hatali, kilit, kadi, bio, (SELECT ph.bitis FROM pro_hediye ph WHERE ph.hesap = hesap.id) AS pro_bitis FROM hesap WHERE eposta = ?').bind(eposta).first();
+  const h = await env.DB.prepare('SELECT id, ad, eposta, tuz, ozet, hatali, kilit, kadi, bio, cihaz, (SELECT ph.bitis FROM pro_hediye ph WHERE ph.hesap = hesap.id) AS pro_bitis FROM hesap WHERE eposta = ?').bind(eposta).first();
   if (!h) { await sifreOzeti(env, g.sifre, 'sahte-tuz'); throw new Hata('yanlis', 401); }   // zamanlama farkı olmasın
   if (h.kilit > Date.now()) throw new Hata('kilitli', 429);
   if (!esit(await sifreOzeti(env, g.sifre, h.tuz), h.ozet)) {
@@ -1326,6 +1406,8 @@ async function giris(env, g) {
   const kimlik = await hesapKimlik(env, h.id);
   h.kimlik = kimlik;
   await profilHesapli(env, h);
+  await eskiProfiliTasi(env, h, hamCihaz);
+  await cihazYaz(env, h, hamCihaz);
   return { ok: true, oturum: await oturumAc(env, h.id), hesap: hesapOzet(h) };
 }
 
@@ -1451,7 +1533,7 @@ async function takipListesi(env, g, cihaz) {
   const takipciler = g.tur !== 'takip';
   const { results } = await env.DB.prepare('SELECT pr.kod, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, EXISTS (SELECT 1 FROM takip t2 WHERE t2.takipci = ?2 AND t2.takip = pr.kod) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?2 AND ti.hedef = pr.kod) AS istekte ' +
     'FROM takip t JOIN profil pr ON pr.kod = ' + (takipciler ? 't.takipci' : 't.takip') + ' WHERE ' + (takipciler ? 't.takip' : 't.takipci') + ' = ?1 ' +
-    'AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY t.zaman DESC LIMIT 200').bind(hedef, kod).all();
+    'AND pr.hesapli = 1 AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY t.zaman DESC LIMIT 200').bind(hedef, kod).all();
   return { ok: true, liste: (results || []).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0, benim: r.kod === kod ? 1 : 0 })) };
 }
 async function paylasimDuzenle(env, g, cihaz) {
@@ -2096,7 +2178,8 @@ const EPOSTA_METIN = {
   tr: ['Kombinle şifre sıfırlama kodun', 'Şifreni sıfırlamak için kodun: ', '15 dakika geçerlidir. Bu isteği sen yapmadıysan bu e-postayı yok sayabilirsin.'],
   en: ['Your Kombinle password reset code', 'Your code to reset your password: ', 'Valid for 15 minutes. If you did not ask for this, you can ignore this email.'],
   ru: ['Код для сброса пароля Kombinle', 'Твой код для сброса пароля: ', 'Действует 15 минут. Если ты не запрашивала сброс, просто проигнорируй письмо.'],
-  uz: ['Kombinle parolni tiklash kodi', 'Parolni tiklash kodingiz: ', "15 daqiqa amal qiladi. Agar siz so'ramagan bo'lsangiz, bu xatni e'tiborsiz qoldiring."]
+  uz: ['Kombinle parolni tiklash kodi', 'Parolni tiklash kodingiz: ', "15 daqiqa amal qiladi. Agar siz so'ramagan bo'lsangiz, bu xatni e'tiborsiz qoldiring."],
+  ko: ['Kombinle 비밀번호 재설정 코드', '비밀번호 재설정 코드: ', '15분 동안 유효해요. 요청하지 않았다면 이 메일은 무시하세요.']
 };
 async function kodGonder(env, g) {
   if (!env.BREVO_API_KEY || !env.EPOSTA_GONDEREN) return { ok: false, hata: 'eposta_yok' };

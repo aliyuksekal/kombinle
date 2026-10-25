@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cikis">한 번 더 누르면 종료돼요</string>
+    <string name="ses_yok">이 휴대폰에서는 음성 인식을 쓸 수 없어요</string>
+    <string name="ses_soyle">어디에 가세요?</string>
+    <string name="tarayici_yok">링크를 열 앱이 없어요</string>
+    <string name="kanal_adi">팔로우, 좋아요, 메시지</string>
+    <string name="bn_takip">%1$s님이 팔로우하기 시작했어요</string>
+    <string name="bn_begeni">%1$s님이 게시물을 좋아해요</string>
+    <string name="bn_yorum">%1$s님이 게시물에 댓글을 남겼어요</string>
+    <string name="bn_anket">%1$s님이 투표에 참여했어요</string>
+    <string name="bn_istek">%1$s님이 팔로우를 요청했어요</string>
+    <string name="bn_paylasim">%1$s님이 새 코디를 공유했어요</string>
+    <string name="bn_kabul">%1$s님이 팔로우 요청을 수락했어요</string>
+    <string name="bn_genel">%1$s님의 새 알림</string>
+    <string name="bn_mesaj">%1$s님이 메시지를 보냈어요</string>
+    <string name="bn_sayi">새 알림 %1$d개</string>
+    <string name="bn_mesaj_sayi">읽지 않은 메시지 %1$d개</string>
+    <string name="bn_ac">눌러서 보기</string>
+    <string name="bn_mesaj_ac">눌러서 읽기</string>
+</resources>

@@ -18,7 +18,7 @@ function dmRozetGuncelle() {
 }
 function dmKisiGecerli(k) { return k && typeof k === 'object' && typeof k.kod === 'string' && /^[a-f0-9]{12}$/.test(k.kod) && typeof k.takma === 'string'; }
 /* saat (balon içinde) ve gün ayracı (Bugün / Dün / tarih) */
-var DM_YEREL = function () { return ({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB'; };
+var DM_YEREL = function () { return ({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB'; };
 function dmSaat(ms) { try { return new Date(ms).toLocaleTimeString(DM_YEREL(), { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
 function dmGun(ms) {
   var d = new Date(ms), b = new Date(), dun = new Date(Date.now() - 86400000);
@@ -38,7 +38,7 @@ var DM_TEPKILER = ['❤️', '😂', '😮', '😢', '🙏', '👍'];
 function dmZaman(ms) {
   var d = new Date(ms), b = new Date();
   try {
-    if (d.toDateString() === b.toDateString()) return d.toLocaleTimeString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (d.toDateString() === b.toDateString()) return d.toLocaleTimeString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB', { hour: '2-digit', minute: '2-digit' });
   } catch (e) { }
   return zamanOnce(ms);
 }

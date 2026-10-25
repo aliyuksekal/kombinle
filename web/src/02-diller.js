@@ -511,7 +511,7 @@ var DIL = {
     gorListe: 'List', gorTakvim: 'Calendar', proO5: 'Unlimited background removal, packing, calendar, builder, inspiration and stats', proO6: 'Plan your week and travel with a ready suitcase'
   }
 };
-var DILLER = [['tr', 'Türkçe'], ['en', 'English'], ['ru', 'Русский'], ['uz', "O'zbekcha"]];
+var DILLER = [['tr', 'Türkçe'], ['en', 'English'], ['ru', 'Русский'], ['uz', "O'zbekcha"], ['ko', '한국어']];
 function t(k) {
   var d = DIL[A.dil] || DIL.tr, v = d[k];
   if (v === undefined && A.dil !== 'tr' && DIL.en) v = DIL.en[k];

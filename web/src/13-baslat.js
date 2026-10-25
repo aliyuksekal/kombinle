@@ -1,6 +1,6 @@
 /* ---------- Sesle söyleme ---------- */
 var dinleyici = null;
-var KONUSMA_DILI = { tr: 'tr-TR', en: 'en-US', ru: 'ru-RU', uz: 'uz-UZ' };
+var KONUSMA_DILI = { tr: 'tr-TR', en: 'en-US', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' };
 function sesliDinle(alan, btn, bitti) {
   var dil = KONUSMA_DILI[A.dil] || 'tr-TR';
   var yaz = function (m) {

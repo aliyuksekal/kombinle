@@ -3,7 +3,7 @@
    ve stil asistanının adı/hitabı değişir ("AI Prenses" → "AI Stilist"). */
 var KIMIN_SECENEK = [['kadin', 'kiminKadin'], ['erkek', 'kiminErkek'], ['notr', 'kiminNotr']];
 var ASISTAN_AD = {
-  tr: [/AI Prenses/g, 'AI Stilist'], en: [/AI Princess/g, 'AI Stylist'], ru: [/AI[- ]Принцесс[аыуе]/g, 'AI-Стилист'], uz: [/AI Malika/g, 'AI Stilist']
+  tr: [/AI Prenses/g, 'AI Stilist'], en: [/AI Princess/g, 'AI Stylist'], ru: [/AI[- ]Принцесс[аыуе]/g, 'AI-Стилист'], uz: [/AI Malika/g, 'AI Stilist'], ko: [/AI 프린세스/g, 'AI 스타일리스트']
 };
 var DIL_ASLI = null;
 /* asistan adını tüm metinlerde değiştirir (kadın seçiliyse asıl metinlere döner) */
@@ -102,4 +102,21 @@ Object.assign(DIL.uz, {
   dmIzinAlt_takip: 'Faqat sen kuzatadigan odamlar yoza oladi.', dmIzinAlt_kimse: "Hech kim yangi xabar yubora olmaydi.",
   dmIzinKaydedildi: 'Xabar sozlamasi saqlandi.', dmKapali: "Bu odam hozir xabar qabul qilmaydi.",
   dmKisitli: "Xabarlaring ustidan shikoyat qilingani uchun bir muddat notanishlarga yoza olmaysan."
+});
+
+Object.assign(DIL.tr, {
+  hCihazHesap: function (e) { return 'Bu telefonda zaten bir Kombinle hesabı var (' + e + '). Herkesin tek profili olur: o hesapla giriş yap; şifreni unuttuysan "Şifremi unuttum"a dokun.'; },
+  hIkinciHesap: function (e) { return 'Bu telefonda bir hesabın daha var (' + e + '). Tek profil için kullanmadığın hesaba giriş yapıp Ayarlar → Hesap → Hesabı sil ile silebilirsin.'; }
+});
+Object.assign(DIL.en, {
+  hCihazHesap: function (e) { return 'This phone already has a Kombinle account (' + e + '). Everyone has one profile: sign in with that account; if you forgot the password, tap "Forgot password".'; },
+  hIkinciHesap: function (e) { return 'You have another account on this phone (' + e + '). To keep one profile, sign in to the one you don\'t use and delete it in Settings → Account → Delete account.'; }
+});
+Object.assign(DIL.ru, {
+  hCihazHesap: function (e) { return 'На этом телефоне уже есть аккаунт Kombinle (' + e + '). У каждого один профиль: войди в него; если забыла пароль, нажми «Забыли пароль».'; },
+  hIkinciHesap: function (e) { return 'На этом телефоне есть ещё один твой аккаунт (' + e + '). Чтобы остался один профиль, войди в ненужный и удали его: Настройки → Аккаунт → Удалить аккаунт.'; }
+});
+Object.assign(DIL.uz, {
+  hCihazHesap: function (e) { return "Bu telefonda allaqachon Kombinle hisobi bor (" + e + "). Har kimning bitta profili bo'ladi: o hisob bilan kiring; parolni unutgan bo'lsangiz \"Parolni unutdim\"ni bosing."; },
+  hIkinciHesap: function (e) { return "Bu telefonda yana bitta hisobingiz bor (" + e + "). Bitta profil qolishi uchun keraksiz hisobga kirib, Sozlamalar → Hisob → Hisobni o'chirish orqali o'chiring."; }
 });

@@ -21,6 +21,8 @@ function hesapTazele(zorla) {
   yzIste('/v1/ben', {}, 15000).then(function (v) {
     if (!v || !v.hesap || typeof v.hesap.ad !== 'string') return;
     hesapYaz(v.hesap);
+    var ikinci = typeof v.ikinciHesap === 'string' ? kirp(v.ikinciHesap, 60) : '';
+    if (ikinci !== LS.al('ikinciHesap', '')) { LS.yaz('ikinciHesap', ikinci); if (S.sekme === 'ayarlar') ciz(); }
     var simdi = hediyePro();
     if (simdi && !once) tost(t('proHediyeGeldi'));
     if (simdi !== once) ciz();
@@ -78,6 +80,7 @@ function girisIste() {
 }
 function hesapHataMetni(e) {
   var k = e && e.message;
+  if (k === 'cihaz_hesap') return t('hCihazHesap', kirp((e.veri && e.veri.eposta) || '', 60));
   return ({ eposta: t('hEpostaHata'), sifre: t('hSifreKisa'), ad: t('hAdHata'), kayitli: t('hKayitli'), yanlis: t('hYanlis'), kilitli: t('hKilitli'),
     kota: t('hKota'), baglanti: t('baglantiYok'), oturum: t('hOturumBitti'), kadi: t('kadiGecersiz'), alinmis: t('kadiAlinmis'), ayrilmis: t('kadiAyrilmis'),
     yetki: t('yetkiYok'), resim: t('avResimHata'), sinir: t('sinirDoldu'), yok: t('kisiBulunamadi'), kendi: t('kendinAtayamazsin'),
@@ -94,6 +97,8 @@ function hesapBolumu(yenile) {
       avatarDoldur(h('button', { class: 'hesap-av benim', 'aria-label': t('avBaslik'), on: { click: function () { avatarMenusu(yenile); } } }), benimAvatar(), hb.ad),
       h('div', null, h('b', { text: hb.ad }), hb.kadi ? kadiEl(hb.kadi) : h('span', { class: 'kadi bos', text: t('kadiSecilmedi') }), h('small', { text: hb.eposta }))));
     if (hb.bio) kap.appendChild(h('p', { class: 'hesap-bio', text: hb.bio }));
+    var ikinci = LS.al('ikinciHesap', '');
+    if (typeof ikinci === 'string' && ikinci) kap.appendChild(h('div', { class: 'hesap-uyari' }, ikon('bilgi', 'k'), h('span', { text: t('hIkinciHesap', ikinci) })));
     kap.appendChild(h('button', { class: 'btn ana profil-duzenle-btn', style: { width: '100%' }, on: { click: function () { profilDuzenle(yenile); } } }, ikon('kalem', 'k'), t('profilDuzenle')));
     if (hb.yonetici) kap.appendChild(h('button', { class: 'btn ikincil yonetici-btn', style: { width: '100%' }, on: { click: yoneticiPaneli } }, ikon('kalkan', 'k'), t('yoneticiPanel')));
     kap.appendChild(h('div', { class: 'hesap-dugmeler' },
@@ -184,7 +189,10 @@ function hesapBolumu(yenile) {
       if (mod === 'kayit' && typeof v.kurtarma === 'string') kurtarmaGoster(v.kurtarma, v.hesap.ad);
       else tost(t('hHosgeldin', kirp(v.hesap.ad, 24)));
       yenile(); ciz();
-    }).catch(function (x) { tost(hesapHataMetni(x)); }).then(function () { gidiyor = false; btn.disabled = false; });
+    }).catch(function (x) {
+      tost(hesapHataMetni(x));
+      if (x && x.message === 'cihaz_hesap') { S.hesapMod = 'giris'; yenile(); }   // bu telefonda zaten hesap var: girişe geç
+    }).then(function () { gidiyor = false; btn.disabled = false; });
   });
   return kap;
 }

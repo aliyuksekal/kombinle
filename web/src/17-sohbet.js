@@ -13,7 +13,7 @@ function sohbetGecmisi() {
 function satirKirp(m, n) { return String(m || '').split(/\s*\n\s*/).map(function (x) { return kirp(x, n); }).filter(Boolean).join('\n').slice(0, n); }
 function sohbetKaydet(l) { LS.yaz('sohbet', l.slice(-40)); }
 /* saate göre selam: sabah Günaydın, öğlen Selam, akşam İyi akşamlar */
-var SELAM_SOZ = { tr: ['Günaydın', 'Selam', 'İyi akşamlar', 'Merhaba'], en: ['Good morning', 'Hi', 'Good evening', 'Hi'], ru: ['Доброе утро', 'Привет', 'Добрый вечер', 'Привет'], uz: ['Xayrli tong', 'Salom', 'Xayrli kech', 'Salom'] };
+var SELAM_SOZ = { tr: ['Günaydın', 'Selam', 'İyi akşamlar', 'Merhaba'], en: ['Good morning', 'Hi', 'Good evening', 'Hi'], ru: ['Доброе утро', 'Привет', 'Добрый вечер', 'Привет'], uz: ['Xayrli tong', 'Salom', 'Xayrli kech', 'Salom'], ko: ['좋은 아침이에요', '안녕하세요', '좋은 저녁이에요', '안녕하세요'] };
 function selamSoz() {
   var l = SELAM_SOZ[A.dil] || SELAM_SOZ.tr, s = new Date().getHours();
   return s >= 5 && s < 11 ? l[0] : s >= 11 && s < 17 ? l[1] : s >= 17 ? l[2] : l[3];
@@ -91,16 +91,16 @@ function yerelPrenses(metin) {
     return { m: t('fbKombin', l.map(parcaAd).join(' + ')), p: l.map(function (p) { return p.id; }) };
   };
   var var_ = function (re) { return re.test(m); };
-  if (var_(/merhaba|selam|gunaydin|aksamlar|hello|\bhi\b|morning|evening|privet|привет|добр|salom|xayrli/)) return { m: selamSoz() + ' 👑 ' + t('fbSelam'), p: [] };
-  if (var_(/renk|color|цвет|rang/)) return { m: t('fbRenk'), p: [] };
-  if (var_(/ofis|toplanti|office|meeting|офис|работ|ish/)) return kombin() || { m: t('fbOfis'), p: [] };
-  if (var_(/dugun|davet|nisan|wedding|party|свадь|празд|to'?y|bayram/)) return { m: t('fbDavet'), p: [] };
-  if (var_(/spor|rahat|gunluk|casual|comfort|повсед|удоб|kundalik|qulay/)) return kombin() || { m: t('fbRahat'), p: [] };
-  if (var_(/kis|soguk|winter|cold|зим|холод|qish|sovuq/)) return { m: t('fbKis'), p: [] };
-  if (var_(/yaz|sicak|summer|hot|лет|жар|yoz|issiq/)) return { m: t('fbYaz'), p: [] };
-  if (var_(/aksesuar|canta|kolye|kupe|accessor|bag|jewel|аксесс|сумк|aksessuar|sumka/)) return { m: t('fbAks'), p: [] };
-  if (var_(/ayakkabi|topuklu|shoe|heel|sneaker|обув|туфл|poyabzal|tufli/)) return { m: t('fbAyk'), p: [] };
-  if (var_(/kombin|giy|ne giy|outfit|wear|образ|надеть|obraz|kiy/)) return kombin() || { m: t('fbDolapBos'), p: [] };
+  if (var_(/merhaba|selam|gunaydin|aksamlar|hello|\bhi\b|morning|evening|privet|привет|добр|salom|xayrli|안녕|좋은 아침/)) return { m: selamSoz() + ' 👑 ' + t('fbSelam'), p: [] };
+  if (var_(/renk|color|цвет|rang|색/)) return { m: t('fbRenk'), p: [] };
+  if (var_(/ofis|toplanti|office|meeting|офис|работ|ish|출근|사무실|회의/)) return kombin() || { m: t('fbOfis'), p: [] };
+  if (var_(/dugun|davet|nisan|wedding|party|свадь|празд|to'?y|bayram|결혼식|파티|행사/)) return { m: t('fbDavet'), p: [] };
+  if (var_(/spor|rahat|gunluk|casual|comfort|повсед|удоб|kundalik|qulay|편한|캐주얼|일상/)) return kombin() || { m: t('fbRahat'), p: [] };
+  if (var_(/kis|soguk|winter|cold|зим|холод|qish|sovuq|겨울|추워/)) return { m: t('fbKis'), p: [] };
+  if (var_(/yaz|sicak|summer|hot|лет|жар|yoz|issiq|여름|더워/)) return { m: t('fbYaz'), p: [] };
+  if (var_(/aksesuar|canta|kolye|kupe|accessor|bag|jewel|аксесс|сумк|aksessuar|sumka|액세서리|가방|목걸이|귀걸이/)) return { m: t('fbAks'), p: [] };
+  if (var_(/ayakkabi|topuklu|shoe|heel|sneaker|обув|туфл|poyabzal|tufli|신발|구두|힐|스니커즈/)) return { m: t('fbAyk'), p: [] };
+  if (var_(/kombin|giy|ne giy|outfit|wear|образ|надеть|obraz|kiy|코디|입을|입지|뭐 입/)) return kombin() || { m: t('fbDolapBos'), p: [] };
   return { m: t('fbVarsayilan'), p: [] };
 }
 

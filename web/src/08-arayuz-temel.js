@@ -92,7 +92,7 @@ function renkAd(id) { var r = RENK[id]; return r ? yerelAd('renk', id, r.tr, r.e
 function ortamAd(id) { var o = ORTAMLAR[id]; return o ? yerelAd('ortam', id, o.tr, o.en) : ''; }
 function parcaAd(p) { return p.ad || (renkAd(p.renk) + ' ' + turAd(p.tur).toLocaleLowerCase(A.dil === 'tr' ? 'tr' : 'en')); }
 function tarihYaz(ts) {
-  try { return new Date(ts).toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { day: 'numeric', month: 'long', weekday: 'long' }); }
+  try { return new Date(ts).toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB', { day: 'numeric', month: 'long', weekday: 'long' }); }
   catch (e) { return bugunAnahtar(new Date(ts)); }
 }
 

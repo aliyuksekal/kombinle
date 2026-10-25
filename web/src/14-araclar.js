@@ -211,7 +211,7 @@ function bavulFormu() {
   var s = sayfaAc({ baslik: t('bavulBaslik'), icerik: gov, altBar: [h('button', { class: 'btn ikincil', text: t('vazgec'), on: { click: function () { s.kapat(); } } }), btn] });
   ciz6();
 }
-function kisaTarih(d) { try { return d.toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { day: 'numeric', month: 'short' }); } catch (e) { return bugunAnahtar(d); } }
+function kisaTarih(d) { try { return d.toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB', { day: 'numeric', month: 'short' }); } catch (e) { return bugunAnahtar(d); } }
 function bavulOlustur(yer, bas, gunSay, planMetni, kayit) {
   var cumle = cumleCoz(planMetni, '');
   var parcalar = oneriParcalari();
@@ -306,7 +306,7 @@ function istatistikSayfasi() {
   var toplamGiy = l.reduce(function (a, p) { return a + (p.giy || 0); }, 0);
   var fiyatli = l.filter(function (p) { return p.fiyat > 0; });
   var deger = fiyatli.reduce(function (a, p) { return a + p.fiyat; }, 0);
-  var para = function (x) { try { return x.toLocaleString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { maximumFractionDigits: 0 }) + ' ₺'; } catch (e) { return Math.round(x) + ' ₺'; } };
+  var para = function (x) { try { return x.toLocaleString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB', { maximumFractionDigits: 0 }) + ' ₺'; } catch (e) { return Math.round(x) + ' ₺'; } };
   var gov = h('div');
   gov.appendChild(h('div', { class: 'istat-sayi' },
     h('div', null, h('b', { text: l.length }), h('small', { text: t('isParca') })),
@@ -430,7 +430,7 @@ function takvimCiz() {
   var ay = S.takvimAy ? new Date(S.takvimAy) : new Date();
   ay.setDate(1); ay.setHours(12, 0, 0, 0);
   var adi;
-  try { adi = ay.toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ' })[A.dil] || 'en-GB', { month: 'long', year: 'numeric' }); } catch (e) { adi = bugunAnahtar(ay).slice(0, 7); }
+  try { adi = ay.toLocaleDateString(({ tr: 'tr-TR', ru: 'ru-RU', uz: 'uz-UZ', ko: 'ko-KR' })[A.dil] || 'en-GB', { month: 'long', year: 'numeric' }); } catch (e) { adi = bugunAnahtar(ay).slice(0, 7); }
   var degistir = function (n) { var d = new Date(ay); d.setMonth(d.getMonth() + n); S.takvimAy = d.getTime(); ciz(); };
   bol.appendChild(h('div', { class: 'takvim-ust' },
     h('button', { class: 'ikon-btn', 'aria-label': t('oncekiAy'), on: { click: function () { degistir(-1); } } }, ikon('sol')),

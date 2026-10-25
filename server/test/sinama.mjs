@@ -285,6 +285,9 @@ syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
 ok(syz.includes('AI Stilist') && syz.includes('erkek giyimine') && !syz.includes('"prenses" hitabını bu cevapta en fazla'), 'erkek kullanıcıya AI Stilist, prenses hitabı yok');
 r = await iste('/v1/sohbet', { mesaj: 'ne giysem', dil: 'tr', gecmis: [], saat: 13, ilk: true, kimin: 'notr' });
 ok(yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text.includes('cinsiyetini varsayma'), 'belirtmek istemeyene cinsiyetsiz dil');
+r = await iste('/v1/sohbet', { mesaj: '뭐 입을까요', dil: 'ko', gecmis: [], saat: 8, ilk: true });
+syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
+ok(syz.includes('한국어') && syz.includes('"좋은 아침이에요" ile başla'), 'Korece sohbet: Korece cevap ve Korece selam');
 yzYanit = () => ({ yanit: 'Selam prenses! 💜 bence lacivert pantolon olur.', parcalar: [], oneriler: [] });
 r = await iste('/v1/sohbet', { mesaj: 'peki alta?', dil: 'tr', gecmis: [{ r: 'k', m: 'ne giysem' }, { r: 'a', m: 'Merhaba prenses! Krem kazak.' }], saat: 13, ilk: false });
 syz = yzIstekleri[yzIstekleri.length - 1].g.contents[0].parts[0].text;
@@ -751,6 +754,43 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   ok(ko && Array.isArray(ko.resimler) && ko.resimler.indexOf(r1.veri.id) >= 0 && ko.resimler.indexOf(r2.veri.id) < 0, 'kişi kartında yalnız herkese açık paylaşımların resmi');
   await iste('/v1/takip', { kod: kC, takip: false }, cihazB);
   await iste('/v1/gizlilik', { acik: false }, cihazC);
+}
+
+// herkesin tek profili: telefon başına tek hesap, eski telefon profili hesaba taşınır, hesapsız profiller gizlenir
+{
+  const tuzlu = async ham => { const h = createHash('sha256').update('cihaz:' + ANAHTAR + ':' + ham).digest('hex'); return h.slice(0, 40); };
+  r = await iste('/v1/kayit', { ad: 'Bora İkinci', eposta: 'bora2@ornek.com', sifre: 'sifre-bora-222' }, cihazB, { oturumsuz: true });
+  ok(r.veri.hata === 'cihaz_hesap' && r.veri.eposta === 'bo***@ornek.com', 'aynı telefondan ikinci hesap açılamaz (hangi hesap olduğu gizlenerek söylenir)');
+  // eski sürümden kalma telefon profili: adı aynı, takipçisi var
+  const cihazE = 'e'.repeat(64), eski = (await tuzlu(cihazE)).slice(0, 12);
+  const kD = (await iste('/v1/ben', {}, cihazD)).veri.hesap.kod;
+  db.prepare('INSERT INTO profil (kod, takma, zaman, hesapli) VALUES (?, ?, ?, 1)').run(eski, 'Emre', Date.now());
+  db.prepare('INSERT INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').run(kD, eski, Date.now());
+  const ek = await iste('/v1/kayit', { ad: 'Emre', eposta: 'emre@ornek.com', sifre: 'sifre-emre-123' }, cihazE, { oturumsuz: true });
+  OTURUM[cihazE] = ek.veri.oturum;
+  const kE = ek.veri.hesap.kod;
+  await iste('/v1/ben', {}, cihazE);
+  ok(!db.prepare('SELECT 1 FROM profil WHERE kod = ?').get(eski), 'eski telefon profili kaldırıldı');
+  ok(!!db.prepare('SELECT 1 FROM takip WHERE takipci = ? AND takip = ?').get(kD, kE), 'eski profilin takipçisi hesaba taşındı');
+  const kt = (await iste('/v1/kisiler', { mod: 'takip' }, cihazD)).veri.liste;
+  ok(kt.filter(k => k.takma === 'Emre').length === 1, 'takip edenin listesinde tek "Emre" görünüyor');
+  // başka birinin telefonunda giriş: o telefondaki başka adlı eski profil taşınmaz
+  const cihazF = 'f'.repeat(64), eskiF = (await tuzlu(cihazF)).slice(0, 12);
+  db.prepare('INSERT INTO profil (kod, takma, zaman, hesapli) VALUES (?, ?, ?, 1)').run(eskiF, 'Fatma', Date.now());
+  db.prepare("UPDATE hesap SET cihaz = 'x' WHERE eposta = 'emre@ornek.com'").run();
+  const gf = await iste('/v1/giris', { eposta: 'emre@ornek.com', sifre: 'sifre-emre-123' }, cihazF, { oturumsuz: true });
+  ok(gf.veri.ok && !!db.prepare('SELECT 1 FROM profil WHERE kod = ?').get(eskiF), 'eşinin telefonunda giriş yapınca onun eski profili taşınmadı');
+  // hesapsız (hayalet) profiller gizlenir, takip ilişkileri silinir
+  db.prepare("DELETE FROM bakim WHERE ad = 'hayalet'").run();
+  db.prepare('INSERT INTO profil (kod, takma, zaman, hesapli) VALUES (?, ?, ?, 1)').run('a1b2c3d4e5f6', 'Hayalet', Date.now());
+  db.prepare('INSERT INTO takip (takipci, takip, zaman) VALUES (?, ?, ?)').run(kD, 'a1b2c3d4e5f6', Date.now());
+  await iste('/v1/ben', {}, cihazD);
+  ok(db.prepare('SELECT hesapli FROM profil WHERE kod = ?').get('a1b2c3d4e5f6').hesapli === 0 && !db.prepare('SELECT 1 FROM takip WHERE takip = ?').get('a1b2c3d4e5f6'), 'hesabı olmayan profil gizlendi, takibi silindi');
+  ok(db.prepare("SELECT COUNT(*) AS n FROM profil p JOIN hesap h ON h.kod = p.kod WHERE p.hesapli = 1").get().n === db.prepare('SELECT COUNT(*) AS n FROM hesap').get().n, 'her hesabın tek ve görünür profili var');
+  ok(!(await iste('/v1/kisiler', { ara: 'Hayalet' }, cihazD)).veri.liste.length, 'hayalet profil aramada çıkmıyor');
+  // aynı telefonda iki hesap varsa uyarı
+  db.prepare("UPDATE hesap SET cihaz = (SELECT cihaz FROM hesap WHERE eposta = 'deniz@ornek.com') WHERE eposta = 'emre@ornek.com'").run();
+  ok((await iste('/v1/ben', {}, cihazD)).veri.ikinciHesap === 'em***@ornek.com', 'bu telefondaki ikinci hesap kullanıcıya bildirilir');
 }
 
 // cron

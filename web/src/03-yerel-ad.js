@@ -25,6 +25,19 @@ var AD_DIL = {
     ortam: { is: 'Ish / uchrashuv', davet: "Bayram / to'y", randevu: 'Uchrashuv / kechki ovqat', pratik: 'Boshpana / uy ishlari', spor: 'Mashg\'ulot', doga: 'Tabiat / sayohat', seyahat: 'Safar', okul: "O'qish", plaj: "Plyaj / hovuz", ev: 'Uyda', taziye: "Ta'ziya", gunluk: 'Kundalik' },
     grup: { ust: 'Ust', alt: 'Past', tek: "Ko'ylaklar", dis: 'Ustki kiyim', ayk: 'Poyabzal', aks: 'Aksessuarlar', ic: 'Ichki kiyim' },
     mevsim: { i: 'Bahor', y: 'Yoz', s: 'Kuz', k: 'Qish' }
+  },
+  ko: {
+    tur: { polo: '폴로 셔츠', takim: '정장 재킷', kravat: '넥타이 / 나비넥타이', tisort: '티셔츠', bluz: '블라우스', gomlek: '셔츠', askili: '민소매 / 나시', kazak: '스웨터', sweat: '맨투맨', tunik: '튜닉', kumas: '슬랙스', kot: '청바지',
+      etek: '치마', uzunetek: '롱스커트', sort: '반바지', tayt: '레깅스', esofman: '트레이닝 바지', elbise: '원피스', uzunelbise: '맥시 원피스', tulum: '점프수트', ferace: '아바야', hirka: '카디건', yelek: '조끼',
+      blazer: '블레이저', ceket: '재킷', tren: '트렌치코트', yagmurluk: '레인코트', mont: '패딩 / 파카', kaban: '울 코트', spor: '스니커즈', babet: '플랫슈즈', loafer: '로퍼', topuklu: '힐', bot: '부츠',
+      sandalet: '샌들', terlik: '슬리퍼', canta: '가방', esarp: '스카프 / 숄', atki: '목도리', bere: '모자 / 비니', eldiven: '장갑', gozluk: '선글라스', kemer: '벨트', kupe: '귀걸이', kolye: '목걸이',
+      bileklik: '팔찌 / 반지', saat: '시계', taki: '기타 주얼리', kulot: '팬티', sutyen: '브래지어', corap: '양말', kulotlu: '스타킹' },
+    renk: { siyah: '검정', antrasit: '차콜', gri: '회색', acikgri: '연회색', beyaz: '흰색', krem: '크림', bej: '베이지', taba: '카멜', kahve: '갈색', lacivert: '네이비', kot: '데님', haki: '카키',
+      zeytin: '올리브', bordo: '버건디', kirmizi: '빨강', pembe: '분홍', pudra: '파우더 핑크', fusya: '푸시아', mor: '보라', lila: '라일락', mavi: '파랑', acikmavi: '하늘색', turkuaz: '청록', yesil: '초록',
+      mint: '민트', sari: '노랑', hardal: '머스터드', turuncu: '주황', somon: '연어색' },
+    ortam: { is: '출근 / 회의', davet: '행사 / 결혼식', randevu: '데이트 / 저녁 식사', pratik: '봉사 / 집안일', spor: '운동', doga: '자연 / 등산', seyahat: '여행', okul: '학교', plaj: '해변 / 수영장', ev: '집', taziye: '조문', gunluk: '일상' },
+    grup: { ust: '상의', alt: '하의', tek: '원피스', dis: '아우터', ayk: '신발', aks: '액세서리', ic: '속옷' },
+    mevsim: { i: '봄', y: '여름', s: '가을', k: '겨울' }
   }
 };
 /* tr → Türkçe ad, en ve diğer diller → çeviri ya da İngilizce */
@@ -37,18 +50,18 @@ function yerelAd(tip, id, tr, en) {
 /* Rusça ve Özbekçe planlardan ortam tanıma (internetsiz) */
 (function () {
   var ek = {
-    is: 'работ офис встреч собеседован совещан презентац клиент ish ofis uchrashuv majlis suhbat taqdimot',
-    davet: 'свадьб праздник вечеринк банкет торжеств юбилей to\'y toy bayram ziyofat tantana nikoh',
-    randevu: 'свидан ужин ресторан романтич kechki restoran uchrashuvga',
-    pratik: 'приют убор животн собак кошк ремонт boshpana tozalash hayvon itlar mushuk',
-    spor: 'спорт трениров зал фитнес бег йог sport mashg yugur zal fitnes',
-    doga: 'поход природ лес гор пикник tabiat tog o\'rmon piknik',
-    seyahat: 'поездк путешеств самолёт самолет аэропорт отпуск safar sayohat samolyot aeroport',
-    okul: 'школ университет учёб учеб лекци maktab universitet dars o\'qish',
-    plaj: 'пляж мор бассейн plyaj dengiz hovuz',
-    ev: 'дома домашн uyda uy',
-    taziye: 'похорон соболезнован поминк ta\'ziya janoza',
-    gunluk: 'прогулк кафе магазин шопинг каждый sayr kafe do\'kon xarid'
+    is: 'работ офис встреч собеседован совещан презентац клиент ish ofis uchrashuv majlis suhbat taqdimot 출근 회의 사무실 면접 발표',
+    davet: 'свадьб праздник вечеринк банкет торжеств юбилей to\'y toy bayram ziyofat tantana nikoh 결혼식 파티 행사 돌잔치 축하',
+    randevu: 'свидан ужин ресторан романтич kechki restoran uchrashuvga 데이트 저녁 레스토랑',
+    pratik: 'приют убор животн собак кошк ремонт boshpana tozalash hayvon itlar mushuk 봉사 청소 이사',
+    spor: 'спорт трениров зал фитнес бег йог sport mashg yugur zal fitnes 운동 헬스 요가 러닝',
+    doga: 'поход природ лес гор пикник tabiat tog o\'rmon piknik 등산 캠핑 피크닉 산',
+    seyahat: 'поездк путешеств самолёт самолет аэропорт отпуск safar sayohat samolyot aeroport 여행 공항 비행기 휴가',
+    okul: 'школ университет учёб учеб лекци maktab universitet dars o\'qish 학교 대학 수업 강의',
+    plaj: 'пляж мор бассейн plyaj dengiz hovuz 해변 바다 수영장',
+    ev: 'дома домашн uyda uy 집에서',
+    taziye: 'похорон соболезнован поминк ta\'ziya janoza 장례식 조문',
+    gunluk: 'прогулк кафе магазин шопинг каждый sayr kafe do\'kon xarid 산책 카페 쇼핑'
   };
   Object.keys(ek).forEach(function (id) { if (ORTAMLAR[id]) ORTAMLAR[id].k += ' ' + ek[id]; });
 })();
