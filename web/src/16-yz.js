@@ -302,11 +302,7 @@ function kisilerKarti() {
       if (!l.length) { sira.appendChild(h('p', { class: 'alt-yazi', text: kirp(ara.value, 24) ? t('kisiYok') : t('kisiYokHenuz') })); return; }
       l.forEach(function (k) {
         var ad = kirp(k.takma, 24), kd = typeof k.kadi === 'string' ? k.kadi : '', bio = typeof k.bio === 'string' ? kirp(k.bio, 150) : '';
-        sira.appendChild(h('div', { class: 'g-kisi' },
-          h('button', { class: 'g-kisi-ac', on: { click: function () { kisiSayfasi(k.kod, ad, kd, bio, k.av); } } },
-            avatarDoldur(h('span', { class: 'uav' }), kisiAvatar(k.kod, k.av, ad), ad), h('b', { text: ad }), kadiEl(kd),
-            h('small', { text: t('takipciSay', k.takipci | 0) + ' • ' + t('paylasimSay', k.paylasim | 0) })),
-          takipDugmesi(k.kod, !!k.takipte, !!k.istekte)));
+        sira.appendChild(kisiKarti(k, sunucuAdres()));
       });
     }).catch(function () { if (no === son) { temizle(sira); sira.appendChild(h('p', { class: 'alt-yazi', text: t('tpHata') })); } });
   }
@@ -316,6 +312,7 @@ function kisilerKarti() {
 }
 function toplulukBolumu() {
   var kap = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } });
+  if (yzKurulu() && girisli()) kap.appendChild(takipSirasi());
   if (yzKurulu()) kap.appendChild(kisilerKarti());
   var seg = h('div', { class: 'g-haplar' });
   [['yeni', 'tpHerkes'], ['takip', 'tpTakip'], ['populer', 'tpPopuler'], ['anket', 'tpAnket'], ['benim', 'tpBenim']].forEach(function (x) {
@@ -360,7 +357,6 @@ function toplulukDoldur(alan) {
       setTimeout(function () { if (document.body.contains(daha)) io.observe(daha); }, 50);
     }
   }
-  yenilemeKur(alan);
 }
 /* aşağı çekip bırakınca akış yenilenir */
 function yenilemeKur(alan) {
@@ -396,7 +392,7 @@ function goruntuleyiciAc(src, alt) {
   requestAnimationFrame(function () { kok.classList.add('acik'); });
   var kayit = { kapandi: false };
   YIGIN.push(kayit);
-  try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { }
+  gecmisEkle();
   function kapat(gecmistenMi) {
     if (kayit.kapandi) return;
     kayit.kapandi = true;
@@ -672,7 +668,7 @@ function tuvaldenB64(c, enFazla) {
   }
   return b64 && b64.length * 0.75 <= enFazla ? b64 : '';
 }
-function paylasSayfasi(k, baglam) {
+function paylasSayfasi(k, baglam, hazir) {
   if (!yzKurulu()) { tost(t('tpYok')); return; }
   if (!girisIste()) return;
   var hb = hesapBilgi();
@@ -695,30 +691,23 @@ function paylasSayfasi(k, baglam) {
   function goster(c) {
     temizle(onizleme);
     tuval = c;
+    duzenBtn.hidden = !c;
     if (!c) { onizleme.appendChild(h('p', { class: 'alt-yazi', text: t('resimInternet') })); return; }
     var img = h('img', { alt: '', src: c.toDataURL('image/jpeg', 0.8) });
     onizleme.appendChild(img);
   }
-  var fotoBtn = h('button', { class: 'btn ikincil kucuk', on: { click: kendiFotografi } }, ikon('galeri', 'k'), t('kendiFoto'));
+  var fotoBtn = h('button', { class: 'btn ikincil kucuk', on: { click: kendiFotografi } }, ikon('galeri', 'k'), t('gnGaleri'));
+  var kameraBtn = h('button', { class: 'btn ikincil kucuk', on: { click: function () {
+    kameraAc({ tek: true, sonuc: function (c) { fotoDuzenle(c).then(function (d) { if (d) goster(d); }); }, galeri: kendiFotografi });
+  } } }, ikon('kamera', 'k'), t('gnKamera'));
+  var duzenBtn = h('button', { class: 'btn ikincil kucuk', hidden: true, on: { click: function () { if (tuval) fotoDuzenle(tuval).then(function (d) { if (d) goster(d); }); } } }, ikon('isilti', 'k'), t('duzenle'));
   var kolajBtn = h('button', { class: 'btn ikincil kucuk', on: { click: function () { kombinKolaji(k).then(goster); } } }, ikon('aski', 'k'), t('kolajKullan'));
   function kendiFotografi() {
-    var inp = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', style: { display: 'none' } });
-    document.body.appendChild(inp);
-    inp.addEventListener('change', function () {
-      var f = inp.files && inp.files[0]; inp.remove();
-      if (!f) return;
-      if (f.size > EN_BUYUK_DOSYA) { tost(t('dosyaBuyuk')); return; }
-      resimCoz(f).then(function (bmp) {
-        var c = tuvaleCiz(bmp, 1080);   /* yeniden çizim: konum gibi EXIF bilgileri gitmez */
-        try { if (bmp.close) bmp.close(); } catch (e) { }
-        goster(c);
-      }).catch(function () { tost(t('dosyaBozuk')); });
-    });
-    inp.click();
+    galeridenTuval().then(function (c) { if (c) fotoDuzenle(c).then(function (d) { if (d) goster(d); }); });
   }
   var gov = h('div', null,
     onizleme,
-    h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, k ? kolajBtn : null, fotoBtn),
+    h('div', { class: 'sarili', style: { 'margin-top': '10px' } }, k ? kolajBtn : null, kameraBtn, fotoBtn, duzenBtn),
     h('div', { class: 'bolum' }, takma),
     h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('aciklamaYer') }), aciklama),
     h('div', { class: 'bolum' }, h('span', { class: 'etk', text: t('gorunurlukBaslik') }), gorSec),
@@ -727,7 +716,7 @@ function paylasSayfasi(k, baglam) {
       h('ul', null, ['kural1', 'kural2', 'kural3', 'kural4'].map(function (x) { return h('li', { text: t(x) }); })),
       h('label', { class: 'g-onay', for: 'kuralOnay' }, onay, h('span', { text: t('kurallarOnay') }))));
   var s = sayfaAc({ baslik: t('paylasBaslik'), icerik: gov, altBar: gonderBtn });
-  if (k) kombinKolaji(k).then(goster); else goster(null);
+  if (hazir) goster(hazir); else if (k) kombinKolaji(k).then(goster); else goster(null);
   var gidiyor = false;
   function gonder() {
     if (gidiyor) return;

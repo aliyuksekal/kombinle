@@ -62,7 +62,8 @@ function ayarIcerik(gov) {
         A.kimin === 'erkek' ? null : anahtarSatir(t('tesettur'), t('tesetturAlt'), A.tesettur, function (v) { A.tesettur = v; ayarKaydet(); S.sonuc = null; }, 'esarp'),
         (yzKurulu() ? anahtarSatir(t('yzAc'), t('yzAcAlt'), A.yz, function (v) { A.yz = v; ayarKaydet(); S.sonuc = null; }, 'isilti') : null),
         anahtarSatir(t('kendiMod'), t('kendiModAlt'), A.kendiMod, function (v) { A.kendiMod = v; ayarKaydet(); S.sonuc = null; }, 'kalp'),
-        satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi))));
+        satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi),
+        YEREL ? bildirimAyarSatiri() : null)));
     /* pro ve destek */
     gov.appendChild(kart('pro', 'zap', t('proBaslik'), S.pro ? t('proAcik') : t('jetonVar', jeton()),
       h('div', { class: 'ayar-grup' },

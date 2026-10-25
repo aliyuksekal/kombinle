@@ -35,7 +35,7 @@ with sync_playwright() as pw:
     ok(s.locator('.bas .pr-yeni').count() == 1, 'kendi profilimde üstte "+" (yeni kombin paylaş)')
     o.ekran('t1_profil_tam')
     s.locator('.bas .pr-yeni').click(); p.wait_for_timeout(900)
-    ok('Kombinini paylaş' in son(p).inner_text(), '"+" paylaşım sayfasını açtı')
+    ok('Kamera' in son(p).inner_text() and 'Galeri' in son(p).inner_text(), '"+" yeni gönderi için kamera / galeri soruyor')
     son(p).locator('.bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(500)
     son(p).locator('.bas [aria-label="Geri"]').click(); p.wait_for_timeout(500)
     ok(p.locator('.sayfa.acik').count() == 0, 'geri düğmesi profili kapattı')

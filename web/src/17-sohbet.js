@@ -130,7 +130,7 @@ function sohbetAc() {
   /* geri tuşu sohbeti kapatsın */
   var kayit = { kapandi: false };
   YIGIN.push(kayit);
-  try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { }
+  gecmisEkle();
   function kapat(gecmistenMi) {
     if (kayit.kapandi) return;
     kayit.kapandi = true; SOHBET.acik = false;

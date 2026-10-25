@@ -413,3 +413,48 @@ html[data-tema="koyu"] .g-pro{background:#0E0C0F!important;border-color:var(--al
 .kimin-seg button{white-space:nowrap}
 .dm-izin-satir .seg{margin-top:8px}
 .pr-mesaj[aria-disabled=true]{opacity:.45}
+
+/* ---------- Fotoğraf düzenleyici ---------- */
+.gn-sayfa{display:flex;flex-direction:column;gap:12px;min-height:100%}
+.gn-sahne{flex:1;min-height:240px;display:grid;place-items:center;background:var(--yuzey2);border-radius:18px;overflow:hidden;padding:8px}
+.gn-onizleme{max-width:100%;max-height:52vh;border-radius:10px;touch-action:none;display:block}
+.gn-sekmeler{align-self:center}
+.gn-arac{display:flex;flex-direction:column;gap:10px;min-height:120px}
+.gn-filtreler{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.gn-filtreler::-webkit-scrollbar{display:none}
+.gn-filtre{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:var(--murekkep);padding:0}
+.gn-filtre-resim{width:72px;height:72px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:var(--yuzey2);border:2px solid transparent}
+.gn-filtre-resim canvas{width:100%;height:100%;object-fit:cover}
+.gn-filtre[aria-pressed=true] .gn-filtre-resim{border-color:var(--vurgu)}
+.gn-filtre b{font-size:11.5px;font-weight:600}
+.gn-filtre[aria-pressed=true] b{color:var(--vurgu)}
+.gn-kaydir{display:grid;grid-template-columns:92px 1fr 34px;align-items:center;gap:10px;font-size:13px}
+.gn-kaydir input{width:100%;accent-color:var(--vurgu)}
+.gn-kaydir output{text-align:right;font-variant-numeric:tabular-nums;color:var(--soluk);font-size:12px}
+.gn-kirp{justify-content:center;gap:10px}
+
+/* ---------- Uygulama içi bildirim şeridi ---------- */
+.bn-serit{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:60;display:flex;align-items:center;gap:10px;max-width:min(92vw,420px);padding:12px 16px;border-radius:16px;border:1px solid var(--cizgi);background:var(--yuzey);color:var(--murekkep);box-shadow:0 10px 30px rgba(0,0,0,.18);font:inherit;font-size:14px;text-align:left;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.bn-serit.acik{transform:translate(-50%,0)}
+.bn-serit .ik{color:var(--vurgu);flex:none}
+
+/* ---------- Keşfet: çekip yenile ---------- */
+.cek-yenile-ust{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top));z-index:40;width:38px;height:38px;border-radius:50%;background:var(--yuzey);border:1px solid var(--cizgi);box-shadow:0 6px 18px rgba(0,0,0,.12);display:grid;place-items:center;color:var(--soluk);opacity:0;transform:translate(-50%,0);pointer-events:none;transition:opacity .2s}
+.cek-yenile-ust.hazir{color:var(--vurgu)}
+
+/* ---------- Keşfet: takip ettiklerin ve kişi kartları ---------- */
+.kt{background:var(--yuzey);border:1px solid var(--cizgi2);border-radius:24px;padding:14px 14px 10px}
+.kt-sira{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;padding:4px 2px}
+.kt-sira::-webkit-scrollbar{display:none}
+.kt-kisi{flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:var(--murekkep);padding:0}
+.kt-halka{padding:3px;border-radius:50%;border:2px solid var(--cizgi)}
+.kt-kisi.yeni .kt-halka{border-color:var(--vurgu)}
+.kt-kisi .uav{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--yuzey2);font-weight:700;overflow:hidden}
+.kt-kisi small{font-size:11px;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-kisi.kk{width:200px;padding:0 0 12px;overflow:hidden;border-radius:20px}
+.g-kisi.kk .g-kisi-ac{padding:0 10px}
+.kk-resimler{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:0 -10px 0;height:72px}
+.kk-resimler img,.kk-bos{width:100%;height:72px;object-fit:cover;background:var(--yuzey);display:grid;place-items:center;color:var(--soluk)}
+.g-kisi.kk .uav{width:54px;height:54px;margin:-27px auto 6px;border:3px solid var(--yuzey2);position:relative}
+.kk-bio{font-size:11.5px;color:var(--soluk);margin:4px 0 0;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.g-kisi.kk .g-takip{margin:0 10px;width:calc(100% - 20px)}

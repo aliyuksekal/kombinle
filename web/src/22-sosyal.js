@@ -20,7 +20,7 @@ function profilSayfasi(kod, on) {
   /* kendi profilimde üst çubukta "+": yeni kombin paylaş (Instagram'daki gibi) */
   if (benim) {
     var sag = $('.bas-sag', s.sayfa);
-    if (sag) sag.appendChild(h('button', { class: 'ikon-btn pr-yeni', 'aria-label': t('yeniPaylasim'), on: { click: function () { paylasSayfasi(null, null); } } }, ikon('arti')));
+    if (sag) sag.appendChild(h('button', { class: 'ikon-btn pr-yeni', 'aria-label': t('yeniPaylasim'), on: { click: yeniPaylasim } }, ikon('arti')));
   }
   var sekme = 'paylasim';
   gov.appendChild(bas);
@@ -77,7 +77,7 @@ function profilSayfasi(kod, on) {
       temizle(izgara);
       var l = Array.isArray(v.liste) ? v.liste.filter(paylasimGecerli) : [];
       if (!l.length) { izgara.appendChild(h('div', { class: 'g-bos-not pr-tam' }, ikon(sekme === 'kayitli' ? 'yerimi' : 'galeri', 'k'), h('span', { text: sekme === 'kayitli' ? t('prKayitliBos') : benim ? t('prBenimBos') : t('prBos') }),
-        benim && sekme === 'paylasim' ? h('button', { class: 'btn ana kucuk', style: { 'margin-top': '10px' }, on: { click: function () { paylasSayfasi(null, null); } } }, ikon('arti', 'k'), t('ilkPaylasim')) : null)); return; }
+        benim && sekme === 'paylasim' ? h('button', { class: 'btn ana kucuk', style: { 'margin-top': '10px' }, on: { click: yeniPaylasim } }, ikon('arti', 'k'), t('ilkPaylasim')) : null)); return; }
       var adres = sunucuAdres();
       l.forEach(function (x) {
         var hucre = h('button', { class: 'pr-hucre', 'aria-label': kirp(x.aciklama, 60) || t('paylasim') },
@@ -160,8 +160,11 @@ function bildirimSayi(hemen) {
     DM.okunmamis = sayiMi(v.mesaj) ? Math.max(0, v.mesaj | 0) : 0; dmRozetGuncelle();
     /* uygulama açıkken yeni takipçi / bildirim / mesaj kısa bir uyarıyla haber verilir (ilk açılışta eskiler için değil) */
     var son = v.son && sayiMi(v.son.zaman) ? v.son : null, sm = v.sonMesaj && sayiMi(v.sonMesaj.zaman) ? v.sonMesaj : null;
-    if (BILDIRIM.gorulen && son && son.zaman > BILDIRIM.gorulen) tost(son.tur === 'takip' ? t('bnYeniTakip', kirp(son.takma, 24)) : son.tur === 'istek' ? t('bnIstek', kirp(son.takma, 24)) : son.tur === 'kabul' ? t('bnKabul', kirp(son.takma, 24)) : t('bnYeni'));
-    if (BILDIRIM.gorulenMesaj && sm && sm.zaman > BILDIRIM.gorulenMesaj && !DM.acik) tost(t('bnYeniMesaj', kirp(sm.takma, 24)));
+    if (BILDIRIM.gorulen && son && son.zaman > BILDIRIM.gorulen) {
+      var ad = kirp(son.takma, 24);
+      bildirimSeridi(son.tur === 'takip' ? t('bnYeniTakip', ad) : son.tur === 'istek' ? t('bnIstek', ad) : son.tur === 'kabul' ? t('bnKabul', ad) : son.tur === 'paylasim' ? t('bnYeniPaylasim', ad) : t('bnYeni'), 'bildirim');
+    }
+    if (BILDIRIM.gorulenMesaj && sm && sm.zaman > BILDIRIM.gorulenMesaj && !DM.acik) bildirimSeridi(t('bnYeniMesaj', kirp(sm.takma, 24)), 'mesaj');
     BILDIRIM.gorulen = Math.max(BILDIRIM.gorulen || 1, son ? son.zaman : 1);
     BILDIRIM.gorulenMesaj = Math.max(BILDIRIM.gorulenMesaj || 1, sm ? sm.zaman : 1);
   }).catch(function () { });
@@ -198,7 +201,7 @@ function bildirimSayfasi() {
       gov.appendChild(h('button', { class: 'pr-istek bn-istekler', on: { click: function () { istekSayfasi(function () { s.kapat(); setTimeout(bildirimSayfasi, 300); }); } } },
         ikon('kisi', 'k'), h('span', null, h('b', { text: t('takipIstekleri') }), h('small', { text: t('istekOzet', kirp(ist[0].takma, 24), ist.length - 1) })), h('b', { class: 'dm-sayi', text: String(ist.length) })));
     }
-    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip', 'anket', 'kabul'].indexOf(b.tur) >= 0; }) : [];
+    var l = Array.isArray(v.liste) ? v.liste.filter(function (b) { return b && /^[a-f0-9]{12}$/.test(b.kod) && typeof b.takma === 'string' && ['begeni', 'yorum', 'takip', 'anket', 'kabul', 'paylasim'].indexOf(b.tur) >= 0; }) : [];
     if (!l.length && !ist.length) { gov.appendChild(h('div', { class: 'g-bos-not' }, ikon('zil', 'k'), h('span', { text: t('bildirimYok') }))); return; }
     var bugun = [], once = [];
     l.forEach(function (b) { (Date.now() - b.zaman < 86400000 * 7 ? bugun : once).push(b); });
@@ -207,13 +210,13 @@ function bildirimSayfasi() {
       gov.appendChild(h('span', { class: 'g-bolum-etk', text: grup[1] }));
       grup[0].forEach(function (b) {
         var ad = kirp(b.takma, 24);
-        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : b.tur === 'anket' ? t('bnAnket') : b.tur === 'kabul' ? t('bnKabulMetin') : t('bnTakip');
+        var metin = b.tur === 'begeni' ? t('bnBegendi') : b.tur === 'yorum' ? t('bnYorum', kirp(b.metin, 80)) : b.tur === 'anket' ? t('bnAnket') : b.tur === 'kabul' ? t('bnKabulMetin') : b.tur === 'paylasim' ? t('bnPaylasim') : t('bnTakip');
         var ac = function () {
           s.kapat();
           setTimeout(function () {
             if (b.tur === 'anket') { S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; ANKET.sira = 'benim'; ANKET.yuklendi = false; ciz(); window.scrollTo(0, 0); }
             else if (b.tur === 'takip' || b.tur === 'kabul' || !/^[a-z0-9]{20}$/.test(b.paylasim)) profilSayfasi(b.kod, b);
-            else paylasimAcId(b.paylasim);
+            else paylasimAcId(b.paylasim, b.tur === 'paylasim' ? b.kod : '');
           }, 250);
         };
         var ek = h('small', { class: 'bn-metin' }, h('span', { text: metin }), h('i', { text: ' • ' + zamanOnce(b.zaman) }));
@@ -228,10 +231,10 @@ function bildirimSayfasi() {
   }).catch(function (e) { temizle(gov); gov.appendChild(h('p', { class: 'alt-yazi', text: hesapHataMetni(e) })); });
 }
 /* bildirimden paylaşıma: kendi paylaşımlarım arasında bul */
-function paylasimAcId(id) {
+function paylasimAcId(id, kod) {
   var x = TOPLULUK.liste.filter(function (y) { return y.id === id; })[0];
   if (x) { paylasimDetay(x); return; }
-  yzIste('/v1/akis', { sira: 'benim' }, 15000).then(function (v) {
+  yzIste('/v1/akis', kod ? { sira: 'kisi', kisi: kod } : { sira: 'benim' }, 15000).then(function (v) {
     var l = Array.isArray(v.liste) ? v.liste.filter(paylasimGecerli) : [];
     var y = l.filter(function (z) { return z.id === id; })[0];
     if (y) paylasimDetay(y); else tost(t('prYok'));

@@ -546,6 +546,7 @@ public class AnaEkran extends Activity {
     protected void onPause() {
         super.onPause();
         BildirimIscisi.onPlanda = false;
+        BildirimIscisi.yakindaBak(this);
         if (web != null) web.onPause();
     }
 

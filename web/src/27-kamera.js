@@ -5,8 +5,10 @@
    Art arda birkaç parça çekilebilir, "Bitti" ile hepsi sırayla tanınır. İki parmakla yakınlaştırma. */
 
 var KAMERA_EN_FAZLA = 10;
-function kameraAc() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { tost(t('kameraYok')); $('#dosyaSec').click(); return; }
+/* sec.tek: gönderi kamerası — tek kare çekilir, sec.sonuc(tuval) çağrılır; galeri düğmesi sec.galeri() */
+function kameraAc(sec) {
+  sec = sec || {};
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { tost(t('kameraYok')); if (sec.tek) { if (sec.galeri) sec.galeri(); } else $('#dosyaSec').click(); return; }
   var ayar = LS.al('kamera', null) || {};
   var yon = 'environment', mod = 'kiyafet', zamanlayici = 0, izgara = ayar.izgara !== false, flas = false;
   var akis = null, iz = null, yetenek = {}, cekimler = [], geriSay = null, kapandi = false, yakin = 1;
@@ -35,7 +37,7 @@ function kameraAc() {
   /* geri tuşu kamerayı kapatsın */
   var kayit = { kapandi: false };
   YIGIN.push(kayit);
-  try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { }
+  gecmisEkle();
   kayit.kapat = function (gecmisten) { kapat(gecmisten); };
 
   function kamIkon(ad) {
@@ -57,6 +59,7 @@ function kameraAc() {
   function izgaraCiz() { izgaraEl.hidden = !izgara; izgaraBtn.setAttribute('aria-pressed', izgara ? 'true' : 'false'); }
   function modCiz() {
     temizle(modlar);
+    if (sec.tek) { modlar.appendChild(h('button', { 'aria-pressed': 'true', text: t('kamModGonderi') })); ipucu.textContent = t('kamIpucuGonderi'); return; }
     [['kiyafet', t('kamModKiyafet')], ['boydan', t('kamModBoydan')]].forEach(function (x) {
       modlar.appendChild(h('button', { 'aria-pressed': mod === x[0] ? 'true' : 'false', text: x[1], on: { click: function () { modSec(x[0]); } } }));
     });
@@ -129,6 +132,11 @@ function kameraAc() {
     var o = Math.min(1, 1920 / Math.max(video.videoWidth, video.videoHeight));
     c.width = Math.round(video.videoWidth * o); c.height = Math.round(video.videoHeight * o);
     c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);   // ön kamerada da yazılar ters çıkmasın: ayna uygulanmaz
+    if (sec.tek) {   // gönderi: çekilen kare düzenlemeye gider
+      flasPerde.classList.remove('cak'); void flasPerde.offsetWidth; flasPerde.classList.add('cak');
+      kapat(); setTimeout(function () { if (sec.sonuc) sec.sonuc(c); }, 320);
+      return;
+    }
     cekimler.push(c);
     flasPerde.classList.remove('cak'); void flasPerde.offsetWidth; flasPerde.classList.add('cak');
     try { if (navigator.vibrate) navigator.vibrate(15); } catch (e) { }
@@ -150,6 +158,7 @@ function kameraAc() {
     temizle(bittiBtn); bittiBtn.appendChild(document.createTextNode(t('kamBitti', cekimler.length)));
   }
   function galeri() {
+    if (sec.tek) { kapat(); setTimeout(function () { if (sec.galeri) sec.galeri(); }, 300); return; }
     if (cekimler.length) { onayla(t('kamCekilenler'), t('kamSonuSil'), t('sil'), true).then(function (evet) { if (evet) { cekimler.pop(); galeriCiz(); } }); return; }
     kapat(); setTimeout(function () { $('#dosyaSec').click(); }, 300);
   }

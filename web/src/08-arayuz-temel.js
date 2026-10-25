@@ -13,7 +13,13 @@ function tost(m) {
   clearTimeout(tostZaman); tostZaman = setTimeout(function () { el.classList.remove('acik'); }, 2800);
 }
 var YIGIN = [];
-var geriKilit = 0;
+var geriKilit = 0, bekleyenGecmis = 0;
+/* yeni sayfa için geçmiş kaydı; önceki sayfanın kapanışından gelen "geri" henüz işlenmediyse onu bekler
+   (yoksa geri, yeni kaydı siler ve sonraki kapanış uygulamadan çıkar) */
+function gecmisEkle() {
+  if (geriKilit > 0) { bekleyenGecmis++; return; }
+  try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { }
+}
 function sayfaAc(o) {
   var perde = h('div', { class: 'perde' });
   /* o.tam: tam ekran sayfa (profil, mesajlar, bildirimler): üstten iner, solda geri düğmesi */
@@ -31,7 +37,7 @@ function sayfaAc(o) {
   document.body.appendChild(perde); document.body.appendChild(sayfa);
   var kayit = { sayfa: sayfa, perde: perde, kapaninca: o.kapaninca, kapandi: false, icerik: icerik };
   YIGIN.push(kayit);
-  try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { }
+  gecmisEkle();
   requestAnimationFrame(function () { perde.classList.add('acik'); sayfa.classList.add('acik'); });
   perde.addEventListener('click', function () { if (!o.kilitli) kapat(); });
   function kapat(gecmistenMi) {
@@ -48,7 +54,11 @@ function sayfaAc(o) {
   return kayit;
 }
 window.addEventListener('popstate', function () {
-  if (geriKilit > 0) { geriKilit--; return; }
+  if (geriKilit > 0) {
+    geriKilit--;
+    if (!geriKilit) while (bekleyenGecmis > 0) { bekleyenGecmis--; try { history.pushState({ kb: YIGIN.length }, ''); } catch (e) { } }
+    return;
+  }
   var ust = YIGIN[YIGIN.length - 1];
   if (ust) ust.kapat(true);
 });

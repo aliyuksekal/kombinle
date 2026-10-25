@@ -699,6 +699,13 @@ async function paylas(env, g, cihaz) {
       .bind(id, cihaz, takma, aciklama, JSON.stringify(etiketler), resim, tip, Date.now(), gorunurluk),
     profilYaz(env, cihaz, takma)
   ]);
+  // takipçilere "yeni paylaşım" bildirimi (uygulama içinde ve telefonun bildirim panelinde görünür)
+  if (gorunurluk !== 'gizli') {
+    try {
+      await env.DB.prepare("INSERT OR IGNORE INTO bildirim (alici, tur, kimden, paylasim, metin, zaman) SELECT t.takipci, 'paylasim', ?1, ?2, '', ?3 FROM takip t WHERE t.takip = ?1 " +
+        'AND t.takipci NOT IN (SELECT engelleyen FROM dm_engel WHERE engellenen = ?1) ORDER BY t.zaman DESC LIMIT 5000').bind(yazarKodu(cihaz), id, Date.now()).run();
+    } catch (e) { /* bildirim yazılamasa da paylaşım yayında */ }
+  }
   return { ok: true, id };
 }
 
@@ -1015,13 +1022,28 @@ async function kisiler(env, g, cihaz, hamCihaz) {
     'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = pr.kod) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?1 AND ti.hedef = pr.kod) AS istekte FROM profil pr WHERE pr.kod <> ?1 AND pr.kod <> ?3 AND pr.hesapli = 1 ' +
     'AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ' +
     (ara ? 'AND (pr.takma LIKE ?2 OR pr.kadi LIKE ?2) ' : 'AND ?2 = \'\' ') + 'ORDER BY takipci DESC, pr.zaman DESC LIMIT 30';
-  const q = env.DB.prepare(sql);
-  const { results } = await q.bind(kod, ara ? '%' + ara + '%' : '', eskiKod).all();
+  // mod 'takip': takip ettiklerim, en son paylaşım yapan önce (keşfetteki "Takip ettiklerin" sırası)
+  const takipModu = g.mod === 'takip' && !ara;
+  const q = takipModu
+    ? env.DB.prepare('SELECT pr.kod, pr.takma, pr.kadi, pr.bio, (SELECT a.zaman FROM avatar a WHERE a.kod = pr.kod) AS av, 0 AS takipci, 0 AS paylasim, 1 AS takipte, 0 AS istekte, ' +
+      "(SELECT MAX(p.zaman) FROM paylasim p WHERE substr(p.yazar, 1, 12) = pr.kod AND p.gizli = 0 AND p.gorunurluk IN ('herkes', 'takip')) AS son " +
+      'FROM takip t JOIN profil pr ON pr.kod = t.takip WHERE t.takipci = ?1 AND pr.kod NOT IN (SELECT substr(cihaz, 1, 12) FROM engelli) ORDER BY son IS NULL, son DESC, t.zaman DESC LIMIT 40').bind(kod)
+    : env.DB.prepare(sql).bind(kod, ara ? '%' + ara + '%' : '', eskiKod);
+  const { results } = await q.all();
+  const satirlar = (results || []).filter(r => engelli.indexOf(r.kod) < 0);
+  // her kişinin son 3 herkese açık paylaşımı (kartta küçük resimler)
+  const resimler = {};
+  if (satirlar.length) {
+    const kodlar = satirlar.map(r => r.kod);
+    const { results: ps } = await env.DB.prepare("SELECT id, substr(yazar, 1, 12) AS k FROM paylasim WHERE gizli = 0 AND gorunurluk = 'herkes' AND substr(yazar, 1, 12) IN (" + kodlar.map(() => '?').join(',') + ') ORDER BY zaman DESC LIMIT 400').bind(...kodlar).all();
+    (ps || []).forEach(p => { const l = resimler[p.k] || (resimler[p.k] = []); if (l.length < 3) l.push(p.id); });
+  }
   const takipEdilen = await env.DB.prepare('SELECT COUNT(*) AS n FROM takip WHERE takipci = ?').bind(kod).first();
   return {
     ok: true,
     takipEdilen: takipEdilen ? takipEdilen.n : 0,
-    liste: (results || []).filter(r => engelli.indexOf(r.kod) < 0).map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', av: r.av || 0, takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0 }))
+    liste: satirlar.map(r => ({ kod: r.kod, takma: r.takma, kadi: r.kadi || '', bio: r.bio || '', av: r.av || 0, takipci: r.takipci, paylasim: r.paylasim, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0,
+      resimler: resimler[r.kod] || [], son: r.son || 0 }))
   };
 }
 

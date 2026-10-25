@@ -63,7 +63,8 @@ public final class BildirimIscisi extends Worker {
                 String tur = son.optString("tur");
                 int metin = "takip".equals(tur) ? R.string.bn_takip : "begeni".equals(tur) ? R.string.bn_begeni
                         : "yorum".equals(tur) ? R.string.bn_yorum : "anket".equals(tur) ? R.string.bn_anket
-                        : "istek".equals(tur) ? R.string.bn_istek : "kabul".equals(tur) ? R.string.bn_kabul : R.string.bn_genel;
+                        : "istek".equals(tur) ? R.string.bn_istek : "kabul".equals(tur) ? R.string.bn_kabul
+                        : "paylasim".equals(tur) ? R.string.bn_paylasim : R.string.bn_genel;
                 int n = v.optInt("okunmamis");
                 goster(c, NO_BILDIRIM, c.getString(metin, ad), n > 1 ? c.getString(R.string.bn_sayi, n) : c.getString(R.string.bn_ac), "bildirim");
                 a.edit().putLong("son", son.optLong("zaman")).apply();
@@ -106,6 +107,18 @@ public final class BildirimIscisi extends Worker {
         try {
             NotificationManager nm = c.getSystemService(NotificationManager.class);
             if (nm != null) { nm.cancel(NO_BILDIRIM); nm.cancel(NO_MESAJ); }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** Uygulama arka plana geçince yaklaşık 1 dakika sonra bir kez daha bakar (15 dakikalık düzenli kontrolü beklemeden). */
+    static void yakindaBak(Context c) {
+        try {
+            androidx.work.OneTimeWorkRequest r = new androidx.work.OneTimeWorkRequest.Builder(BildirimIscisi.class)
+                    .setInitialDelay(70, TimeUnit.SECONDS)
+                    .setConstraints(new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                    .build();
+            WorkManager.getInstance(c).enqueueUniqueWork("kombinle_bildirim_tek", androidx.work.ExistingWorkPolicy.REPLACE, r);
         } catch (Throwable ignored) {
         }
     }

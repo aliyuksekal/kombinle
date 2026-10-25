@@ -173,6 +173,40 @@ public final class Kopru {
         ekran.ui.post(ekran::bildirimIzniIste);
     }
 
+    /** Telefon bildirim izni var mı (Android 13+). */
+    @JavascriptInterface
+    public boolean bildirimDurum() {
+        return guvenli && BildirimIscisi.izinVar(ekran.getApplicationContext());
+    }
+
+    /** Uygulamanın bildirim ayarları sayfasını açar (izin reddedildiyse buradan açılır). */
+    @JavascriptInterface
+    public void bildirimAyarlari() {
+        if (!guvenli) return;
+        ekran.ui.post(() -> {
+            try {
+                android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ekran.getPackageName());
+                ekran.startActivity(i);
+            } catch (Throwable t) {
+                try {
+                    ekran.startActivity(new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.parse("package:" + ekran.getPackageName())));
+                } catch (Throwable ignored) { }
+            }
+        });
+    }
+
+    /** Uygulama açıkken gelen yeni bildirimi telefonun bildirim paneline de koyar. */
+    @JavascriptInterface
+    public void bildirimGoster(String baslik, String metin, String ac) {
+        if (!guvenli || baslik == null || baslik.isEmpty()) return;
+        String b = baslik.length() > 80 ? baslik.substring(0, 80) : baslik;
+        String m = metin == null ? "" : (metin.length() > 120 ? metin.substring(0, 120) : metin);
+        String a = "mesaj".equals(ac) ? "mesaj" : "bildirim";
+        BildirimIscisi.goster(ekran.getApplicationContext(), "mesaj".equals(a) ? BildirimIscisi.NO_MESAJ : BildirimIscisi.NO_BILDIRIM, b, m, a);
+    }
+
     /** Bildirime dokunarak açıldıysa bir kez "mesaj" ya da "bildirim" döner. */
     @JavascriptInterface
     public String acilacak() {

@@ -730,6 +730,29 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   ok(!(await iste('/v1/anketler', {}, OYCU)).veri.liste.some(x => x.id === aid), 'silinen anket akışta yok');
 }
 
+// takip edilenin yeni paylaşımı: takipçilere bildirim; keşfette "takip ettiklerin" sırası
+{
+  const kC = (await iste('/v1/ben', {}, cihazC)).veri.hesap.kod;
+  await iste('/v1/gizlilik', { acik: true }, cihazC);
+  await iste('/v1/takip', { kod: kC }, cihazB);
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  const r1 = await iste('/v1/paylas', { resim: jpeg, takma: 'Ceren', aciklama: 'yeni kombinim' }, cihazC);
+  ok(r1.veri.ok, 'takip edilen paylaşım yaptı');
+  const bn = await iste('/v1/bildirim', {}, cihazB);
+  ok(bn.veri.liste.some(b => b.tur === 'paylasim' && b.paylasim === r1.veri.id && b.kod === kC), 'takipçiye "yeni paylaşım" bildirimi gitti');
+  const ss = (await iste('/v1/bildirim', { sadeceSay: true }, cihazB)).veri;
+  ok(ss.son && ss.son.tur === 'paylasim' && ss.son.takma === 'Ceren', 'telefon bildirimi için özet: kim paylaştı');
+  ok(!(await iste('/v1/bildirim', {}, cihazD)).veri.liste.some(b => b.paylasim === r1.veri.id), 'takip etmeyene bildirim gitmedi');
+  const r2 = await iste('/v1/paylas', { resim: jpeg, takma: 'Ceren', aciklama: 'gizli', gorunurluk: 'gizli' }, cihazC);
+  ok(!(await iste('/v1/bildirim', {}, cihazB)).veri.liste.some(b => b.paylasim === r2.veri.id), 'yalnız kendine görünen paylaşım bildirim üretmez');
+  const kt = (await iste('/v1/kisiler', { mod: 'takip' }, cihazB)).veri.liste;
+  ok(kt.length >= 1 && kt[0].kod === kC && kt[0].son > 0 && kt[0].resimler[0] === r1.veri.id, 'takip ettiklerin: en son paylaşan önce, son paylaşım resmiyle');
+  const ko = (await iste('/v1/kisiler', {}, cihazD)).veri.liste.find(k => k.kod === kC);
+  ok(ko && Array.isArray(ko.resimler) && ko.resimler.indexOf(r1.veri.id) >= 0 && ko.resimler.indexOf(r2.veri.id) < 0, 'kişi kartında yalnız herkese açık paylaşımların resmi');
+  await iste('/v1/takip', { kod: kC, takip: false }, cihazB);
+  await iste('/v1/gizlilik', { acik: false }, cihazC);
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

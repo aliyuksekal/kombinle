@@ -10,6 +10,7 @@
     <string name="bn_yorum">%1$s commented on your post</string>
     <string name="bn_anket">%1$s voted on your poll</string>
     <string name="bn_istek">%1$s wants to follow you</string>
+    <string name="bn_paylasim">%1$s shared a new outfit</string>
     <string name="bn_kabul">%1$s accepted your follow request</string>
     <string name="bn_genel">New notification from %1$s</string>
     <string name="bn_mesaj">%1$s sent you a message</string>
