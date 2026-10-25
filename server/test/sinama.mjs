@@ -793,6 +793,64 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   ok((await iste('/v1/ben', {}, cihazD)).veri.ikinciHesap === 'em***@ornek.com', 'bu telefondaki ikinci hesap kullanıcıya bildirilir');
 }
 
+// reklam ver: başvuru → onay (fiyat) → havale bilgisi → ödendi → yayında
+{
+  let t = await iste('/v1/rtarife', {}, cihazB);
+  ok(t.veri.paketler.length === 3 && t.veri.paketler[0].gun === 3 && t.veri.havale === false, 'reklam paketleri; IBAN tanımlı değil');
+  const temel = { firma: 'Lale Butik Ltd.', yetkili: 'Ayşe Lale', eposta: 'ayse@lalebutik.com', telefon: '0532 111 22 33', marka: 'Lale Butik', baslik: 'Yeni sezon', metin: 'Tüm ürünlerde %20', link: 'https://lalebutik.com', boyut: 'dikey', gun: 3, resim: jpeg };
+  ok((await iste('/v1/rtalep', Object.assign({}, temel, { gun: 5 }), cihazB)).veri.hata === 'paket', 'tanımsız paket reddedildi');
+  ok((await iste('/v1/rtalep', Object.assign({}, temel, { link: 'http://x.com' }), cihazB)).veri.hata === 'link', 'güvensiz bağlantı reddedildi');
+  ok((await iste('/v1/rtalep', Object.assign({}, temel, { telefon: '12' }), cihazB)).veri.hata === 'telefon', 'telefon gerekli');
+  r = await iste('/v1/rtalep', temel, cihazB); if (!r.veri.ok) console.log(r);
+  ok(r.veri.ok && /^KMB-[A-Z2-9]{6}$/.test(r.veri.kod) && r.veri.fiyat === 750, 'başvuru alındı, kod ve fiyat: ' + r.veri.kod);
+  const tid = r.veri.id;
+  const adm = (await iste('/v1/bildirim', {}, cihazC)).veri.liste;
+  ok(adm.some(b => b.tur === 'rtalep'), "@admin'e yeni başvuru bildirimi");
+  ok((await iste('/v1/rtyonetim', {}, cihazB)).durum === 403, 'başvuruları yalnız @admin görür');
+  let y = (await iste('/v1/rtyonetim', {}, cihazC)).veri.liste;
+  ok(y[0].id === tid && y[0].telefon === '0532 111 22 33' && y[0].durum === 'bekliyor', '@admin başvuruyu iletişim bilgisiyle görüyor');
+  ok((await iste('/v1/rtkarar', { id: tid, karar: 'odendi' }, cihazB)).durum === 403, 'başkası ödendi diyemez');
+  env.REKLAM_IBAN = 'TR33 0006 1005 1978 6457 8413 26'; env.REKLAM_ALICI = 'Ali Yüksekal';
+  ok((await iste('/v1/rtkarar', { id: tid, karar: 'onayla', fiyat: 900, not: 'Hafta sonu yoğun' }, cihazC)).veri.ok, 'başvuru onaylandı (fiyat 900)');
+  let b = (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0];
+  ok(b.durum === 'onaylandi' && b.fiyat === 900 && b.odeme && b.odeme.iban === 'TR33 0006 1005 1978 6457 8413 26' && b.odeme.alici === 'Ali Yüksekal', 'başvurana havale bilgisi gösterildi');
+  ok(!('telefon' in b), 'başvurana yönetim alanları gitmiyor');
+  ok((await iste('/v1/bildirim', {}, cihazB)).veri.liste.some(x => x.tur === 'rtonay'), 'başvurana onay bildirimi');
+  ok((await iste('/v1/reklamlar', {}, cihazD)).veri.liste.length === 0, 'ödeme gelmeden reklam yayında değil');
+  ok((await iste('/v1/rtkarar', { id: tid, karar: 'odendi' }, cihazC)).veri.ok, '@admin ödendi dedi');
+  const yay = (await iste('/v1/reklamlar', {}, cihazD)).veri.liste;
+  ok(yay.length === 1 && yay[0].marka === 'Lale Butik' && yay[0].boyut === 'dikey', 'reklam Keşfet\'te yayında');
+  b = (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0];
+  ok(b.durum === 'yayinda' && b.bitis - Date.now() > 2.9 * 86400000 && b.bitis - Date.now() < 3.1 * 86400000 && !b.odeme, '3 günlük yayın başladı');
+  ag = await isci.fetch(new Request('https://x/v1/talepresim/' + tid), env, {}); ok(ag.status === 200, 'başvuru görseli');
+  db.prepare('UPDATE reklam SET bitis = ? WHERE marka = ?').run(Date.now() - 1000, 'Lale Butik');
+  db.prepare('UPDATE reklam_talep SET bitis = ? WHERE id = ?').run(Date.now() - 1000, tid);
+  ok((await iste('/v1/reklamlar', {}, cihazD)).veri.liste.length === 0 && (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0].durum === 'bitti', 'süre bitince reklam kendiliğinden kalktı');
+  r = await iste('/v1/rtalep', Object.assign({}, temel, { gun: 7 }), cihazB);
+  ok((await iste('/v1/rtiptal', { id: r.veri.id }, cihazB)).veri.ok && (await iste('/v1/rtalepler', {}, cihazB)).veri.liste[0].durum === 'iptal', 'başvuru geri çekildi');
+  delete env.REKLAM_IBAN; delete env.REKLAM_ALICI;
+  db.prepare("DELETE FROM reklam WHERE marka = 'Lale Butik'").run();
+}
+// gönderiyi öne çıkar
+{
+  db.prepare("DELETE FROM kota WHERE anahtar LIKE 'paylas_%'").run();
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  const p1 = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'öne çıkacak', gorunurluk: 'herkes' }, cihazB)).veri.id;
+  const p2r = await iste('/v1/paylas', { resim: jpeg, aciklama: 'yeni', gorunurluk: 'herkes' }, cihazD); if (!p2r.veri.ok) console.log('p2', p2r); const p2 = p2r.veri.id;
+  ok((await iste('/v1/onecikar', { id: p2 }, cihazB)).durum === 404, 'başkasının gönderisi öne çıkarılamaz');
+  r = await iste('/v1/onecikar', { id: p1 }, cihazB);
+  ok(r.veri.ok && r.veri.bitis > Date.now() + 23 * 3600000, 'gönderi 24 saat öne çıkarıldı');
+  const ak = (await iste('/v1/akis', {}, cihazD)).veri.liste;
+  ok(ak[0].id === p1 && ak[0].oneCikan === 1 && ak.filter(x => x.id === p1).length === 1, 'öne çıkan gönderi Keşfet\'in en üstünde, tek kez');
+  ok((await iste('/v1/akis', { sayfa: 1 }, cihazD)).veri.liste.every(x => x.id !== p1 || x.oneCikan === 1), 'sonraki sayfalarda da etiketli');
+  ok((await iste('/v1/onecikar', { id: p1 }, cihazB)).veri.ok, 'zaten öne çıkmış gönderi tekrar istenince hak düşmez');
+  const p3 = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'ikinci', gorunurluk: 'herkes' }, cihazB)).veri.id;
+  ok((await iste('/v1/onecikar', { id: p3 }, cihazB)).veri.hata === 'kota', 'günde bir gönderi öne çıkarılabilir');
+  const p4 = (await iste('/v1/paylas', { resim: jpeg, aciklama: 'takip', gorunurluk: 'takip' }, cihazD)).veri.id;
+  ok((await iste('/v1/onecikar', { id: p4 }, cihazD)).veri.hata === 'gizli', 'yalnız herkese açık gönderi öne çıkar');
+  db.prepare('UPDATE paylasim SET one_cikan = 0').run();
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

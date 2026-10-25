@@ -13,9 +13,11 @@ CREATE TABLE IF NOT EXISTS paylasim (
   gizli INTEGER NOT NULL DEFAULT 0,
   zaman INTEGER NOT NULL,
   gorunurluk TEXT NOT NULL DEFAULT 'herkes',
-  yorum_sayisi INTEGER NOT NULL DEFAULT 0
+  yorum_sayisi INTEGER NOT NULL DEFAULT 0,
+  one_cikan INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS p_yeni ON paylasim(gizli, zaman DESC);
+CREATE INDEX IF NOT EXISTS p_one ON paylasim(one_cikan);
 CREATE INDEX IF NOT EXISTS p_yazar ON paylasim(yazar, zaman DESC);
 CREATE TABLE IF NOT EXISTS oy (
   paylasim TEXT NOT NULL,
@@ -135,6 +137,34 @@ CREATE TABLE IF NOT EXISTS reklam (
   tik INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS r_aktif ON reklam(aktif, bitis);
+CREATE TABLE IF NOT EXISTS reklam_talep (
+  id TEXT PRIMARY KEY,
+  kod TEXT NOT NULL,
+  hesap TEXT NOT NULL,
+  firma TEXT NOT NULL,
+  yetkili TEXT NOT NULL,
+  eposta TEXT NOT NULL,
+  telefon TEXT NOT NULL,
+  vergi TEXT NOT NULL DEFAULT '',
+  marka TEXT NOT NULL,
+  baslik TEXT NOT NULL DEFAULT '',
+  metin TEXT NOT NULL DEFAULT '',
+  link TEXT NOT NULL DEFAULT '',
+  dugme TEXT NOT NULL DEFAULT '',
+  boyut TEXT NOT NULL DEFAULT 'kare',
+  resim BLOB NOT NULL,
+  tip TEXT NOT NULL,
+  gun INTEGER NOT NULL,
+  fiyat INTEGER NOT NULL,
+  durum TEXT NOT NULL DEFAULT 'bekliyor',
+  yonetici_not TEXT NOT NULL DEFAULT '',
+  reklam TEXT NOT NULL DEFAULT '',
+  bitis INTEGER NOT NULL DEFAULT 0,
+  odeme_zaman INTEGER NOT NULL DEFAULT 0,
+  zaman INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS rt_hesap ON reklam_talep(hesap, zaman DESC);
+CREATE INDEX IF NOT EXISTS rt_durum ON reklam_talep(durum, zaman DESC);
 CREATE TABLE IF NOT EXISTS bildirim (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   alici TEXT NOT NULL,

@@ -9,6 +9,11 @@ def sunucuAdresi = (project.findProperty('sunucuUrl') ?: '').toString().trim()
 def uygulamaAnahtari = (project.findProperty('uygulamaAnahtari') ?: '').toString().trim()
 if (!(sunucuAdresi ==~ /https:\/\/[a-z0-9.-]{3,120}/)) sunucuAdresi = ''
 if (!(uygulamaAnahtari ==~ /[a-f0-9]{64}/)) uygulamaAnahtari = ''
+// AdMob: gerçek kimlikler GitHub gizlilerinden gelir; yoksa Google'ın deneme kimlikleri ("Test Ad" yazan reklam)
+def admobUygulama = (project.findProperty('admobUygulama') ?: '').toString().trim()
+def admobBirim = (project.findProperty('admobBirim') ?: '').toString().trim()
+if (!(admobUygulama ==~ /ca-app-pub-[0-9]{10,20}~[0-9]{6,12}/)) admobUygulama = 'ca-app-pub-3940256099942544~3347511713'
+if (!(admobBirim ==~ /ca-app-pub-[0-9]{10,20}\/[0-9]{6,12}/)) admobBirim = 'ca-app-pub-3940256099942544/9214589741'
 // Play Store yükleme anahtarı (isteğe bağlı): verilirse yalnız AAB derlemesinde kullanılır
 def yuklemeDosyasi = (project.findProperty('yuklemeDosyasi') ?: '').toString().trim()
 def yuklemeSifre = (project.findProperty('yuklemeSifre') ?: '').toString()
@@ -28,6 +33,8 @@ android {
         ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
         buildConfigField 'String', 'SUNUCU', '"' + sunucuAdresi + '"'
         buildConfigField 'String', 'UYGULAMA_ANAHTARI', '"' + uygulamaAnahtari + '"'
+        buildConfigField 'String', 'ADMOB_BIRIM', '"' + admobBirim + '"'
+        manifestPlaceholders = [admobUygulama: admobUygulama]
     }
 
     buildFeatures { buildConfig true }
@@ -107,4 +114,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$kameraSurum"
     implementation "androidx.camera:camera-view:$kameraSurum"
     implementation 'androidx.activity:activity:1.9.3'
+    // Keşfet'te AdMob reklamı ve AB/BK için reklam izni formu
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
+    implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
 }

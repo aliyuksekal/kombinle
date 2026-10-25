@@ -69,6 +69,7 @@ public class AnaEkran extends Activity {
     WebView web;
     private FrameLayout kok;
     private Kopru kopru;
+    Reklamci reklamci;
     private WebViewAssetLoader yukleyici;
     private ValueCallback<Uri[]> dosyaGeriDonus;
     private GeolocationPermissions.Callback konumGeriDonus;
@@ -134,6 +135,11 @@ public class AnaEkran extends Activity {
 
         kopru = new Kopru(this);
         web.addJavascriptInterface(kopru, "KombinleNative");
+        try {
+            reklamci = new Reklamci(this, kopru, kok);
+        } catch (Throwable t) {
+            reklamci = null;
+        }
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -589,6 +595,7 @@ public class AnaEkran extends Activity {
         BildirimIscisi.onPlanda = false;
         BildirimIscisi.yakindaBak(this);
         if (web != null) web.onPause();
+        if (reklamci != null) reklamci.duraklat();
     }
 
     @Override
@@ -597,11 +604,13 @@ public class AnaEkran extends Activity {
         BildirimIscisi.onPlanda = true;
         BildirimIscisi.temizle(this);
         if (web != null) web.onResume();
+        if (reklamci != null) reklamci.devam();
     }
 
     @Override
     protected void onDestroy() {
         if (kopru != null) kopru.kapat();
+        if (reklamci != null) reklamci.kapat();
         if (web != null) {
             ((ViewGroup) web.getParent()).removeView(web);
             web.destroy();

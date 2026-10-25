@@ -47,6 +47,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           EPOSTA_GONDEREN: ${{ secrets.EPOSTA_GONDEREN }}
+          REKLAM_IBAN: ${{ secrets.REKLAM_IBAN }}
+          REKLAM_ALICI: ${{ secrets.REKLAM_ALICI }}
+          REKLAM_FIYAT: ${{ secrets.REKLAM_FIYAT }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$GEMINI_API_KEY" ]; then
             echo "Sunucu gizli anahtarları yok; APK yapay zekâsız derlenecek."
@@ -79,10 +82,12 @@ jobs:
       - name: APK derle (küçültülmüş, imzalı)
         env:
           SUNUCU_URL: ${{ steps.sunucu.outputs.url }}
+          ADMOB_UYGULAMA: ${{ secrets.ADMOB_UYGULAMA_ID }}
+          ADMOB_BIRIM: ${{ secrets.ADMOB_BANNER_ID }}
         run: |
           set -o pipefail
           ( cat sunucu.log 2>/dev/null; gradle assembleRelease --no-daemon --stacktrace \
-              -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" 2>&1 ) | tee derleme.log
+              -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" -PadmobUygulama="${ADMOB_UYGULAMA:-}" -PadmobBirim="${ADMOB_BIRIM:-}" 2>&1 ) | tee derleme.log
           echo "Sunucu: ${SUNUCU_URL:-yok}"
 
       - name: APK'yı hazırla
@@ -98,6 +103,8 @@ jobs:
       - name: AAB derle (Play Store)
         env:
           SUNUCU_URL: ${{ steps.sunucu.outputs.url }}
+          ADMOB_UYGULAMA: ${{ secrets.ADMOB_UYGULAMA_ID }}
+          ADMOB_BIRIM: ${{ secrets.ADMOB_BANNER_ID }}
           YUKLEME_ANAHTARI: ${{ secrets.YUKLEME_ANAHTARI }}
           YUKLEME_SIFRE: ${{ secrets.YUKLEME_SIFRE }}
         run: |
@@ -110,7 +117,7 @@ jobs:
           else
             echo "Yükleme anahtarı yok: AAB deneme anahtarıyla imzalanıyor"
           fi
-          gradle bundleRelease --no-daemon --stacktrace -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" "${EK[@]}" 2>&1 | tee -a derleme.log
+          gradle bundleRelease --no-daemon --stacktrace -PsunucuUrl="$SUNUCU_URL" -PuygulamaAnahtari="${UYGULAMA_ANAHTARI:-}" -PadmobUygulama="${ADMOB_UYGULAMA:-}" -PadmobBirim="${ADMOB_BIRIM:-}" "${EK[@]}" 2>&1 | tee -a derleme.log
           cp app/build/outputs/bundle/release/app-release.aab "cikti/Kombinle-1.0.${{ github.run_number }}.aab"
           rm -f "$RUNNER_TEMP/yukleme.p12"
           jarsigner -verify cikti/*.aab | tail -n 1

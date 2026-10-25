@@ -36,6 +36,9 @@ final class Odeme implements PurchasesUpdatedListener {
     static final String PRO_YIL = "kombinle_pro_yillik";
     /** abonelikler: sahiplik her açılışta Google Play'den yenilenir (iptal/iade düşer) */
     private static final Set<String> KALICI = new HashSet<>(Arrays.asList(PRO, PRO_YIL));
+    /** tek seferlik kalıcı ürünler: "Sosyal paket" (A mı B mi anketi + gönderiyi öne çıkarma) */
+    static final String SOSYAL = "kombinle_sosyal";
+    private static final Set<String> TEK = new HashSet<>(Collections.singletonList(SOSYAL));
     private static final Map<String, Integer> JETON = new HashMap<>();
     static {
         JETON.put("jeton_50", 50);
@@ -43,6 +46,10 @@ final class Odeme implements PurchasesUpdatedListener {
         JETON.put("jeton_400", 400);
     }
     private static final Set<String> TUKETILEN = new HashSet<>(Arrays.asList("destek_cay", "destek_yemek", "jeton_50", "jeton_150", "jeton_400"));
+
+    private static boolean sahiplik(String id) {
+        return KALICI.contains(id) || TEK.contains(id);
+    }
 
     private static String tip(String id) {
         return KALICI.contains(id) ? BillingClient.ProductType.SUBS : BillingClient.ProductType.INAPP;
@@ -62,13 +69,13 @@ final class Odeme implements PurchasesUpdatedListener {
         this.ayar = act.getSharedPreferences("odeme", Activity.MODE_PRIVATE);
         try {
             JSONArray a = new JSONArray(ayar.getString("sahip", "[]"));
-            for (int i = 0; i < a.length(); i++) if (KALICI.contains(a.getString(i))) sahip.add(a.getString(i));
+            for (int i = 0; i < a.length(); i++) if (sahiplik(a.getString(i))) sahip.add(a.getString(i));
         } catch (Exception ignored) {
         }
     }
 
     private static boolean tanimli(String id) {
-        return KALICI.contains(id) || TUKETILEN.contains(id);
+        return KALICI.contains(id) || TEK.contains(id) || TUKETILEN.contains(id);
     }
 
     void baslat() {
@@ -110,13 +117,26 @@ final class Odeme implements PurchasesUpdatedListener {
     private void yenile(Runnable bitti) {
         // önce tek seferlik ürünler (bekleyen jetonlar tüketilir), sonra abonelikler
         istemci.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(), (r, alimlar) -> {
-            if (r.getResponseCode() == BillingClient.BillingResponseCode.OK && alimlar != null) for (Purchase p : alimlar) isle(p);
+            final boolean tekTamam = r.getResponseCode() == BillingClient.BillingResponseCode.OK;
+            final Set<String> tekYeni = new HashSet<>();
+            if (tekTamam && alimlar != null) for (Purchase p : alimlar) if (isle(p)) for (String s : p.getProducts()) if (TEK.contains(s)) tekYeni.add(s);
             istemci.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build(), (r2, abonelikler) -> {
                 if (r2.getResponseCode() == BillingClient.BillingResponseCode.OK && abonelikler != null) {
                     Set<String> yeni = new HashSet<>();
                     for (Purchase p : abonelikler) if (isle(p)) yeni.addAll(p.getProducts());
-                    sahip.clear();
-                    for (String s : yeni) if (KALICI.contains(s)) sahip.add(s);
+                    synchronized (sahip) {
+                        Set<String> eskiTek = new HashSet<>();
+                        for (String s : sahip) if (TEK.contains(s)) eskiTek.add(s);
+                        sahip.clear();
+                        for (String s : yeni) if (KALICI.contains(s)) sahip.add(s);
+                        sahip.addAll(tekTamam ? tekYeni : eskiTek);
+                    }
+                    kaydet();
+                } else if (tekTamam) {
+                    synchronized (sahip) {
+                        sahip.removeIf(TEK::contains);
+                        sahip.addAll(tekYeni);
+                    }
                     kaydet();
                 }
                 if (bitti != null) bitti.run();
@@ -302,7 +322,7 @@ final class Odeme implements PurchasesUpdatedListener {
             for (Purchase p : alimlar) {
                 boolean kalici = isle(p);
                 if (p.getProducts().contains(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) alindi = true;
-                if (kalici) for (String s : p.getProducts()) if (KALICI.contains(s)) sahip.add(s);
+                if (kalici) for (String s : p.getProducts()) if (sahiplik(s)) sahip.add(s);
             }
             kaydet();
         } else if (kod == BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED) {

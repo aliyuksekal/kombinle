@@ -611,6 +611,53 @@ public final class Kopru {
         ekran.kameraKlasoruTemizle();
     }
 
+    /* ---------------- Keşfet'te AdMob reklamı ---------------- */
+
+    @JavascriptInterface
+    public boolean admobVar() {
+        return guvenli && ekran.reklamci != null;
+    }
+
+    /** Akıştaki reklam yuvalarının yeri: {gizli, ust, alt, liste:[{id,x,y,w,h}]} */
+    @JavascriptInterface
+    public void admobYer(final String json) {
+        if (!guvenli || json == null || json.length() > 8000) return;
+        final JSONObject o;
+        try {
+            o = new JSONObject(json);
+        } catch (Exception e) {
+            return;
+        }
+        ekran.ui.post(() -> {
+            if (ekran.reklamci != null) ekran.reklamci.yerler(o);
+        });
+    }
+
+    @JavascriptInterface
+    public boolean admobGizlilikGerekli() {
+        return guvenli && ekran.reklamci != null && ekran.reklamci.gizlilikGerekli();
+    }
+
+    @JavascriptInterface
+    public void admobGizlilik() {
+        if (!guvenli) return;
+        ekran.ui.post(() -> {
+            if (ekran.reklamci != null) ekran.reklamci.gizlilikAc();
+        });
+    }
+
+    /** Sayfaya istek dışı bir olay gönderir (ör. reklam yüklendi). */
+    void olay(String ad, JSONObject detay) {
+        if (!ad.matches("[a-z]{3,20}")) return;
+        final String js = "window.dispatchEvent(new CustomEvent('" + ad + "',{detail:" + detay + "}))";
+        ekran.ui.post(() -> {
+            try {
+                if (ekran.web != null) ekran.web.evaluateJavascript(js, null);
+            } catch (Throwable ignored) {
+            }
+        });
+    }
+
     /* ---------------- sayfaya yanıt ---------------- */
 
     void gonder(String req, boolean ok, String anahtar, Object deger) {
