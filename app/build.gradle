@@ -114,6 +114,8 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$kameraSurum"
     implementation "androidx.camera:camera-view:$kameraSurum"
     implementation 'androidx.activity:activity:1.9.3'
+    // CameraX ListenableFuture döndürür (reklam SDK'sı boş "listenablefuture" sürümünü çekiyor); küçültmede kullanılmayanlar atılır
+    implementation 'com.google.guava:guava:33.3.1-android'
     // Keşfet'te AdMob reklamı ve AB/BK için reklam izni formu
     implementation 'com.google.android.gms:play-services-ads:23.6.0'
     implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
