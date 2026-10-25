@@ -26,8 +26,9 @@ function sohbetYeniMi(gecmis) {
 }
 function sesliYanitAcik() { return LS.al('sesliYanit', true) !== false; }
 var SES = { sira: 0, calan: null, url: '' };
-function sesliOku(metin) {
-  if (!sesliYanitAcik()) return;
+/* zorla: cevabın yanındaki 🔉 düğmesi; sesli yanıt kapalı olsa da okur */
+function sesliOku(metin, zorla) {
+  if (!sesliYanitAcik() && !zorla) return;
   /* emoji ve simgeler okunmasın; madde işaretleri ve satır sonları doğal duraklamaya döner */
   var m = String(metin || '').replace(/[^\p{L}\p{N}\p{P}\p{Zs}\n]/gu, ' ').replace(/^[ \t]*[-•*·][ \t]*/gm, '').replace(/\s*\n+\s*/g, '. ')
     .replace(/([.!?…:])\.(\s|$)/g, '$1$2').replace(/\s+([.,!?…])/g, '$1').replace(/\s+/g, ' ').trim();
@@ -49,16 +50,22 @@ function sesliOku(metin) {
   telefonSesi(m);
 }
 function sesCal(b64, tip, olmadi) {
-  sesBirak();
+  sesDurdur();
   try {
     SES.url = URL.createObjectURL(dataUrlBlob('data:' + tip + ';base64,' + b64));
     var a = new Audio(SES.url); SES.calan = a;
+    clearTimeout(SES.dugmeSure);   // doğal ses çalıyor: düğme ses bitince söner
     a.addEventListener('ended', sesBirak);
     var p = a.play();
     if (p && p.catch) p.catch(function () { sesBirak(); olmadi(); });
   } catch (e) { sesBirak(); olmadi(); }
 }
-function sesBirak() {
+function okuDugmesiBirak() {
+  if (SES.dugme) { SES.dugme.classList.remove('caliyor'); SES.dugme.setAttribute('aria-pressed', 'false'); SES.dugme = null; }
+  clearTimeout(SES.dugmeSure);
+}
+function sesBirak() { okuDugmesiBirak(); sesDurdur(); }
+function sesDurdur() {
   try { if (SES.calan) SES.calan.pause(); } catch (e) { }
   SES.calan = null;
   if (SES.url) { try { URL.revokeObjectURL(SES.url); } catch (e) { } SES.url = ''; }
@@ -146,6 +153,21 @@ function sohbetAc() {
   function mesajEkle(x, kaydirma) {
     var hos = $('.sh-hosgeldin', govde); if (hos) hos.remove();
     var b = h('div', { class: 'sh-mesaj ' + (x.r === 'k' ? 'kul' : 'bot') }, h('span', { text: x.m }));
+    /* stil asistanının her cevabında "sesli oku" düğmesi; çalarken tekrar basınca durur */
+    if (x.r === 'a') {
+      var oku = h('button', { class: 'sh-oku', 'aria-label': t('sesliOkuDugme'), 'aria-pressed': 'false' }, ikon('hoparlor', 'k'));
+      oku.addEventListener('click', function () {
+        var calan = oku.classList.contains('caliyor');
+        sesiKes();
+        if (calan) return;
+        oku.classList.add('caliyor'); oku.setAttribute('aria-pressed', 'true');
+        SES.dugme = oku;
+        /* telefon sesinde bitiş haberi gelmez: süre metnin uzunluğundan tahmin edilir */
+        SES.dugmeSure = setTimeout(okuDugmesiBirak, Math.min(60000, 2500 + x.m.length * 75));
+        sesliOku(x.m, true);
+      });
+      b.appendChild(oku);
+    }
     if (x.p && x.p.length) {
       var harita = Object.create(null); S.parcalar.forEach(function (p) { harita[p.id] = p; });
       var sira = h('div', { class: 'sh-parcalar' });
@@ -186,7 +208,7 @@ function sohbetAc() {
       var a = { r: 'a', m: cevap.m, p: cevap.p || [], z: Date.now() };
       gecmis.push(a); mesajEkle(a); sohbetKaydet(gecmis);
       onerileriGoster(oneri && oneri.length ? oneri : []);
-      sesliOku(a.m);
+      if (sesliYanitAcik()) { var son = $$('.sh-mesaj.bot .sh-oku', govde).pop(); if (son) son.click(); }
     };
     if (!yzAcik()) { setTimeout(function () { bitir(yerelPrenses(m)); }, 450); return; }
     /* günlük sohbet hakkı: ücretsiz 10, PRO 40 mesaj */

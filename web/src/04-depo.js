@@ -39,11 +39,11 @@ function konumGecerli(k) {
 var TEMALAR = [
   ['oto', 'temaOto', 'linear-gradient(135deg,#F5F4F7 50%,#141215 50%)'], ['acik', 'temaAcik', 'linear-gradient(135deg,#F5F4F7 50%,#8C3A5E 50%)'],
   ['koyu', 'temaKoyu', 'linear-gradient(135deg,#1C1A1E 50%,#E3A3BF 50%)'], ['amoled', 'temaAmoled', 'linear-gradient(135deg,#000 50%,#E3A3BF 50%)'],
-  ['pembe', 'temaPembe', 'linear-gradient(135deg,#F8F3F4 50%,#A8456A 50%)'], ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#F4F3F8 50%,#5D4B9A 50%)'],
-  ['altin', 'temaAltin', 'linear-gradient(135deg,#F6F4F0 50%,#86663A 50%)'], ['mint', 'temaMint', 'linear-gradient(135deg,#F2F5F3 50%,#3F6B54 50%)'],
-  ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#F7F3F1 50%,#9C5A4B 50%)']
+  ['pembe', 'temaPembe', 'linear-gradient(135deg,#F9E8EE 50%,#B23A68 50%)'], ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#EEEAFA 50%,#6248B9 50%)'],
+  ['altin', 'temaAltin', 'linear-gradient(135deg,#F5ECDB 50%,#94702E 50%)'], ['mint', 'temaMint', 'linear-gradient(135deg,#E7EFE9 50%,#3F7558 50%)'], ['nane', 'temaNane', 'linear-gradient(135deg,#E2F5EE 50%,#14906C 50%)'],
+  ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#F8EAE4 50%,#A85A47 50%)']
 ];
-var TEMA_ZEMIN = { pembe: '#F8F3F4', lavanta: '#F4F3F8', altin: '#F6F4F0', mint: '#F2F5F3', rosegold: '#F7F3F1', acik: '#F5F4F7', koyu: '#141215', amoled: '#000000' };
+var TEMA_ZEMIN = { pembe: '#F9E8EE', lavanta: '#EEEAFA', altin: '#F5ECDB', mint: '#E7EFE9', nane: '#E2F5EE', rosegold: '#F8EAE4', acik: '#F5F4F7', koyu: '#141215', amoled: '#000000' };
 function temaRengi(secim) {
   if (secim !== 'oto' && TEMA_ZEMIN[secim]) return secim;
   return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'koyu' : 'acik';

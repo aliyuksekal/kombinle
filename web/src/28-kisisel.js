@@ -120,3 +120,9 @@ Object.assign(DIL.uz, {
   hCihazHesap: function (e) { return "Bu telefonda allaqachon Kombinle hisobi bor (" + e + "). Har kimning bitta profili bo'ladi: o hisob bilan kiring; parolni unutgan bo'lsangiz \"Parolni unutdim\"ni bosing."; },
   hIkinciHesap: function (e) { return "Bu telefonda yana bitta hisobingiz bor (" + e + "). Bitta profil qolishi uchun keraksiz hisobga kirib, Sozlamalar → Hisob → Hisobni o'chirish orqali o'chiring."; }
 });
+
+Object.assign(DIL.tr, { sesliOkuDugme: 'Sesli oku', temaNane: 'Nane', temaMint: 'Adaçayı' });
+Object.assign(DIL.en, { sesliOkuDugme: 'Read aloud', temaNane: 'Mint', temaMint: 'Sage' });
+Object.assign(DIL.ru, { sesliOkuDugme: 'Прочитать вслух', temaNane: 'Мята', temaMint: 'Шалфей' });
+Object.assign(DIL.uz, { sesliOkuDugme: "Ovoz chiqarib o'qish", temaNane: 'Yalpiz', temaMint: 'Shalfey' });
+DIL.ko.sesliOkuDugme = '소리 내어 읽기'; DIL.ko.temaNane = '민트'; DIL.ko.temaMint = '세이지';

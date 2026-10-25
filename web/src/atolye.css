@@ -34,36 +34,42 @@ html[data-renk="amoled"]{
   --secim-zemin:#0B0A0C; --secim-yazi:#F4F1F5; --keten:#000; --kart-kenar:#17151A;
   --altin:#D8B98A; --altin-acik:#221D16; --altin-cizgi:#3E3527; --iyi:#7CC9A2; --iyi-acik:#132019; --iyi-cizgi:#22392F; --uyari:#E0A07E;
 }
-/* ---- Diğer renk seçenekleri: aynı sadelikte, yalnız zemin tonu ve vurgu değişir ---- */
+/* ---- Diğer renk seçenekleri: zemin, kartlar, çizgiler, üst çubuk ve seçimler temanın rengine bürünür ---- */
 html[data-renk="pembe"]{
-  --bg:#F8F3F4; --yuzey:#FFFFFF; --yuzey2:#F3ECEE; --murekkep:#251B1F; --soluk:#73656B; --soluk2:#958890;
-  --cizgi:#E8DEE1; --cizgi2:#F0E8EA; --vurgu:#A8456A; --vurgu-acik:#F7E9EE; --dolgu:#A8456A; --dolgu-ust:#FFFFFF;
-  --koyu-btn:#251B1F; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(248,243,244,.92); --girdi-zemin:#FAF7F8; --secim-zemin:#FFFFFF; --secim-yazi:#251B1F; --keten:#F8F3F4;
+  --bg:#F9E8EE; --yuzey:#FFFAFC; --yuzey2:#F4DDE6; --murekkep:#2A1820; --soluk:#7A6069; --soluk2:#9C838C;
+  --cizgi:#EBCFDA; --cizgi2:#F2DFE6; --vurgu:#A8325F; --vurgu-acik:#F7DBE6; --dolgu:#B23A68; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#5C1F38; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(249,232,238,.94); --girdi-zemin:#FDF3F7; --secim-zemin:#FFFAFC; --secim-yazi:#2A1820; --keten:#F9E8EE; --kart-kenar:#FFFAFC;
   --altin:#86663A; --altin-acik:#F6F0E7; --altin-cizgi:#E6DAC6; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
 }
 html[data-renk="lavanta"]{
-  --bg:#F4F3F8; --yuzey:#FFFFFF; --yuzey2:#EEEDF4; --murekkep:#1E1B2A; --soluk:#69667A; --soluk2:#8C899C;
-  --cizgi:#E1DFEA; --cizgi2:#EBE9F1; --vurgu:#5D4B9A; --vurgu-acik:#EEEBF7; --dolgu:#5D4B9A; --dolgu-ust:#FFFFFF;
-  --koyu-btn:#1E1B2A; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(244,243,248,.92); --girdi-zemin:#F8F7FB; --secim-zemin:#FFFFFF; --secim-yazi:#1E1B2A; --keten:#F4F3F8;
+  --bg:#EEEAFA; --yuzey:#FCFBFF; --yuzey2:#E4DEF7; --murekkep:#1F1A33; --soluk:#6A6485; --soluk2:#8D88A6;
+  --cizgi:#D8D0F0; --cizgi2:#E5DFF6; --vurgu:#5B42AA; --vurgu-acik:#E5DDFA; --dolgu:#6248B9; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#2E2258; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(238,234,250,.94); --girdi-zemin:#F7F5FE; --secim-zemin:#FCFBFF; --secim-yazi:#1F1A33; --keten:#EEEAFA; --kart-kenar:#FCFBFF;
   --altin:#86663A; --altin-acik:#F6F0E7; --altin-cizgi:#E6DAC6; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
 }
 html[data-renk="altin"]{
-  --bg:#F6F4F0; --yuzey:#FFFFFF; --yuzey2:#F0EDE7; --murekkep:#211D17; --soluk:#6E675C; --soluk2:#918A7F;
-  --cizgi:#E5E0D6; --cizgi2:#EDE9E1; --vurgu:#86663A; --vurgu-acik:#F4EEE4; --dolgu:#86663A; --dolgu-ust:#FFFFFF;
-  --koyu-btn:#211D17; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(246,244,240,.92); --girdi-zemin:#FAF9F6; --secim-zemin:#FFFFFF; --secim-yazi:#211D17; --keten:#F6F4F0;
-  --altin:#86663A; --altin-acik:#F4EEE4; --altin-cizgi:#E2D6C2; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
+  --bg:#F5ECDB; --yuzey:#FFFCF5; --yuzey2:#EFE2C9; --murekkep:#2A2112; --soluk:#76694F; --soluk2:#998C72;
+  --cizgi:#E4D2B0; --cizgi2:#EDE1C8; --vurgu:#89611F; --vurgu-acik:#F2E5CA; --dolgu:#94702E; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#3F2E10; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(245,236,219,.94); --girdi-zemin:#FCF7EC; --secim-zemin:#FFFCF5; --secim-yazi:#2A2112; --keten:#F5ECDB; --kart-kenar:#FFFCF5;
+  --altin:#89611F; --altin-acik:#F2E5CA; --altin-cizgi:#E0CBA2; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
 }
 html[data-renk="mint"]{
-  --bg:#F2F5F3; --yuzey:#FFFFFF; --yuzey2:#EBF0EC; --murekkep:#18201B; --soluk:#5F6B63; --soluk2:#828E86;
-  --cizgi:#DCE4DE; --cizgi2:#E7EDE9; --vurgu:#3F6B54; --vurgu-acik:#E7F0EA; --dolgu:#3F6B54; --dolgu-ust:#FFFFFF;
-  --koyu-btn:#18201B; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(242,245,243,.92); --girdi-zemin:#F7F9F7; --secim-zemin:#FFFFFF; --secim-yazi:#18201B; --keten:#F2F5F3;
+  --bg:#E7EFE9; --yuzey:#FAFDFB; --yuzey2:#DCE8DF; --murekkep:#17231B; --soluk:#5B6B60; --soluk2:#7F8F84;
+  --cizgi:#CADBCF; --cizgi2:#DAE6DD; --vurgu:#37684C; --vurgu-acik:#D9E9DE; --dolgu:#3F7558; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#1E3A2A; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(231,239,233,.94); --girdi-zemin:#F3F8F4; --secim-zemin:#FAFDFB; --secim-yazi:#17231B; --keten:#E7EFE9; --kart-kenar:#FAFDFB;
   --altin:#86663A; --altin-acik:#F6F0E7; --altin-cizgi:#E6DAC6; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
 }
 html[data-renk="rosegold"]{
-  --bg:#F7F3F1; --yuzey:#FFFFFF; --yuzey2:#F1EBE8; --murekkep:#241C1A; --soluk:#72645F; --soluk2:#958781;
-  --cizgi:#E7DDD9; --cizgi2:#EFE8E5; --vurgu:#9C5A4B; --vurgu-acik:#F5EAE6; --dolgu:#9C5A4B; --dolgu-ust:#FFFFFF;
-  --koyu-btn:#241C1A; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(247,243,241,.92); --girdi-zemin:#FAF7F6; --secim-zemin:#FFFFFF; --secim-yazi:#241C1A; --keten:#F7F3F1;
+  --bg:#F8EAE4; --yuzey:#FFFBF9; --yuzey2:#F1DCD4; --murekkep:#2A1A16; --soluk:#7A625B; --soluk2:#9C847D;
+  --cizgi:#E7CBC0; --cizgi2:#F0DDD6; --vurgu:#9A4B3A; --vurgu-acik:#F4DDD5; --dolgu:#A85A47; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#4A2219; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(248,234,228,.94); --girdi-zemin:#FDF5F2; --secim-zemin:#FFFBF9; --secim-yazi:#2A1A16; --keten:#F8EAE4; --kart-kenar:#FFFBF9;
   --altin:#86663A; --altin-acik:#F6F0E7; --altin-cizgi:#E6DAC6; --iyi:#2E7A58; --iyi-acik:#EAF4EE; --iyi-cizgi:#CFE5D8; --uyari:#A4522B;
+}
+html[data-renk="nane"]{
+  --bg:#E2F5EE; --yuzey:#F9FFFC; --yuzey2:#D2EFE4; --murekkep:#0F2A21; --soluk:#4F6E63; --soluk2:#739187;
+  --cizgi:#BFE5D6; --cizgi2:#D3EEE3; --vurgu:#0F7A5A; --vurgu-acik:#CDF0E2; --dolgu:#14906C; --dolgu-ust:#FFFFFF;
+  --koyu-btn:#0B4A38; --koyu-btn-ust:#FFFFFF; --ust-zemin:rgba(226,245,238,.94); --girdi-zemin:#F0FBF6; --secim-zemin:#F9FFFC; --secim-yazi:#0F2A21; --keten:#E2F5EE; --kart-kenar:#F9FFFC;
+  --altin:#86663A; --altin-acik:#F6F0E7; --altin-cizgi:#E6DAC6; --iyi:#0F7A5A; --iyi-acik:#DDF5EA; --iyi-cizgi:#BFE5D6; --uyari:#A4522B;
 }
 /* Gradyanlar kalktı: eski katmanlar var(--grad) kullansa da düz renk görünür */
 html[data-renk]{--grad:var(--dolgu);--grad-soft:var(--yuzey2);--vurgu2:var(--vurgu);--vurgu-ust:var(--dolgu-ust);
@@ -460,3 +466,14 @@ html[data-tema="koyu"] .g-pro{background:#0E0C0F!important;border-color:var(--al
 .g-kisi.kk .g-takip{margin:0 10px;width:calc(100% - 20px)}
 .hesap-uyari{display:flex;gap:8px;align-items:flex-start;background:var(--yuzey2);border-radius:14px;padding:10px 12px;font-size:12.5px;line-height:1.4;margin:8px 0}
 .hesap-uyari .ik{color:var(--vurgu);flex:none;margin-top:1px}
+
+/* ---- AI cevabını sesli oku (🔉) ---- */
+.sh-mesaj.bot{position:relative;padding-bottom:30px}
+.sh-oku{position:absolute;right:8px;bottom:6px;width:26px;height:26px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;background:var(--vurgu-acik);color:var(--vurgu);cursor:pointer;transition:background .2s,color .2s,transform .15s}
+.sh-oku .ik{width:15px;height:15px}
+.sh-oku:active{transform:scale(.92)}
+.sh-oku.caliyor{background:var(--dolgu);color:var(--dolgu-ust);animation:shOku 1.2s ease-in-out infinite}
+@keyframes shOku{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--dolgu) 45%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--dolgu) 0%,transparent)}}
+.sh-mesaj.bot.sh-yaziyor{padding-bottom:10px}
+/* renkli temalarda alt menü ve kartlar da temaya bürünür */
+html[data-renk="pembe"] #altMenu,html[data-renk="lavanta"] #altMenu,html[data-renk="altin"] #altMenu,html[data-renk="mint"] #altMenu,html[data-renk="nane"] #altMenu,html[data-renk="rosegold"] #altMenu{background:var(--ust-zemin)}
