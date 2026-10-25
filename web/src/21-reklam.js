@@ -11,6 +11,7 @@ function evReklamlari() {
     { id: 'ev-analiz', ev: 1, marka: 'Kombinle', ikon: 'grafik', renk: 'r2', baslik: t('rkAnalizB'), metin: t('rkAnalizM'), dugme: t('rkAnalizD'), eylem: function () { analizSayfasi(); } },
     { id: 'ev-jeton', ev: 1, marka: 'Kombinle', ikon: 'zap', renk: 'r3', baslik: t('rkJetonB'), metin: t('rkJetonM'), dugme: t('rkJetonD'), eylem: function () { magazaSayfasi(); } }
   ];
+  if (yzKurulu()) l.push({ id: 'ev-reklamver', ev: 1, marka: 'Kombinle', ikon: 'grafik', renk: 'r2', baslik: t('rkVerB'), metin: t('rkVerM'), dugme: t('rvBaslik'), eylem: function () { reklamVerSayfasi(); } });
   if (!S.pro) l.unshift({ id: 'ev-pro', ev: 1, marka: 'Kombinle PRO', ikon: 'tac', renk: 'r4', baslik: t('rkProB'), metin: t('rkProM', PRO_FIYAT), dugme: t('rkProD'), eylem: function () { magazaSayfasi(); } });
   return l;
 }
@@ -39,8 +40,12 @@ function reklamPlani(n) {
     if (REKLAM.plan[yer] && !REKLAM.gecilen[REKLAM.plan[yer].r.id]) plan[yer] = REKLAM.plan[yer];
     else {
       // reklam verenler öncelikli (3'te 2), aralarda uygulamanın kendi tanıtımları
-      var r = havuz.length && (Math.random() < 0.67 || !ev.length) ? havuz[(sira + rastgeleArada(0, havuz.length - 1)) % havuz.length] : ev.length ? ev[rastgeleArada(0, ev.length - 1)] : null;
-      if (r) plan[yer] = { r: r, boyut: r.ev ? REKLAM_BOYUTLAR[rastgeleArada(0, 3)] : r.boyut, ara: rastgeleArada(5, 8) };
+      // AdMob açıksa: reklam verenler varsa yuvaların yarısı onlara, kalanı çoğunlukla AdMob; aralarda kendi tanıtımlarımız
+      var admob = admobKullan(), zar = Math.random(), r;
+      if (havuz.length && (zar < (admob ? 0.5 : 0.67) || (!ev.length && !admob))) r = havuz[(sira + rastgeleArada(0, havuz.length - 1)) % havuz.length];
+      else if (admob && (zar < 0.85 || !ev.length)) { r = { id: 'admob-' + (++ADMOB.sayac), admob: 1 }; ADMOB.yer[r.id] = yer; }
+      else r = ev.length ? ev[rastgeleArada(0, ev.length - 1)] : null;
+      if (r) plan[yer] = { r: r, boyut: r.ev ? REKLAM_BOYUTLAR[rastgeleArada(0, 3)] : r.admob ? 'kare' : r.boyut, ara: rastgeleArada(5, 8) };
     }
     sira++;
     yer += plan[yer] ? plan[yer].ara : rastgeleArada(5, 8);
@@ -63,6 +68,7 @@ function reklamAc(r) {
   try { window.open(r.link, '_blank', 'noopener,noreferrer'); } catch (e2) { }
 }
 function reklamKarti(p) {
+  if (p.r.admob) return admobKarti(p);
   var r = p.r, boyut = p.boyut, adres = sunucuAdres();
   var gec = h('button', { class: 'g-reklam-gec', 'aria-label': t('rkGec') }, h('span', { text: t('rkGec') }), ikon('kapat', 'k'));
   var medya;

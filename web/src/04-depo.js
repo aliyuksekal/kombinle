@@ -20,6 +20,7 @@ function ayarYukle() {
     isi: x.isi === -1 || x.isi === 1 ? x.isi : 0,
     karsilandi: x.karsilandi === true,
     pro: x.pro === true,
+    sosyal: x.sosyal === true,
     kendiMod: x.kendiMod === true,
     yz: x.yz !== false,
     renkAnaliz: null,
@@ -41,9 +42,10 @@ var TEMALAR = [
   ['koyu', 'temaKoyu', 'linear-gradient(135deg,#1C1A1E 50%,#E3A3BF 50%)'], ['amoled', 'temaAmoled', 'linear-gradient(135deg,#000 50%,#E3A3BF 50%)'],
   ['pembe', 'temaPembe', 'linear-gradient(135deg,#F9E8EE 50%,#B23A68 50%)'], ['lavanta', 'temaLavanta', 'linear-gradient(135deg,#EEEAFA 50%,#6248B9 50%)'],
   ['altin', 'temaAltin', 'linear-gradient(135deg,#F5ECDB 50%,#94702E 50%)'], ['mint', 'temaMint', 'linear-gradient(135deg,#E7EFE9 50%,#3F7558 50%)'], ['nane', 'temaNane', 'linear-gradient(135deg,#E2F5EE 50%,#14906C 50%)'],
+  ['turkuaz', 'temaTurkuaz', 'linear-gradient(135deg,#DDF3F5 50%,#0B7E8A 50%)'],
   ['rosegold', 'temaRosegold', 'linear-gradient(135deg,#F8EAE4 50%,#A85A47 50%)']
 ];
-var TEMA_ZEMIN = { pembe: '#F9E8EE', lavanta: '#EEEAFA', altin: '#F5ECDB', mint: '#E7EFE9', nane: '#E2F5EE', rosegold: '#F8EAE4', acik: '#F5F4F7', koyu: '#141215', amoled: '#000000' };
+var TEMA_ZEMIN = { pembe: '#F9E8EE', lavanta: '#EEEAFA', altin: '#F5ECDB', mint: '#E7EFE9', nane: '#E2F5EE', turkuaz: '#DDF3F5', rosegold: '#F8EAE4', acik: '#F5F4F7', koyu: '#141215', amoled: '#000000' };
 function temaRengi(secim) {
   if (secim !== 'oto' && TEMA_ZEMIN[secim]) return secim;
   return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'koyu' : 'acik';

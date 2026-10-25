@@ -70,6 +70,8 @@ function ayarIcerik(gov) {
         satir('zap', S.pro ? t('proAcik') : t('magazaBaslik'), S.pro ? (A.pro ? t('proAcikAlt', PRO_GUNLUK) : t('proHediyeAlt', hesapBilgi() && hesapBilgi().pro === -1 ? t('proSuresiz') : t('proBitis', tarihYaz(hesapBilgi() ? hesapBilgi().pro : 0)))) : t('jetonVar', jeton()), magazaSayfasi),
         A.pro ? satir('ayar', t('aboneligiYonet'), null, function () { try { if (YEREL && YEREL.aboneligiYonet) YEREL.aboneligiYonet(); } catch (e) { } }) : null,
         satir('yenile', t('geriYukle'), null, satinAlimlariGeriYukle),
+        satir('isilti', t('sosyalBaslik'), sosyalAcik() ? (S.pro ? t('sosyalProDahil') : t('sosyalSahip')) : t('sosyalAlt'), function () { sosyalSayfasi(); }),
+        yzKurulu() ? satir('grafik', t('rvBaslik'), t('rvAlt'), reklamVerSayfasi) : null,
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
     gov.appendChild(kart('veri', 'kalkan', t('verilerim'), t('verilerimAlt'),
@@ -77,6 +79,7 @@ function ayarIcerik(gov) {
         satir('indir', t('yedekAl'), t('yedekAlAlt'), yedekAl),
         satir('yukle', t('yedekYukle'), t('yedekYukleAlt'), function () { $('#yedekSec').click(); }),
         satir('kalkan', t('gizlilik'), t('gizlilikAlt'), gizlilikSayfasi),
+        admobGizlilikSatiri(satir),
         satir('cop', t('hepsiniSil'), t('hepsiniSilAlt'), hepsiniSil))));
     gov.appendChild(h('p', { class: 'alt-yazi', style: { 'margin-top': '18px', 'font-size': '12px', 'text-align': 'center', 'white-space': 'pre-line' }, text: t('hakkinda') + '\n' + 'Kombinle ' + (YEREL && YEREL.surum ? kirp(YEREL.surum(), 20) : SURUM) + ', matali. ' + t('kaynakMetUzun') + (modelVar() ? ' ' + t('kaynakModel') : '') }));
   }
@@ -115,6 +118,7 @@ function proDurumuDenetle() {
     if (!var_) return;
     var sahip = proSahibi();
     if (A.pro !== sahip) { A.pro = sahip; ayarKaydet(); }
+    sosyalDurumuDenetle();
     if (proHesapla()) ciz();
   });
 }
@@ -123,7 +127,7 @@ function satinAlimlariGeriYukle() {
   zamanAsimi(odeme().restore(), 20000).then(function (l) {
     var sahip = Array.isArray(l) && (l.indexOf(PRO_URUN) >= 0 || l.indexOf(PRO_URUN_YIL) >= 0);
     sahip = sahip || proSahibi();
-    A.pro = sahip; ayarKaydet(); proHesapla();
+    A.pro = sahip; A.sosyal = (Array.isArray(l) && l.indexOf(SOSYAL_URUN) >= 0) || sosyalSahibi(); ayarKaydet(); proHesapla();
     tost(sahip ? t('proGeriGeldi') : t('proBulunamadi')); ciz();
   }).catch(function () { tost(t('odemeTamamlanmadi')); });
 }

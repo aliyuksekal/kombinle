@@ -442,7 +442,7 @@ function anketlerDoldur(alan) {
     h('div', { class: 'g-haplar' }, [['yeni', 'akHepsi'], ['benim', 'akBenim']].map(function (x) {
       return h('button', { 'aria-pressed': ANKET.sira === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { if (ANKET.sira !== x[0]) { ANKET.sira = x[0]; anketYukle(true); } } } });
     })),
-    h('button', { class: 'g-ekle', on: { click: function () { anketOlustur(null, null); } } }, ikon('arti', 'k'), t('akYeni')));
+    h('button', { class: 'g-ekle', on: { click: function () { anketOlustur(null, null); } } }, ikon(sosyalAcik() ? 'arti' : 'kilit', 'k'), t('akYeni')));
   alan.appendChild(ust);
   var adres = sunucuAdres();
   ANKET.liste.filter(function (x) { return eng.indexOf(x.yazar) < 0; }).forEach(function (x) { alan.appendChild(anketKarti(x, adres)); });
@@ -537,6 +537,7 @@ function anketMenusu(x, kart) {
 function anketOlustur(kA, kB, bilgi) {
   if (!yzKurulu()) { tost(t('yzKapali')); return; }
   if (!girisIste()) return;
+  if (!sosyalAcik()) { sosyalSayfasi('anket', function () { anketOlustur(kA, kB, bilgi); }); return; }
   var tuvaller = { a: null, b: null };
   var gor = 'herkes';
   var soru = h('input', { class: 'metin', maxlength: '140', placeholder: t('akSoruYer'), 'aria-label': t('akSoru') });

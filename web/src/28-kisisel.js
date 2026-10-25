@@ -121,8 +121,8 @@ Object.assign(DIL.uz, {
   hIkinciHesap: function (e) { return "Bu telefonda yana bitta hisobingiz bor (" + e + "). Bitta profil qolishi uchun keraksiz hisobga kirib, Sozlamalar → Hisob → Hisobni o'chirish orqali o'chiring."; }
 });
 
-Object.assign(DIL.tr, { sesliOkuDugme: 'Sesli oku', temaNane: 'Nane', temaMint: 'Adaçayı' });
-Object.assign(DIL.en, { sesliOkuDugme: 'Read aloud', temaNane: 'Mint', temaMint: 'Sage' });
-Object.assign(DIL.ru, { sesliOkuDugme: 'Прочитать вслух', temaNane: 'Мята', temaMint: 'Шалфей' });
-Object.assign(DIL.uz, { sesliOkuDugme: "Ovoz chiqarib o'qish", temaNane: 'Yalpiz', temaMint: 'Shalfey' });
-DIL.ko.sesliOkuDugme = '소리 내어 읽기'; DIL.ko.temaNane = '민트'; DIL.ko.temaMint = '세이지';
+Object.assign(DIL.tr, { sesliOkuDugme: 'Sesli oku', temaNane: 'Nane', temaMint: 'Adaçayı', temaTurkuaz: 'Turkuaz' });
+Object.assign(DIL.en, { sesliOkuDugme: 'Read aloud', temaNane: 'Mint', temaMint: 'Sage', temaTurkuaz: 'Turquoise' });
+Object.assign(DIL.ru, { sesliOkuDugme: 'Прочитать вслух', temaNane: 'Мята', temaMint: 'Шалфей', temaTurkuaz: 'Бирюза' });
+Object.assign(DIL.uz, { sesliOkuDugme: "Ovoz chiqarib o'qish", temaNane: 'Yalpiz', temaMint: 'Shalfey', temaTurkuaz: 'Firuza' });
+DIL.ko.sesliOkuDugme = '소리 내어 읽기'; DIL.ko.temaNane = '민트'; DIL.ko.temaMint = '세이지'; DIL.ko.temaTurkuaz = '터쿼이즈';

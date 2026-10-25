@@ -4,14 +4,14 @@ from ortak import *
 KOK = os.path.dirname(os.path.abspath(__file__))
 F = lambda ad: os.path.join(KOK, 'foto', ad)
 SAHTE = r"""localStorage.setItem('kb_hesap', JSON.stringify({ad: 'Elif', eposta: 'elif@ornek.com', kod: '0123456789ab', kadi: 'elif'}));
-window.__api = []; window.__tani = []; window.__anket = [];
+window.__api = []; window.__tani = []; window.__anket = []; window.__sahip = [];
 const yanit = (req, d) => setTimeout(() => window.dispatchEvent(new CustomEvent('kbyerel', {detail: Object.assign({req}, d)})), 40);
 window.KombinleNative = {
   konum: req => yanit(req, {ok: true, lat: 41.01, lon: 28.97, ad: 'İstanbul'}), konumAyarlari: () => {},
   surum: () => '1.0.23', cubuk: () => {}, dinle: req => yanit(req, {ok: false}), etiketle: req => yanit(req, {ok: true, etiketler: []}),
   arkaSil: req => yanit(req, {ok: false}), dosyaKaydet: req => yanit(req, {ok: true}),
-  odemeSorgula: req => yanit(req, {ok: true, products: []}), odemeAl: req => yanit(req, {ok: false}),
-  odemeSahip: () => '[]', odemeGeriYukle: req => yanit(req, {ok: true, owned: []}), jetonTeslim: () => 0,
+  odemeSorgula: req => yanit(req, {ok: true, products: []}), odemeAl: (req, id) => { if (id === 'kombinle_sosyal') { window.__sahip.push(id); return yanit(req, {ok: true, owned: window.__sahip}); } yanit(req, {ok: false}); },
+  odemeSahip: () => JSON.stringify(window.__sahip), odemeGeriYukle: req => yanit(req, {ok: true, owned: []}), jetonTeslim: () => 0,
   yzVar: () => true, oturumVar: () => true, oturumAyarla: () => {}, sunucu: () => 'https://kombinle-api.ornek.workers.dev',
   api: (req, yol, govde) => {
     const g = JSON.parse(govde); window.__api.push({yol, g});
@@ -119,6 +119,12 @@ with sync_playwright() as pw:
     o.ekran('c5_anket')
     p.click('#toplulukAlani button.g-ekle:has-text("Anket")'); p.wait_for_timeout(500)
     sy = p.locator('.sayfa.acik').last
+    ok('Sosyal paket' in sy.inner_text() and 'ücretsiz' in sy.inner_text(), 'anket açmak ücretli: Sosyal paket sayfası (oy vermek ücretsiz)')
+    o.ekran('c5b_sosyal_paket')
+    sy.locator('button.sosyal-al').click(); p.wait_for_timeout(1500)
+    ok('kombinle_sosyal' in p.evaluate('window.__sahip') and p.evaluate("JSON.parse(localStorage.getItem('kb_ayar')).sosyal") is True, 'Sosyal paket satın alındı')
+    sy = p.locator('.sayfa.acik').last
+    ok('Anketi paylaş' in sy.inner_text(), 'satın alınca anket ekranı kendiliğinden açıldı')
     sy.locator('button:has-text("Anketi paylaş")').click(); p.wait_for_timeout(300)
     ok('İki fotoğraf' in p.inner_text('#tost'), 'iki fotoğraf zorunlu')
     dosyalar = sy.locator('input[type=file]')

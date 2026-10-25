@@ -508,10 +508,10 @@ function paylasimKarti(x, adres) {
   var aciklamaCiz = function () { temizle(aciklamaKap); if (kirp(x.aciklama, 200)) aciklamaKap.appendChild(etiketliMetin(kirp(x.aciklama, 200))); };
   aciklamaCiz();
   x._aciklamaCiz = aciklamaCiz;
-  var kart = h('div', { class: 'g-akis' + (x.gizli ? ' gizli' : '') },
+  var kart = h('div', { class: 'g-akis' + (x.gizli ? ' gizli' : '') + (x.oneCikan ? ' one-cikan' : '') },
     h('div', { class: 'g-akis-bas' },
       avatarDoldur(h('button', { class: 'g-avatar', 'aria-label': ad, on: { click: profilAc } }), kisiAvatar(x.yazar, x.av, ad), ad, A.dil === 'en' ? 'en' : 'tr'),
-      h('button', { class: 'g-akis-kim', on: { click: profilAc } }, h('b', null, ad, kadiEl(x.kadi, 'yan')), h('small', null, zamanOnce(x.zaman), gor)),
+      h('button', { class: 'g-akis-kim', on: { click: profilAc } }, h('b', null, ad, kadiEl(x.kadi, 'yan')), h('small', null, x.oneCikan ? h('span', { class: 'g-one-cikan' }, ikon('zap', 'k'), t('oneCikanEtiket')) : null, zamanOnce(x.zaman), gor)),
       !x.benim ? takipDugmesi(x.yazar, !!x.takipte, !!x.istekte) : null,
       h('button', { class: 'ikon-btn g-akis-menu', 'aria-label': t('secenekler'), on: { click: function () { paylasimMenusu(x, kart); } } }, ikon('nokta'))),
     x.gizli ? h('p', { class: 'g-gizli-not', text: t('tpGizli') }) : null,
@@ -546,6 +546,7 @@ function paylasimMenusu(x, kart) {
   var gov = h('div', { class: 'ayar-grup' });
   var s = sayfaAc({ baslik: t('secenekler'), icerik: gov });
   if (x.benim) {
+    if (!x.gizli) gov.appendChild(oneCikarSatiri(x, function () { s.kapat(); }));
     gov.appendChild(menuSatir('kalem', t('aciklamaDuzenle'), '', function () { s.kapat(); setTimeout(function () { aciklamaDuzenle(x, x._aciklamaCiz); }, 300); }));
     gov.appendChild(menuSatir('cop', t('paylasimSil'), '', function () {
       onayla(t('paylasimSil'), t('paylasimSilSor'), t('sil'), true).then(function (evet) {

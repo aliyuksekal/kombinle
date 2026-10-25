@@ -814,7 +814,8 @@ async function akis(env, g, cihaz) {
       yazar: yazarKodu(r.yazar),
       takipte: takipte[yazarKodu(r.yazar)] ? 1 : 0, istekte: istekte[yazarKodu(r.yazar)] ? 1 : 0,
       oy: oylar[r.id] || 0,
-      oneCikan: r.one_cikan > Date.now() ? 1 : 0
+      oneCikan: r.one_cikan > Date.now() ? 1 : 0,
+      oneCikanBitis: r.one_cikan > Date.now() ? r.one_cikan : 0
     }))
   };
 }
