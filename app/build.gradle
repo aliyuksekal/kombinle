@@ -119,4 +119,6 @@ dependencies {
     // Keşfet'te AdMob reklamı ve AB/BK için reklam izni formu
     implementation 'com.google.android.gms:play-services-ads:23.6.0'
     implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
+    // Play Store'da uygulamayı puanlama penceresi (uygulamadan çıkmadan)
+    implementation 'com.google.android.play:review:2.0.2'
 }

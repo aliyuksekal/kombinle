@@ -32,6 +32,8 @@ const KOTA = {
   rtalep_ip: 20,
   siparis_cihaz: 30,  // günlük sipariş ekran görüntüsü okuma (yapay zekâ)
   merhaba_cihaz: 30,  // kullanım ölçümü bildirimi
+  gb_cihaz: 5,        // günlük geri bildirim
+  hata_cihaz: 20,     // günlük hata raporu gönderimi
   weboy_ip: 400,      // WhatsApp bağlantısından tarayıcıda anket oyu
   webanket_ip: 3000,
   paylas_ip: 150,
@@ -90,7 +92,8 @@ export default {
       env.DB.prepare('DELETE FROM anket_oy WHERE anket IN (SELECT id FROM anket WHERE zaman < ?)').bind(Date.now() - 60 * 86400000),
       env.DB.prepare('DELETE FROM anket WHERE zaman < ?').bind(Date.now() - 60 * 86400000),
       env.DB.prepare('DELETE FROM kullanim_gun WHERE gun < ?').bind(gunAnahtari(Date.now() - 120 * 86400000)),
-      env.DB.prepare('DELETE FROM olay_sayac WHERE gun < ?').bind(gunAnahtari(Date.now() - 400 * 86400000))
+      env.DB.prepare('DELETE FROM olay_sayac WHERE gun < ?').bind(gunAnahtari(Date.now() - 400 * 86400000)),
+      env.DB.prepare('DELETE FROM hata_ozet WHERE son < ?').bind(Date.now() - 60 * 86400000)
     ]).then(() => hayaletTemizle(env, true)));
   }
 };
@@ -167,6 +170,10 @@ async function yonlendir(istek, env, ctx) {
     case 'siparis': await kotaDus(env, ['siparis_cihaz:' + cihaz, 'yz_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await siparisOku(env, govde));
     case 'merhaba': await kotaDus(env, ['merhaba_cihaz:' + (dogrulama.cihaz || cihaz)]); return json(await merhaba(env, govde, dogrulama.cihaz || cihaz));
     case 'olcum': hesapGerek(); return json(await olcumRaporu(env, hesap));
+    case 'geribildir': await kotaDus(env, ['gb_cihaz:' + (dogrulama.cihaz || cihaz)]); return json(await geriBildirim(env, govde, hesap));
+    case 'gbliste': hesapGerek(); return json(await geriBildirimListe(env, govde, hesap));
+    case 'hata': await kotaDus(env, ['hata_cihaz:' + (dogrulama.cihaz || cihaz)]); return json(await hataRaporu(env, govde));
+    case 'hataliste': hesapGerek(); return json(await hataListe(env, govde, hesap));
     case 'onecikar': hesapGerek(); return json(await oneCikar(env, govde, cihaz, kat));
     case 'rtarife': return json(reklamTarife(env));
     case 'rtalep': hesapGerek(); return json(await reklamTalep(env, govde, hesap, () => kotaDus(env, ['rtalep_cihaz:' + cihaz, 'rtalep_ip:' + ip], kat)));
@@ -720,6 +727,46 @@ async function olcumRaporu(env, hesap) {
   return { ok: true, gunler: gunler.map(g => ({ gun: g, aktif: a[g] || 0, yeni: y[g] || 0 })), d1, d7, d30,
     toplam: toplam.results && toplam.results[0] ? toplam.results[0].n : 0, haftaOrtalama: Math.round(hafta / 7),
     olaylar: (olay.results || []).map(r => ({ ad: r.ad, n: r.n })) };
+}
+
+/* --- Geri bildirim ve hata raporları --------------------------------------
+   Kullanıcı uygulamadan görüş/öneri ve 1–5 puan gönderir; @admin okur. Sayfa hataları özet olarak (mesaj + yer)
+   sayılır: kişisel veri yok, aynı hata tek satırda toplanır. */
+async function geriBildirim(env, g, hesap) {
+  const metin_ = metin(g.metin, 1000), puan = Math.round(sayi(g.puan, 0, 5, 0));
+  if (metin_.length < 3 && !puan) throw new Hata('bos');
+  const eposta = hesap ? hesap.eposta : (EPOSTA.test(metin(g.eposta, 254).toLowerCase()) ? metin(g.eposta, 254).toLowerCase() : '');
+  await env.DB.prepare('INSERT INTO geri_bildirim (zaman, kim, eposta, metin, puan, surum, dil, ekran) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(Date.now(), hesap ? (hesap.ad + (hesap.kadi ? ' @' + hesap.kadi : '')) : '', eposta, metin_, puan, metin(g.surum, 20), DIL_AD[g.dil] ? g.dil : '', metin(g.ekran, 40)).run();
+  await env.DB.prepare('DELETE FROM geri_bildirim WHERE id NOT IN (SELECT id FROM geri_bildirim ORDER BY id DESC LIMIT 2000)').run();
+  return { ok: true };
+}
+async function geriBildirimListe(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  if (g.sil && Number.isInteger(g.sil)) await env.DB.prepare('DELETE FROM geri_bildirim WHERE id = ?').bind(g.sil).run();
+  const { results } = await env.DB.prepare('SELECT id, zaman, kim, eposta, metin, puan, surum, dil, ekran FROM geri_bildirim ORDER BY id DESC LIMIT 100').all();
+  const o = await env.DB.prepare('SELECT COUNT(*) AS n, AVG(CASE WHEN puan > 0 THEN puan END) AS ort FROM geri_bildirim').first();
+  return { ok: true, liste: results || [], toplam: o ? o.n : 0, ortalama: o && o.ort ? Math.round(o.ort * 10) / 10 : null };
+}
+async function hataRaporu(env, g) {
+  const l = liste(g.liste, 10).filter(x => x && typeof x.m === 'string').slice(0, 10);
+  const surum = metin(g.surum, 20), simdi = Date.now();
+  const ifadeler = [];
+  for (const x of l) {
+    const m = metin(x.m, 300), y = metin(x.y, 200);
+    if (!m) continue;
+    const imza = (await sha256(m + '|' + y)).slice(0, 24);
+    ifadeler.push(env.DB.prepare('INSERT INTO hata_ozet (imza, mesaj, yer, surum, sayi, ilk, son) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(imza) DO UPDATE SET sayi = sayi + excluded.sayi, son = excluded.son, surum = excluded.surum')
+      .bind(imza, m, y, surum, Math.max(1, Math.min(50, Math.round(Number(x.n) || 1))), simdi, simdi));
+  }
+  if (ifadeler.length) await env.DB.batch(ifadeler);
+  return { ok: true };
+}
+async function hataListe(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  if (g.temizle === true) await env.DB.prepare('DELETE FROM hata_ozet').run();
+  const { results } = await env.DB.prepare('SELECT mesaj, yer, surum, sayi, ilk, son FROM hata_ozet ORDER BY son DESC LIMIT 60').all();
+  return { ok: true, liste: results || [] };
 }
 
 /* --- WhatsApp anket sayfası -------------------------------------------------

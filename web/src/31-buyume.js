@@ -93,7 +93,7 @@ function anketPaylas(x) {
   metinPaylas(t('akWpMesaj', kirp(x.soru, 140) || t('akVarsayilan'), adres + '/a/' + x.id), 'whatsapp');
 }
 function davetEt() {
-  olay('davet');
+  olay('davet'); LS.yaz('davetEtti', true);
   metinPaylas(t('davetMesaj', PLAY_ADRES), 'whatsapp');
 }
 

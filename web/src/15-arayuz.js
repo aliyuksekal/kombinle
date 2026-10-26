@@ -112,6 +112,7 @@ function altMenuCiz() {
 function bugunEkrani() {
   var bol = h('section', { class: 'g-bolum' });
   bol.appendChild(havaKarti());
+  var bg = baslangicKarti(); if (bg) bol.appendChild(bg);
   if (!S.parcalar.length) { bol.appendChild(bosDolapKarti()); bol.appendChild(araclarBolumu()); return bol; }
   var pk = planKarti(); if (pk) bol.appendChild(pk);
   bol.appendChild(istekKarti());
@@ -296,6 +297,7 @@ function kombinGardiroba(k) {
   if (kayit && kayit.fav) return;
   kombinKaydet(k, false);
   tost(t('gardirobaEklendi'));
+  if (gecmisAl().filter(function (g) { return g.fav; }).length >= 2) puanIste();
   setTimeout(function () { var p = $('.g-paylas-panel'); if (p) p.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 250);
 }
 /* Kayıtlı kombinin altındaki paylaşım paneli: gizli / yalnız takipçiler / herkes */

@@ -65,6 +65,7 @@ function havaYukle(zorla) {
 var hataSayisi = 0;
 function hataYakala(e) {
   hataSayisi++;
+  try { if (typeof hataKaydet === 'function') hataKaydet(e); } catch (x) { }
   try { if (window.console) console.warn('[kombinle]', e && e.message ? e.message : e); } catch (x) { }
 }
 window.addEventListener('error', function (e) {
@@ -76,6 +77,7 @@ window.addEventListener('unhandledrejection', function (e) { hataYakala(e.reason
 /* ---------- Başlat ---------- */
 function baslat() {
   ayarYukle();
+  if (!LS.al('ilkAcilis', 0)) LS.yaz('ilkAcilis', Date.now());
   S.pro = !!A.pro || hediyePro();
   temaUygula(temaSecimi());
   try {

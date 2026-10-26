@@ -75,6 +75,7 @@ function ayarIcerik(gov) {
         yzKurulu() ? satir('zap', t('ocBaslik'), oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('oneCikarAlt'), function () { oneCikarPaketSayfasi(); }) : null,
         yzKurulu() ? satir('grafik', t('rvBaslik'), t('rvAlt'), reklamVerSayfasi) : null,
         satir('kisi', t('davetBaslik'), t('davetAlt'), davetEt),
+        yzKurulu() ? satir('yorum', t('gbAyar'), t('gbAyarAlt'), function () { geriBildirimSayfasi('ayarlar'); }) : null,
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
     gov.appendChild(kart('veri', 'kalkan', t('verilerim'), t('verilerimAlt'),

@@ -249,6 +249,13 @@ public final class Kopru {
         ekran.ui.post(ekran::widgetEkle);
     }
 
+    /** Play'de puanlama penceresi (uygulama içinde). */
+    @JavascriptInterface
+    public void puanIste(final String req) {
+        if (!guvenli || !istekGecerli(req)) return;
+        ekran.ui.post(() -> ekran.puanIste(req));
+    }
+
     /** Metni WhatsApp'ta ya da paylaşım menüsünde paylaşır. */
     @JavascriptInterface
     public void metinPaylas(final String metin, final String hedef) {

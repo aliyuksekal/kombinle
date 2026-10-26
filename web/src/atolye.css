@@ -580,3 +580,25 @@ i.ol-aktif{background:color-mix(in srgb,var(--dolgu) 45%,transparent)}
 i.ol-yeni{background:var(--dolgu)}
 .ol-lejant{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--soluk);margin:6px 0 0}
 .ol-lejant i{display:inline-block;width:10px;height:10px;border-radius:3px}
+/* ---- Başlangıç görevleri ---- */
+.bg-kart{display:flex;flex-direction:column;gap:8px;margin:12px 0;padding:16px;border-radius:20px;background:var(--yuzey);border:1px solid var(--cizgi)}
+.bg-bas{display:flex;align-items:center;gap:10px}
+.bg-bas>div{flex:1;display:flex;flex-direction:column;min-width:0}
+.bg-bas b{font-size:16px}
+.bg-bas small{color:var(--soluk);font-size:12px}
+.bg-sayac{font-size:12px;font-weight:700;color:var(--vurgu);background:var(--vurgu-acik);padding:2px 10px;border-radius:99px}
+.bg-gizle{width:32px;height:32px}
+.bg-gorev{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-radius:14px;background:var(--yuzey2);color:var(--murekkep);font:inherit;text-align:left}
+.bg-gorev>span:nth-child(2){flex:1}
+.bg-gorev.tamam{opacity:.65;text-decoration:line-through}
+.bg-isaret{flex:0 0 22px;height:22px;border-radius:99px;border:2px solid var(--cizgi);display:grid;place-items:center}
+.bg-gorev.tamam .bg-isaret{background:var(--iyi);border-color:var(--iyi);color:#fff}
+.bg-isaret svg{width:14px;height:14px}
+/* ---- Geri bildirim ---- */
+.gb-yildiz{display:flex;gap:6px}
+.gb-yildiz button{width:44px;height:44px;border-radius:12px;border:1px solid var(--cizgi);background:var(--yuzey);font-size:24px;line-height:1;color:var(--cizgi)}
+.gb-yildiz button.dolu{color:#F5A524;border-color:#F5A524;background:color-mix(in srgb,#F5A524 12%,var(--yuzey))}
+.gb-metin{min-height:110px;resize:vertical}
+.gb-ust{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.gb-ust b{color:#F5A524;letter-spacing:.05em}
+.hy-mesaj{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-word}

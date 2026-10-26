@@ -914,6 +914,23 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   db.prepare("DELETE FROM anket WHERE id IN (?, ?)").run('w'.repeat(20), 'v'.repeat(20));
 }
 
+// geri bildirim ve hata raporu
+{
+  ok((await iste('/v1/geribildir', { metin: 'x' }, cihazB)).veri.hata === 'bos', 'boş geri bildirim reddedildi');
+  ok((await iste('/v1/geribildir', { metin: 'Sabah bildirimi harika!', puan: 5, surum: '1.0.37', dil: 'tr', ekran: 'ayarlar' }, cihazB)).veri.ok, 'geri bildirim alındı');
+  await iste('/v1/geribildir', { metin: 'Kamera bazen yavaş', puan: 3 }, cihazD);
+  ok((await iste('/v1/gbliste', {}, cihazB)).durum === 403, 'geri bildirimleri yalnız @admin okur');
+  let gb = (await iste('/v1/gbliste', {}, cihazC)).veri;
+  ok(gb.liste.length >= 2 && gb.liste[1].metin === 'Sabah bildirimi harika!' && gb.liste[1].puan === 5 && gb.ortalama === 4, 'geri bildirim listesi ve ortalama puan');
+  ok(gb.liste[1].eposta && gb.liste[1].kim.length > 0, 'giriş yapanın adı ve e-postası eklendi');
+  gb = (await iste('/v1/gbliste', { sil: gb.liste[0].id }, cihazC)).veri;
+  ok(gb.liste[0].metin === 'Sabah bildirimi harika!', 'geri bildirim silindi');
+  await iste('/v1/hata', { surum: '1.0.37', liste: [{ m: 'TypeError: x is null', y: 'kombinIste', n: 2 }, { m: 'TypeError: x is null', y: 'kombinIste', n: 1 }, { m: 'Başka', y: '' }] }, cihazB);
+  const hl = (await iste('/v1/hataliste', {}, cihazC)).veri.liste;
+  ok(hl.length === 2 && hl.find(x => x.yer === 'kombinIste').sayi === 3, 'aynı hata tek satırda toplandı (3 kez)');
+  ok((await iste('/v1/hataliste', {}, cihazB)).durum === 403, 'hataları yalnız @admin görür');
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

@@ -573,6 +573,22 @@ public class AnaEkran extends Activity {
         }
     }
 
+    /** Play'in uygulama içi puanlama penceresi. Google kotası nedeniyle her istekte görünmeyebilir. */
+    void puanIste(String istek) {
+        try {
+            final com.google.android.play.core.review.ReviewManager m = com.google.android.play.core.review.ReviewManagerFactory.create(this);
+            m.requestReviewFlow().addOnCompleteListener(g -> {
+                if (!g.isSuccessful()) {
+                    kopru.gonder(istek, false, "hata", "akis");
+                    return;
+                }
+                m.launchReviewFlow(this, g.getResult()).addOnCompleteListener(s -> kopru.gonder(istek, true, "bitti", true));
+            });
+        } catch (Throwable t) {
+            kopru.gonder(istek, false, "hata", "yok");
+        }
+    }
+
     /** Ana ekrana widget ekleme penceresi (Android 8+, başlatıcı destekliyorsa). */
     boolean widgetEkle() {
         try {
