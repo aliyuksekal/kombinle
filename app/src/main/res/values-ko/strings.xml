@@ -18,4 +18,14 @@
     <string name="bn_mesaj_sayi">읽지 않은 메시지 %1$d개</string>
     <string name="bn_ac">눌러서 보기</string>
     <string name="bn_mesaj_ac">눌러서 읽기</string>
+    <string name="sabah_kanal">아침 코디 추천</string>
+    <string name="sabah_baslik">좋은 아침이에요 ☀️</string>
+    <string name="sabah_metin">오늘의 코디 추천이 준비됐어요. 눌러서 보세요.</string>
+    <string name="sabah_hava">좋은 아침이에요 ☀️ 오늘 %1$d–%2$d°</string>
+    <string name="sabah_yagmur">, 비 예보</string>
+    <string name="widget_adi">오늘의 코디</string>
+    <string name="widget_aciklama">오늘의 코디 추천과 날씨</string>
+    <string name="widget_bos_baslik">오늘 뭐 입지?</string>
+    <string name="widget_bos_metin">눌러서 코디 추천 받기</string>
+    <string name="paylas_baslik">공유</string>
 </resources>

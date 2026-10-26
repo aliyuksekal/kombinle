@@ -18,4 +18,14 @@
     <string name="bn_mesaj_sayi">You have %1$d unread messages</string>
     <string name="bn_ac">Tap to see</string>
     <string name="bn_mesaj_ac">Tap to read</string>
+    <string name="sabah_kanal">Morning outfit idea</string>
+    <string name="sabah_baslik">Good morning ☀️</string>
+    <string name="sabah_metin">Today\'s outfit idea is ready, tap to see it.</string>
+    <string name="sabah_hava">Good morning ☀️ Today %1$d–%2$d°</string>
+    <string name="sabah_yagmur">, rain expected</string>
+    <string name="widget_adi">Outfit of the day</string>
+    <string name="widget_aciklama">Today\'s outfit idea and the weather</string>
+    <string name="widget_bos_baslik">What should I wear today?</string>
+    <string name="widget_bos_metin">Tap for your outfit idea</string>
+    <string name="paylas_baslik">Share</string>
 </resources>

@@ -30,6 +30,10 @@ const KOTA = {
   onecikar_cihaz: 5, // günlük "gönderiyi öne çıkar" (öne çıkarma hakkı uygulamada satın alınır; PRO'da ayda 10)
   rtalep_cihaz: 3,   // günlük reklam başvurusu
   rtalep_ip: 20,
+  siparis_cihaz: 30,  // günlük sipariş ekran görüntüsü okuma (yapay zekâ)
+  merhaba_cihaz: 30,  // kullanım ölçümü bildirimi
+  weboy_ip: 400,      // WhatsApp bağlantısından tarayıcıda anket oyu
+  webanket_ip: 3000,
   paylas_ip: 150,
   oy_cihaz: 600,
   oy_ip: 15000,
@@ -84,7 +88,9 @@ export default {
       env.DB.prepare('DELETE FROM kota WHERE gun < ?').bind(dun),
       env.DB.prepare('DELETE FROM paylasim WHERE gizli = 1 AND zaman < ?').bind(Date.now() - 30 * 86400000),
       env.DB.prepare('DELETE FROM anket_oy WHERE anket IN (SELECT id FROM anket WHERE zaman < ?)').bind(Date.now() - 60 * 86400000),
-      env.DB.prepare('DELETE FROM anket WHERE zaman < ?').bind(Date.now() - 60 * 86400000)
+      env.DB.prepare('DELETE FROM anket WHERE zaman < ?').bind(Date.now() - 60 * 86400000),
+      env.DB.prepare('DELETE FROM kullanim_gun WHERE gun < ?').bind(gunAnahtari(Date.now() - 120 * 86400000)),
+      env.DB.prepare('DELETE FROM olay_sayac WHERE gun < ?').bind(gunAnahtari(Date.now() - 400 * 86400000))
     ]).then(() => hayaletTemizle(env, true)));
   }
 };
@@ -104,6 +110,9 @@ async function yonlendir(istek, env, ctx) {
   if (rm && istek.method === 'GET') return resimVer(env, rm[1]);
   const av = /^\/v1\/avatar\/([a-f0-9]{12})$/.exec(yol);
   if (av && istek.method === 'GET') return avatarVer(env, av[1]);
+  // WhatsApp'ta paylaşılan anket: uygulama olmadan tarayıcıda oy verilir
+  const wa = /^\/a\/([a-z0-9]{20})(\/oy)?$/.exec(yol);
+  if (wa) return webAnket(istek, env, wa[1], !!wa[2]);
   const rt = /^\/v1\/talepresim\/([a-z0-9]{20})$/.exec(yol);
   if (rt && istek.method === 'GET') return talepResmi(env, rt[1]);
   const rk = /^\/v1\/reklam\/([a-z0-9]{20})$/.exec(yol);
@@ -155,6 +164,9 @@ async function yonlendir(istek, env, ctx) {
     case 'analiz': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await analiz(env, govde));
     case 'paylas': hesapGerek(); await kotaDus(env, ['paylas_cihaz:' + cihaz, 'paylas_ip:' + ip, 'yz_genel:hepsi']); govde.takma = hesap.ad; return json(await paylas(env, govde, cihaz));
     case 'akis': await kotaDus(env, ['akis_ip:' + ip]); return json(await akis(env, govde, cihaz));
+    case 'siparis': await kotaDus(env, ['siparis_cihaz:' + cihaz, 'yz_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await siparisOku(env, govde));
+    case 'merhaba': await kotaDus(env, ['merhaba_cihaz:' + (dogrulama.cihaz || cihaz)]); return json(await merhaba(env, govde, dogrulama.cihaz || cihaz));
+    case 'olcum': hesapGerek(); return json(await olcumRaporu(env, hesap));
     case 'onecikar': hesapGerek(); return json(await oneCikar(env, govde, cihaz, kat));
     case 'rtarife': return json(reklamTarife(env));
     case 'rtalep': hesapGerek(); return json(await reklamTalep(env, govde, hesap, () => kotaDus(env, ['rtalep_cihaz:' + cihaz, 'rtalep_ip:' + ip], kat)));
@@ -623,6 +635,166 @@ async function renkAnalizi(env, g) {
   if (!s || typeof s !== 'object') throw new Hata('yz_bos', 502);
   if (s.yuz === false) return { ok: true, sonuc: { yuz: false } };
   return { ok: true, sonuc: s };
+}
+
+/* --- Sipariş / sepet ekran görüntüsünden gardıroba ekleme -------------------
+   Trendyol, Zara, H&M gibi uygulamaların sipariş, sepet ya da favori ekranı: her ürünün FOTOĞRAFININ kutusu
+   bulunur; uygulama bu kutuları keser ve her ürünü ayrı ayrı tanıyıp dolaba ekler. */
+async function siparisOku(env, g) {
+  const resim = base64Coz(g.resim);
+  const tip = resimTuru(resim);
+  if (!tip || resim.length > 2 * 1024 * 1024) throw new Hata('resim');
+  const dil = DIL_AD[g.dil] ? g.dil : 'tr';
+  const kutuSema = { type: 'array', items: { type: 'integer', minimum: 0, maximum: 1000 }, minItems: 4, maxItems: 4 };
+  const sema = {
+    type: 'object',
+    properties: {
+      alisveris: { type: 'boolean', description: 'the image is a screenshot of an online shop / order / cart / favourites / product list' },
+      urunler: {
+        type: 'array', maxItems: 12,
+        items: { type: 'object', properties: { ad: { type: 'string', maxLength: 40 }, kategori: { type: 'string', enum: KATEGORI.filter(k => k !== 'yok') }, kutu: kutuSema }, required: ['ad', 'kategori', 'kutu'] }
+      }
+    },
+    required: ['alisveris', 'urunler']
+  };
+  const yonerge =
+    'This image should be a phone screenshot from an online fashion shop or marketplace (an order, the cart, favourites or a product list; e.g. Trendyol, Zara, H&M, Hepsiburada).\n' +
+    'List every clothing, shoe, bag or accessory product whose PRODUCT PHOTO is visible.\n' +
+    '- kutu: a tight bounding box of the product photo itself (the picture, not the text, price or buttons) as [ymin, xmin, ymax, xmax] normalized to 0–1000.\n' +
+    '- ad: a short product name in ' + DIL_AD[dil] + ' with the colour (e.g. "Siyah midi etek"), using the visible product title if there is one.\n' +
+    '- kategori: ust=top, alt=bottom, tek=dress/jumpsuit, dis=outerwear, ayk=shoes, aks=bag/accessory/jewellery, ic=underwear/socks.\n' +
+    'Skip banners, adverts, logos, models\' faces, non-fashion products and duplicates of the same product. A cut-off photo smaller than a third of its size can be skipped.\n' +
+    'If it is not a shopping screenshot, set alisveris=false and return an empty list.';
+  const s = await yz(env, [{ text: yonerge }, { inlineData: { mimeType: tip, data: g.resim } }], sema, { dusunme: 'low', enFazla: 1400, zaman: 45000 });
+  if (!s || typeof s !== 'object') throw new Hata('yz_bos', 502);
+  const urunler = (Array.isArray(s.urunler) ? s.urunler : []).map(x => {
+    const kutu = kutuTemizle(x && x.kutu);
+    if (!kutu || KATEGORI.indexOf(x.kategori) < 0 || x.kategori === 'yok') return null;
+    return { ad: metin(x.ad, 40), kategori: x.kategori, kutu };
+  }).filter(Boolean).slice(0, 12);
+  return { ok: true, alisveris: s.alisveris !== false, urunler };
+}
+
+/* --- Kullanım ölçümü --------------------------------------------------------
+   Kişisel veri tutulmaz: telefon kimliği gizli anahtarla tek yönlü özetlenir (başka tablolarla eşleşmez).
+   Günlük aktif kullanıcı, yeni kullanıcı, 1/7/30. gün geri dönüş ve özellik kullanım sayıları. */
+const OLAYLAR = ['kombin', 'parca_ekle', 'siparis', 'sohbet', 'anket_ac', 'anket_oy', 'anket_paylas', 'paylas', 'davet', 'sabah_ac', 'sabah_dokun',
+  'widget', 'renk', 'alsam', 'kamera', 'reklam_basvuru', 'onecikar', 'satin_al', 'kesfet'];
+async function merhaba(env, g, cihaz) {
+  if (!cihaz) throw new Hata('girdi');
+  const kimlik = (await sha256('olcum:' + env.UYGULAMA_ANAHTARI + ':' + cihaz)).slice(0, 24);
+  const gun = gunAnahtari(Date.now());
+  const ifadeler = [
+    env.DB.prepare('INSERT OR IGNORE INTO kullanim_ilk (kimlik, gun) VALUES (?, ?)').bind(kimlik, gun),
+    env.DB.prepare('INSERT OR IGNORE INTO kullanim_gun (gun, kimlik) VALUES (?, ?)').bind(gun, kimlik)
+  ];
+  const o = g.olaylar && typeof g.olaylar === 'object' ? g.olaylar : {};
+  Object.keys(o).slice(0, 30).forEach(ad => {
+    const n = Math.round(Number(o[ad]));
+    if (OLAYLAR.indexOf(ad) >= 0 && n > 0) ifadeler.push(env.DB.prepare('INSERT INTO olay_sayac (gun, ad, sayi) VALUES (?, ?, ?) ON CONFLICT(gun, ad) DO UPDATE SET sayi = sayi + excluded.sayi').bind(gun, ad, Math.min(n, 500)));
+  });
+  await env.DB.batch(ifadeler);
+  return { ok: true };
+}
+async function olcumRaporu(env, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  const simdi = Date.now(), gunler = [];
+  for (let i = 29; i >= 0; i--) gunler.push(gunAnahtari(simdi - i * 86400000));
+  const [aktif, yeni, olay, toplam] = await env.DB.batch([
+    env.DB.prepare('SELECT gun, COUNT(*) AS n FROM kullanim_gun WHERE gun >= ? GROUP BY gun').bind(gunler[0]),
+    env.DB.prepare('SELECT gun, COUNT(*) AS n FROM kullanim_ilk WHERE gun >= ? GROUP BY gun').bind(gunler[0]),
+    env.DB.prepare('SELECT ad, SUM(sayi) AS n FROM olay_sayac WHERE gun >= ? GROUP BY ad ORDER BY n DESC').bind(gunAnahtari(simdi - 6 * 86400000)),
+    env.DB.prepare('SELECT COUNT(*) AS n FROM kullanim_ilk')
+  ]);
+  const harita = l => { const m = {}; (l.results || []).forEach(r => { m[r.gun] = r.n; }); return m; };
+  const a = harita(aktif), y = harita(yeni);
+  // geri dönüş: o gün ilk kez gelenlerin N gün sonra yeniden açma oranı (yeterince eski gruplar)
+  async function donus(n) {
+    const son = gunAnahtari(simdi - n * 86400000), ilk = gunAnahtari(simdi - (n + 60) * 86400000);
+    const r = await env.DB.prepare("SELECT COUNT(*) AS grup, SUM(CASE WHEN EXISTS (SELECT 1 FROM kullanim_gun g WHERE g.kimlik = i.kimlik AND g.gun = date(i.gun, '+' || ?1 || ' day')) THEN 1 ELSE 0 END) AS donen FROM kullanim_ilk i WHERE i.gun <= ?2 AND i.gun >= ?3")
+      .bind(n, son, ilk).first();
+    return { grup: r ? r.grup || 0 : 0, donen: r ? r.donen || 0 : 0, oran: r && r.grup ? Math.round(1000 * (r.donen || 0) / r.grup) / 10 : null };
+  }
+  const [d1, d7, d30] = [await donus(1), await donus(7), await donus(30)];
+  const hafta = gunler.slice(-7).reduce((t, g) => t + (a[g] || 0), 0);
+  return { ok: true, gunler: gunler.map(g => ({ gun: g, aktif: a[g] || 0, yeni: y[g] || 0 })), d1, d7, d30,
+    toplam: toplam.results && toplam.results[0] ? toplam.results[0].n : 0, haftaOrtalama: Math.round(hafta / 7),
+    olaylar: (olay.results || []).map(r => ({ ad: r.ad, n: r.n })) };
+}
+
+/* --- WhatsApp anket sayfası -------------------------------------------------
+   https://<sunucu>/a/<anket>: uygulaması olmayan arkadaş tarayıcıda oy verir; sonucu görür ve
+   "Sen de sor: Kombinle'yi indir" bağlantısıyla uygulamaya gelir. Yalnız herkese açık anketler. */
+const PLAY_ADRES = 'https://play.google.com/store/apps/details?id=com.benim.kombinle';
+const WEB_METIN = {
+  tr: { soruyor: 'soruyor', varsayilan: 'Hangisini giysin?', oyla: 'Oy vermek için birine dokun', oy: 'oy', tesekkur: 'Oyun kaydedildi, teşekkürler! 💜', cta: "Sen de kombinin için sor: Kombinle'yi indir", alt: 'Dolabındakilerle her sabah hava durumuna göre kombin önerisi', yok: 'Bu anket artık yok ya da herkese açık değil.', hata: 'Oy kaydedilemedi, tekrar dene.', desc: 'Oy ver: hangisi daha güzel?' },
+  en: { soruyor: 'asks', varsayilan: 'Which one should I wear?', oyla: 'Tap one to vote', oy: 'votes', tesekkur: 'Your vote was saved, thank you! 💜', cta: 'Ask about your outfits too: get Kombinle', alt: 'Daily outfit ideas from your own wardrobe, matched to the weather', yok: "This poll no longer exists or isn't public.", hata: "Couldn't save your vote, try again.", desc: 'Vote: which one looks better?' },
+  ru: { soruyor: 'спрашивает', varsayilan: 'Что надеть?', oyla: 'Нажми, чтобы проголосовать', oy: 'голосов', tesekkur: 'Голос учтён, спасибо! 💜', cta: 'Спроси и ты: скачай Kombinle', alt: 'Образы из твоего гардероба по погоде каждое утро', yok: 'Опрос недоступен.', hata: 'Не удалось сохранить голос.', desc: 'Голосуй: что лучше?' },
+  uz: { soruyor: "so'rayapti", varsayilan: 'Qaysi birini kiysin?', oyla: 'Ovoz berish uchun birini bosing', oy: 'ovoz', tesekkur: 'Ovozingiz saqlandi, rahmat! 💜', cta: "Siz ham so'rang: Kombinle'ni yuklab oling", alt: "Har tong ob-havoga mos obraz g'oyalari", yok: "Bu so'rovnoma mavjud emas.", hata: 'Ovoz saqlanmadi.', desc: 'Ovoz bering: qaysi biri chiroyli?' },
+  ko: { soruyor: '님의 질문', varsayilan: '어떤 걸 입을까요?', oyla: '하나를 눌러 투표하세요', oy: '표', tesekkur: '투표했어요. 고마워요! 💜', cta: '내 코디도 물어보기: Kombinle 받기', alt: '내 옷장으로 매일 아침 날씨에 맞춘 코디 추천', yok: '이 투표는 더 이상 없어요.', hata: '투표를 저장하지 못했어요.', desc: '투표하기: 어느 쪽이 더 예쁠까요?' }
+};
+function htmlKac(x) { return String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function webDil(istek) {
+  const l = String(istek.headers.get('Accept-Language') || '').toLowerCase().split(',').map(x => x.trim().slice(0, 2));
+  return l.find(x => WEB_METIN[x]) || 'tr';
+}
+async function webAnket(istek, env, id, oyMu) {
+  const ip = istek.headers.get('CF-Connecting-IP') || '0';
+  const a = await env.DB.prepare("SELECT id, takma, soru, oy_a, oy_b, zaman FROM anket WHERE id = ? AND gizli = 0 AND gorunurluk = 'herkes'").bind(id).first();
+  if (oyMu) {
+    if (istek.method !== 'POST') throw new Hata('yontem', 405);
+    await kotaDus(env, ['weboy_ip:' + ip]);
+    if (!a) throw new Hata('yok', 404);
+    let g = {};
+    try { g = JSON.parse((await istek.text()).slice(0, 500)); } catch (e) { throw new Hata('girdi'); }
+    const secim = g.secim === 'a' || g.secim === 'b' ? g.secim : '';
+    const z = typeof g.ziyaretci === 'string' && /^[a-f0-9]{32}$/.test(g.ziyaretci) ? g.ziyaretci : '';
+    if (!secim || !z) throw new Hata('girdi');
+    const cihaz = 'w' + (await sha256('web:' + env.UYGULAMA_ANAHTARI + ':' + z)).slice(0, 39);
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO anket_oy (anket, cihaz, secim, zaman) VALUES (?, ?, ?, ?) ON CONFLICT(anket, cihaz) DO UPDATE SET secim = excluded.secim').bind(id, cihaz, secim, Date.now()),
+      env.DB.prepare("UPDATE anket SET oy_a = (SELECT COUNT(*) FROM anket_oy WHERE anket = ?1 AND secim = 'a'), oy_b = (SELECT COUNT(*) FROM anket_oy WHERE anket = ?1 AND secim = 'b') WHERE id = ?1").bind(id)
+    ]);
+    const s = await env.DB.prepare('SELECT oy_a, oy_b FROM anket WHERE id = ?').bind(id).first();
+    return json({ ok: true, a: s ? s.oy_a : 0, b: s ? s.oy_b : 0, secim });
+  }
+  if (istek.method !== 'GET') throw new Hata('yontem', 405);
+  await kotaDus(env, ['webanket_ip:' + ip]);
+  const m = WEB_METIN[webDil(istek)];
+  const kok = new URL(istek.url).origin;
+  const nonce = hex(crypto.getRandomValues(new Uint8Array(12)));
+  const basliklar = Object.assign({}, GUVENLIK_BASLIKLARI, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Content-Security-Policy': "default-src 'none'; img-src 'self'; style-src 'nonce-" + nonce + "'; script-src 'nonce-" + nonce + "'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    'Cache-Control': 'no-store'
+  });
+  const stil = `:root{--bg:#fdf7fb;--kart:#fff;--yazi:#2a1424;--soluk:#7b6274;--vurgu:#c2185b;--cizgi:#f0dbe7}@media (prefers-color-scheme:dark){:root{--bg:#141215;--kart:#1f1b21;--yazi:#f4ecf1;--soluk:#b9a6b3;--vurgu:#f48fb1;--cizgi:#3a3138}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--yazi);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:20px 16px 36px}.marka{font-weight:800;letter-spacing:.02em;color:var(--vurgu);font-size:18px}
+h1{font-size:22px;line-height:1.25;margin:10px 0 4px}.kim{color:var(--soluk);font-size:14px;margin:0 0 14px}.ikili{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.sec{position:relative;padding:0;border:2px solid var(--cizgi);border-radius:18px;overflow:hidden;background:var(--kart);cursor:pointer;color:inherit;font:inherit}
+button.sec img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}button.sec b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff;border-radius:99px;width:30px;height:30px;display:grid;place-items:center}
+button.sec.secili{border-color:var(--vurgu)}.sonuc{position:absolute;left:0;right:0;bottom:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,.75));color:#fff;font-weight:800;font-size:22px;text-align:left}
+.ipucu{color:var(--soluk);font-size:14px;text-align:center;margin:12px 0}.cta{display:block;margin-top:22px;padding:16px;border-radius:16px;background:var(--vurgu);color:#fff;text-align:center;font-weight:700;text-decoration:none}
+.alt{color:var(--soluk);font-size:13px;text-align:center;margin-top:8px}`;
+  if (!a) return new Response(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kombinle</title><style nonce="${nonce}">${stil}</style></head><body><main><div class="marka">Kombinle</div><h1>${htmlKac(m.yok)}</h1><a class="cta" href="${PLAY_ADRES}">${htmlKac(m.cta)}</a></main></body></html>`, { status: 404, headers: basliklar });
+  const soru = a.soru || m.varsayilan;
+  const veri = JSON.stringify({ id: a.id, a: a.oy_a, b: a.oy_b, m: { oy: m.oy, tesekkur: m.tesekkur, hata: m.hata } }).replace(/</g, '\\u003c');
+  const sayfa = `<!doctype html><html lang="${htmlKac(webDil(istek))}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${htmlKac(soru)} · Kombinle</title><meta name="description" content="${htmlKac(m.desc)}">
+<meta property="og:title" content="${htmlKac(soru)}"><meta property="og:description" content="${htmlKac(a.takma + ' ' + m.soruyor + ' • ' + m.desc)}">
+<meta property="og:image" content="${kok}/v1/anketresim/${a.id}/a"><meta property="og:type" content="website"><meta name="theme-color" content="#c2185b">
+<style nonce="${nonce}">${stil}</style></head><body><main>
+<div class="marka">Kombinle</div><h1>${htmlKac(soru)}</h1><p class="kim">${htmlKac(a.takma)} ${htmlKac(m.soruyor)}</p>
+<div class="ikili"><button class="sec" data-s="a"><img src="/v1/anketresim/${a.id}/a" alt="A"><b>A</b></button><button class="sec" data-s="b"><img src="/v1/anketresim/${a.id}/b" alt="B"><b>B</b></button></div>
+<p class="ipucu" id="ipucu">${htmlKac(m.oyla)}</p>
+<a class="cta" href="${PLAY_ADRES}">${htmlKac(m.cta)}</a><p class="alt">${htmlKac(m.alt)}</p></main>
+<script nonce="${nonce}">(function(){var D=${veri};var k='kb_oy_'+D.id,z;try{z=localStorage.getItem('kb_z');if(!z){var r=new Uint8Array(16);crypto.getRandomValues(r);z=Array.prototype.map.call(r,function(x){return('0'+x.toString(16)).slice(-2)}).join('');localStorage.setItem('kb_z',z)}}catch(e){z=''}
+var dg=document.querySelectorAll('button.sec'),ip=document.getElementById('ipucu');function goster(a,b,s){var t=a+b;dg.forEach(function(d){var h=d.getAttribute('data-s'),n=h==='a'?a:b;d.classList.toggle('secili',h===s);var e=d.querySelector('.sonuc');if(!e){e=document.createElement('div');e.className='sonuc';d.appendChild(e)}e.textContent='%'+(t?Math.round(100*n/t):0)+' · '+n+' '+D.m.oy})}
+var once=null;try{once=localStorage.getItem(k)}catch(e){}if(once){goster(D.a,D.b,once);ip.textContent=D.m.tesekkur}
+dg.forEach(function(d){d.addEventListener('click',function(){var s=d.getAttribute('data-s');if(!z){ip.textContent=D.m.hata;return}fetch(location.pathname+'/oy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secim:s,ziyaretci:z})}).then(function(r){return r.json()}).then(function(v){if(!v.ok)throw 0;try{localStorage.setItem(k,s)}catch(e){}goster(v.a,v.b,s);ip.textContent=D.m.tesekkur}).catch(function(){ip.textContent=D.m.hata})})})})();</script>
+</body></html>`;
+  return new Response(sayfa, { headers: basliklar });
 }
 
 /* --- dolap ve giyim analizi ----------------------------------------- */

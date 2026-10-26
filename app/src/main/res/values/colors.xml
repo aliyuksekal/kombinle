@@ -4,4 +4,9 @@
     <color name="zemin_koyu">#131313</color>
     <color name="ikon_zemin">#8A3A62</color>
     <color name="acilis">#0C0720</color>
+    <color name="w_zemin">#FFFFFF</color>
+    <color name="w_yazi">#2A1424</color>
+    <color name="w_soluk">#7B6274</color>
+    <color name="w_vurgu">#C2185B</color>
+    <color name="w_kutu">#FBF1F6</color>
 </resources>

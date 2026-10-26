@@ -863,6 +863,57 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   db.prepare('UPDATE paylasim SET one_cikan = 0').run();
 }
 
+// sipariş ekran görüntüsü
+{
+  yzYanit = () => ({ alisveris: true, urunler: [{ ad: 'Siyah midi etek', kategori: 'alt', kutu: [100, 50, 400, 480] }, { ad: 'Bozuk', kategori: 'yok', kutu: [1, 1, 2, 2] }, { ad: 'Krem kazak', kategori: 'ust', kutu: [100, 520, 400, 950] }] });
+  let r = await iste('/v1/siparis', { resim: jpeg, dil: 'tr' }, cihazB);
+  ok(r.veri.ok && r.veri.alisveris && r.veri.urunler.length === 2 && r.veri.urunler[0].kutu.join() === '100,50,400,480', 'sipariş ekran görüntüsünden ürün kutuları (bozuklar atıldı)');
+  yzYanit = () => ({ alisveris: false, urunler: [] });
+  r = await iste('/v1/siparis', { resim: jpeg }, cihazB);
+  ok(r.veri.ok && r.veri.alisveris === false && !r.veri.urunler.length, 'alışveriş ekranı olmayan görüntü');
+  ok((await iste('/v1/siparis', { resim: 'xyz' }, cihazB)).veri.hata === 'resim', 'bozuk görüntü reddedildi');
+}
+// kullanım ölçümü
+{
+  ok((await iste('/v1/merhaba', { olaylar: { kombin: 3, kotu_olay: 5, parca_ekle: 2 } }, cihazB)).veri.ok, 'kullanım bildirimi');
+  await iste('/v1/merhaba', { olaylar: { kombin: 1 } }, cihazB);
+  await iste('/v1/merhaba', {}, cihazC);
+  const dun = new Date(Date.now() - 86400000).toISOString().slice(0, 10), bugun = new Date().toISOString().slice(0, 10);
+  const oncekiGun = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+  db.prepare('INSERT INTO kullanim_ilk (kimlik, gun) VALUES (?, ?), (?, ?)').run('eski1', oncekiGun, 'eski2', oncekiGun);
+  db.prepare('INSERT INTO kullanim_gun (gun, kimlik) VALUES (?, ?), (?, ?), (?, ?)').run(oncekiGun, 'eski1', oncekiGun, 'eski2', dun, 'eski1');
+  ok(db.prepare("SELECT kimlik FROM kullanim_gun WHERE gun = ?").all(bugun).every(r => r.kimlik.length === 24 && r.kimlik.indexOf('b') !== 0), 'telefon kimliği saklanmıyor (özet)');
+  ok((await iste('/v1/olcum', {}, cihazB)).durum === 403, 'ölçümü yalnız @admin görür');
+  const o = (await iste('/v1/olcum', {}, cihazC)).veri;
+  const b = o.gunler[o.gunler.length - 1];
+  ok(o.gunler.length === 30 && b.aktif >= 2 && b.yeni >= 2, 'günlük aktif ve yeni kullanıcı');
+  ok(o.d1.grup >= 2 && o.d1.donen >= 1 && o.d1.oran === 50, '1. gün geri dönüş oranı: %' + o.d1.oran);
+  ok(o.olaylar.find(x => x.ad === 'kombin').n === 4 && !o.olaylar.find(x => x.ad === 'kotu_olay'), 'olay sayaçları (yalnız tanımlı olaylar)');
+}
+// WhatsApp anket sayfası
+{
+  const [ac, gizli] = ['herkes', 'takip'];
+  db.prepare("INSERT INTO anket (id, yazar, takma, soru, resim_a, tip_a, resim_b, tip_b, zaman, gorunurluk) VALUES (?, ?, ?, ?, ?, 'image/jpeg', ?, 'image/jpeg', ?, ?)").run('w'.repeat(20), 'b'.repeat(40), 'Bora', 'Düğüne <hangisi>?', Buffer.from('a'), Buffer.from('b'), Date.now(), ac);
+  db.prepare("INSERT INTO anket (id, yazar, takma, soru, resim_a, tip_a, resim_b, tip_b, zaman, gorunurluk) VALUES (?, ?, ?, ?, ?, 'image/jpeg', ?, 'image/jpeg', ?, ?)").run('v'.repeat(20), 'b'.repeat(40), 'Bora', 'x', Buffer.from('a'), Buffer.from('b'), Date.now(), gizli);
+  let w = await isci.fetch(new Request('https://k.workers.dev/a/' + 'w'.repeat(20), { headers: { 'Accept-Language': 'tr-TR' } }), env, {});
+  const html = await w.text();
+  ok(w.status === 200 && /text\/html/.test(w.headers.get('Content-Type')) && html.includes('Düğüne &lt;hangisi&gt;?') && !html.includes('<hangisi>'), 'anket sayfası açıldı, soru güvenli yazıldı');
+  ok(html.includes('og:image') && html.includes('https://k.workers.dev/v1/anketresim/' + 'w'.repeat(20) + '/a') && html.includes('play.google.com'), 'WhatsApp önizlemesi ve indirme bağlantısı');
+  ok(/script-src 'nonce-/.test(w.headers.get('Content-Security-Policy')), 'sayfa sıkı güvenlik politikasıyla');
+  ok((await isci.fetch(new Request('https://k.workers.dev/a/' + 'v'.repeat(20)), env, {})).status === 404, 'takipçilere özel anket web\'de açılmaz');
+  const oy = (s, z) => isci.fetch(new Request('https://k.workers.dev/a/' + 'w'.repeat(20) + '/oy', { method: 'POST', body: JSON.stringify({ secim: s, ziyaretci: z }), headers: { 'CF-Connecting-IP': '5.5.5.5' } }), env, {}).then(r => r.json());
+  let v = await oy('a', '1'.repeat(32));
+  ok(v.ok && v.a === 1 && v.b === 0, 'tarayıcıdan oy verildi');
+  v = await oy('b', '1'.repeat(32));
+  ok(v.a === 0 && v.b === 1, 'aynı ziyaretçi oyunu değiştirebilir, çift sayılmaz');
+  v = await oy('a', '2'.repeat(32));
+  ok(v.a === 1 && v.b === 1, 'ikinci ziyaretçinin oyu');
+  ok((await oy('c', '2'.repeat(32))).hata === 'girdi', 'geçersiz seçim reddedildi');
+  w = await isci.fetch(new Request('https://k.workers.dev/a/' + 'w'.repeat(20), { headers: { 'Accept-Language': 'en-US,en' } }), env, {});
+  ok((await w.text()).includes('Tap one to vote'), 'İngilizce tarayıcıda İngilizce');
+  db.prepare("DELETE FROM anket WHERE id IN (?, ?)").run('w'.repeat(20), 'v'.repeat(20));
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

@@ -19,4 +19,14 @@
     <string name="bn_mesaj_sayi">%1$d okunmamış mesajın var</string>
     <string name="bn_ac">Görmek için dokun</string>
     <string name="bn_mesaj_ac">Okumak için dokun</string>
+    <string name="sabah_kanal">Sabah kombin önerisi</string>
+    <string name="sabah_baslik">Günaydın ☀️</string>
+    <string name="sabah_metin">Bugünün kombin önerisi hazır, görmek için dokun.</string>
+    <string name="sabah_hava">Günaydın ☀️ Bugün %1$d–%2$d°</string>
+    <string name="sabah_yagmur">, yağmur bekleniyor</string>
+    <string name="widget_adi">Günün kombini</string>
+    <string name="widget_aciklama">Bugünün kombin önerisi ve hava durumu</string>
+    <string name="widget_bos_baslik">Bugün ne giysem?</string>
+    <string name="widget_bos_metin">Kombin önerin için dokun</string>
+    <string name="paylas_baslik">Paylaş</string>
 </resources>

@@ -274,3 +274,20 @@ CREATE TABLE IF NOT EXISTS dm_sikayet (
   zaman INTEGER NOT NULL,
   PRIMARY KEY (mesaj, cihaz)
 );
+CREATE TABLE IF NOT EXISTS kullanim_ilk (
+  kimlik TEXT PRIMARY KEY,
+  gun TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ki_gun ON kullanim_ilk(gun);
+CREATE TABLE IF NOT EXISTS kullanim_gun (
+  gun TEXT NOT NULL,
+  kimlik TEXT NOT NULL,
+  PRIMARY KEY (gun, kimlik)
+);
+CREATE INDEX IF NOT EXISTS kg_kimlik ON kullanim_gun(kimlik, gun);
+CREATE TABLE IF NOT EXISTS olay_sayac (
+  gun TEXT NOT NULL,
+  ad TEXT NOT NULL,
+  sayi INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (gun, ad)
+);

@@ -53,6 +53,19 @@
             android:theme="@style/KameraTema"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density" />
 
+        <!-- Ana ekran widget'ı: günün kombini -->
+        <receiver
+            android:name=".Sabah$Widget"
+            android:exported="true"
+            android:label="@string/widget_adi">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_kombin" />
+        </receiver>
+
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobUygulama}" />

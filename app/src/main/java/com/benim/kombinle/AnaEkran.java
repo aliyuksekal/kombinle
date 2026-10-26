@@ -219,11 +219,12 @@ public class AnaEkran extends Activity {
         if (web.getUrl() == null) web.loadUrl(SAYFA);
         acilacakAl(getIntent());
         BildirimIscisi.planla(this);
+        Sabah.planla(this);
     }
 
     private void acilacakAl(Intent i) {
         String a = i != null ? i.getStringExtra("ac") : null;
-        acilacak = "mesaj".equals(a) || "bildirim".equals(a) ? a : "";
+        acilacak = "mesaj".equals(a) || "bildirim".equals(a) || "sabah".equals(a) ? a : "";
     }
 
     @Override
@@ -551,6 +552,36 @@ public class AnaEkran extends Activity {
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         c.setAppearanceLightStatusBars(!koyu);
         c.setAppearanceLightNavigationBars(!koyu);
+    }
+
+    /** Metin paylaşımı: hedef "whatsapp" ise doğrudan WhatsApp (yüklü değilse paylaşım menüsü). */
+    void metinPaylas(String metin, String hedef) {
+        Intent i = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, metin);
+        if ("whatsapp".equals(hedef)) {
+            for (String p : new String[]{"com.whatsapp", "com.whatsapp.w4b"}) {
+                try {
+                    startActivity(new Intent(i).setPackage(p));
+                    return;
+                } catch (ActivityNotFoundException ignored) {
+                }
+            }
+        }
+        try {
+            startActivity(Intent.createChooser(i, getString(R.string.paylas_baslik)));
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.tarayici_yok, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Ana ekrana widget ekleme penceresi (Android 8+, başlatıcı destekliyorsa). */
+    boolean widgetEkle() {
+        try {
+            android.appwidget.AppWidgetManager m = getSystemService(android.appwidget.AppWidgetManager.class);
+            if (m == null || Build.VERSION.SDK_INT < 26 || !m.isRequestPinAppWidgetSupported()) return false;
+            return m.requestPinAppWidget(new android.content.ComponentName(this, Sabah.Widget.class), null, null);
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     void disariAc(Uri u) {

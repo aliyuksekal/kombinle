@@ -207,6 +207,56 @@ public final class Kopru {
         BildirimIscisi.goster(ekran.getApplicationContext(), "mesaj".equals(a) ? BildirimIscisi.NO_MESAJ : BildirimIscisi.NO_BILDIRIM, b, m, a);
     }
 
+    /* ---------------- sabah bildirimi, widget, paylaşım ---------------- */
+
+    /** Sabah bildirimi ve widget için hazırlanan öneri (sayfa her açılış/kapanışta günceller). */
+    @JavascriptInterface
+    public void sabahAyarla(final String json) {
+        if (!guvenli || json == null || json.length() > 3_200_000) return;
+        try {
+            final JSONObject o = new JSONObject(json);
+            new Thread(() -> Sabah.ayarla(ekran.getApplicationContext(), o)).start();
+        } catch (Exception ignored) {
+        }
+    }
+
+    @JavascriptInterface
+    public boolean widgetVar() {
+        if (!guvenli) return false;
+        try {
+            android.appwidget.AppWidgetManager m = android.appwidget.AppWidgetManager.getInstance(ekran);
+            int[] l = m.getAppWidgetIds(new android.content.ComponentName(ekran, Sabah.Widget.class));
+            return l != null && l.length > 0;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public boolean widgetEklenebilir() {
+        if (!guvenli || android.os.Build.VERSION.SDK_INT < 26) return false;
+        try {
+            android.appwidget.AppWidgetManager m = ekran.getSystemService(android.appwidget.AppWidgetManager.class);
+            return m != null && m.isRequestPinAppWidgetSupported();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public void widgetEkle() {
+        if (!guvenli) return;
+        ekran.ui.post(ekran::widgetEkle);
+    }
+
+    /** Metni WhatsApp'ta ya da paylaşım menüsünde paylaşır. */
+    @JavascriptInterface
+    public void metinPaylas(final String metin, final String hedef) {
+        if (!guvenli || metin == null || metin.isEmpty() || metin.length() > 1000) return;
+        final String h = "whatsapp".equals(hedef) ? "whatsapp" : "";
+        ekran.ui.post(() -> ekran.metinPaylas(metin, h));
+    }
+
     /** Bildirime dokunarak açıldıysa bir kez "mesaj" ya da "bildirim" döner. */
     @JavascriptInterface
     public String acilacak() {
