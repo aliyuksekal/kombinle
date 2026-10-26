@@ -31,7 +31,8 @@ function olcumGonder(zorla) {
     LS.yaz('olaylar', simdi);
   }).catch(function () { }).then(function () { OLCUM_GIDIYOR = false; });
 }
-document.addEventListener('visibilitychange', function () { if (document.hidden) { olcumGonder(true); sabahHazirla(); } });
+/* arka plana geçince (sayfa kapanırken değil: zamanlayıcı kapanışta çalışmaz, yarım kayıt riski olmaz) */
+document.addEventListener('visibilitychange', function () { if (document.hidden) setTimeout(function () { olcumGonder(true); sabahHazirla(); }, 0); });
 
 /* @admin: kullanım istatistikleri */
 function olcumSayfasi() {

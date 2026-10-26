@@ -29,6 +29,7 @@ function kiminSec(deger, sonra) {
   A.kimin = deger;
   if (deger === 'erkek') A.tesettur = false;
   ayarKaydet(); kiminUygula(); S.sonuc = null;
+  try { if ($('#altMenu .ic')) altMenuCiz(); } catch (e) { }   // ortadaki asistan düğmesinin adı da değişsin
   if (sonra) sonra();
 }
 function kiminSeg(sonra) {

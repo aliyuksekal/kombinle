@@ -96,11 +96,10 @@ with sync_playwright() as pw:
     ok('AI Stilist' in p.inner_text('.sohbet') and 'Prenses' not in p.inner_text('.sohbet'), 'stil asistanı erkekte "AI Stilist"')
     o.ekran('t4_stilist')
     ok(p.get_attribute('.ai-orta', 'aria-label') == 'AI Stilist', 'alt menüdeki asistan düğmesi de AI Stilist')
-    p.evaluate("(() => { const a = JSON.parse(localStorage.getItem('kb_ayar')); a.kimin = 'kadin'; localStorage.setItem('kb_ayar', JSON.stringify(a)); location.reload(); })()")
-    p.wait_for_timeout(1500)
-    try: p.click('#acilis', timeout=1500)
-    except Exception: pass
-    p.wait_for_selector('.ai-orta', state='attached', timeout=10000)
+    p.go_back(); p.wait_for_timeout(500)
+    p.click('nav.alt-menu button[data-sekme="ayarlar"]'); p.wait_for_timeout(500)
+    p.evaluate("document.querySelectorAll('.ayar-kart').forEach(d => d.open = true)"); p.wait_for_timeout(200)
+    p.locator('.ayar-sekme .kimin-seg button', has_text='Kadın').click(); p.wait_for_timeout(600)
     ok(p.get_attribute('.ai-orta', 'aria-label') == 'AI Prenses', 'kadına dönünce asıl ad (AI Prenses) geri geldi')
     hatalar = [h for h in o.hatalar if 'pageerror' in h]
     ok(not hatalar, 'sayfa hatası yok ' + str(hatalar[:2]))
