@@ -1087,11 +1087,19 @@ async function sahipKimligi(env) {
 }
 async function sikayet(env, g, cihaz, hesap) {
   const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
-  const neden = ['uygunsuz', 'hakaret', 'spam', 'kisisel', 'diger'].indexOf(g.neden) >= 0 ? g.neden : 'diger';
+  const neden = ['cocuk', 'uygunsuz', 'hakaret', 'spam', 'kisisel', 'diger'].indexOf(g.neden) >= 0 ? g.neden : 'diger';
   if (!id) throw new Hata('girdi');
   const p = await env.DB.prepare('SELECT yazar FROM paylasim WHERE id = ?').bind(id).first();
   if (!p) throw new Hata('yok', 404);
   if (p.yazar === cihaz) throw new Hata('kendi');
+  // çocuk güvenliği şikâyeti tek başına yeterlidir: paylaşım yönetici inceleyene kadar hemen gizlenir
+  if (neden === 'cocuk') {
+    await env.DB.batch([
+      env.DB.prepare('INSERT OR REPLACE INTO sikayet (paylasim, cihaz, neden, zaman) VALUES (?, ?, ?, ?)').bind(id, cihaz, neden, Date.now()),
+      env.DB.prepare('UPDATE paylasim SET sikayet = (SELECT COUNT(*) FROM sikayet WHERE paylasim = ?1), gizli = 1 WHERE id = ?1').bind(id)
+    ]);
+    return { ok: true };
+  }
   if (!sikayetSayilir(hesap)) return { ok: true };
   await env.DB.batch([
     env.DB.prepare('INSERT OR IGNORE INTO sikayet (paylasim, cihaz, neden, zaman) VALUES (?, ?, ?, ?)').bind(id, cihaz, neden, Date.now()),

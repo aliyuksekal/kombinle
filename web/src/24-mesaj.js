@@ -426,7 +426,7 @@ Object.assign(DIL.tr, {
   ykBos: 'Bekleyen yok.', ykSikayet: function (n) { return n + ' şikâyet'; }, ykAc: 'Geri aç', ykAcildi: 'Geri açıldı.', ykYoksay: 'Yok say', ykKapandi: 'Kapatıldı.', ykEngelle: 'Gönderene engel',
   ykEngelSor: function (a) { return a + ' uygulamadan engellensin mi? Hiçbir şey paylaşamaz ve mesaj gönderemez.'; },
   ykEngelKaldir: 'Engeli kaldır', ykEngelKalkti: 'Engel kaldırıldı.', ykBilinmeyen: 'Profilsiz cihaz',
-  ykn_uygunsuz: 'uygunsuz', ykn_hakaret: 'hakaret', ykn_spam: 'spam', ykn_kisisel: 'kişisel bilgi', ykn_diger: 'diğer',
+  ykn_uygunsuz: 'uygunsuz', ykn_hakaret: 'hakaret', ykn_spam: 'spam', ykn_kisisel: 'kişisel bilgi', ykn_diger: 'diğer', ykn_cocuk: 'ÇOCUK GÜVENLİĞİ',
   bnYeniTakip: function (a) { return a + ' seni takip etmeye başladı'; }, bnYeni: 'Yeni bir bildirimin var', bnYeniMesaj: function (a) { return a + ' sana mesaj gönderdi'; },
   hEpostaKod: 'E-postama kod gelsin', hKurtarmaYol: 'Kurtarma kodum var', hKodGonder: 'Kod gönder', hKodGitti: 'Kayıtlıysa e-postana 6 haneli bir kod gönderdik. Gelen kutunu ve gereksiz klasörünü kontrol et.',
   hEpostaKodu: 'E-postadaki 6 haneli kod', hEpostaYok: 'E-postayla sıfırlama şu an kapalı; kurtarma kodunu kullan.', hEpostaHatasi: 'E-posta şu an gönderilemedi, birazdan tekrar dene.'
@@ -460,7 +460,7 @@ Object.assign(DIL.en, {
   ykBos: 'Nothing pending.', ykSikayet: function (n) { return n + ' report' + (n === 1 ? '' : 's'); }, ykAc: 'Restore', ykAcildi: 'Restored.', ykYoksay: 'Dismiss', ykKapandi: 'Closed.', ykEngelle: 'Block sender',
   ykEngelSor: function (a) { return 'Block ' + a + " from the app? They won't be able to share or send messages."; },
   ykEngelKaldir: 'Unblock', ykEngelKalkti: 'Unblocked.', ykBilinmeyen: 'Device without profile',
-  ykn_uygunsuz: 'inappropriate', ykn_hakaret: 'insult', ykn_spam: 'spam', ykn_kisisel: 'personal info', ykn_diger: 'other',
+  ykn_uygunsuz: 'inappropriate', ykn_hakaret: 'insult', ykn_spam: 'spam', ykn_kisisel: 'personal info', ykn_diger: 'other', ykn_cocuk: 'CHILD SAFETY',
   bnYeniTakip: function (a) { return a + ' started following you'; }, bnYeni: 'You have a new notification', bnYeniMesaj: function (a) { return a + ' sent you a message'; },
   hEpostaKod: 'Email me a code', hKurtarmaYol: 'I have a recovery code', hKodGonder: 'Send code', hKodGitti: "If the email is registered, we've sent a 6-digit code. Check your inbox and spam folder.",
   hEpostaKodu: '6-digit code from the email', hEpostaYok: 'Email reset is not available right now; use your recovery code.', hEpostaHatasi: "The email couldn't be sent right now, try again shortly."

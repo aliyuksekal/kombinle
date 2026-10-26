@@ -194,6 +194,10 @@ ok((await iste('/v1/akis', { sira: 'benim' }, cihazA)).veri.liste[0].gizli === 1
 
 // silme
 yzYanit = () => ({ uygun: true, neden: 'uygun' });
+const idc = (await iste('/v1/paylas', { resim: jpeg, takma: 'Elif', aciklama: 'cocuk' })).veri.id;
+ok((await iste('/v1/akis', {}, cihazD)).veri.liste.some(x => x.id === idc), 'yeni paylaşım akışta');
+ok((await iste('/v1/sikayet', { id: idc, neden: 'cocuk' }, cihazC)).veri.ok, 'çocuk güvenliği şikâyeti alındı');
+ok(!(await iste('/v1/akis', {}, cihazD)).veri.liste.some(x => x.id === idc), 'çocuk güvenliği şikâyeti tek başına paylaşımı gizledi');
 const id2 = (await iste('/v1/paylas', { resim: jpeg, takma: 'Elif', aciklama: 'iki' })).veri.id;
 ok((await iste('/v1/sil', { id: id2 }, cihazB)).durum === 404, 'başkasının paylaşımı silinemez');
 ok((await iste('/v1/sil', { id: id2 }, cihazA)).veri.ok, 'kendi paylaşımı silindi');

@@ -576,7 +576,7 @@ function paylasimMenusu(x, kart) {
 function sikayetSayfasi(x, kart) {
   var gov = h('div', { class: 'ayar-grup' });
   var s = sayfaAc({ baslik: t('sikayetNeden'), icerik: gov });
-  [['uygunsuz', 'snUygunsuz'], ['hakaret', 'snHakaret'], ['spam', 'snSpam'], ['kisisel', 'snKisisel'], ['diger', 'snDiger']].forEach(function (n) {
+  [['cocuk', 'snCocuk'], ['uygunsuz', 'snUygunsuz'], ['hakaret', 'snHakaret'], ['spam', 'snSpam'], ['kisisel', 'snKisisel'], ['diger', 'snDiger']].forEach(function (n) {
     gov.appendChild(menuSatir('bayrak', t(n[1]), '', function () {
       yzIste('/v1/sikayet', { id: x.id, neden: n[0] }, 15000).then(function () {
         s.kapat(); tost(t('sikayetAlindi'));
