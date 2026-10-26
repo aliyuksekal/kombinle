@@ -512,26 +512,24 @@ var ILHAM_SECKI = [
 ];
 function kesfetEkrani() {
   var bol = h('section', { class: 'g-bolum' });
-  if (!S.kesfetSekme) S.kesfetSekme = yzKurulu() ? 'topluluk' : 'secki';
+  if (['topluluk', 'secki', 'takip'].indexOf(S.kesfetSekme) < 0) S.kesfetSekme = yzKurulu() ? 'topluluk' : 'secki';
+  /* üstte üç düğme: Topluluk / Editör seçkisi / Takip ettiklerim */
   var seg = h('div', { class: 'seg g-kesfet-seg' });
-  [['topluluk', 'sTopluluk'], ['secki', 'sSecki']].forEach(function (x) {
-    seg.appendChild(h('button', { 'aria-pressed': S.kesfetSekme === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () { if (S.kesfetSekme !== x[0]) { S.kesfetSekme = x[0]; ciz(); } } } }));
+  [['topluluk', 'sTopluluk'], ['secki', 'sSecki'], ['takip', 'sTakipEttiklerim']].forEach(function (x) {
+    seg.appendChild(h('button', { 'aria-pressed': S.kesfetSekme === x[0] ? 'true' : 'false', text: t(x[1]), on: { click: function () {
+      if (S.kesfetSekme === x[0]) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      S.kesfetSekme = x[0]; ciz(); window.scrollTo(0, 0);
+    } } }));
   });
-  if (S.kesfetSekme === 'topluluk') {
-    bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sTopluluk') }), h('p', { text: t('kural1') })),
-      h('button', { class: 'g-ekle', 'aria-label': t('yeniPaylasim'), on: { click: yeniPaylasim } }, ikon('arti', 'k'), t('paylas'))));
-    bol.appendChild(seg);
-    bol.appendChild(toplulukBolumu());
-    return bol;
-  }
-  bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('kesfetBaslik') }), h('p', { text: t('kesfetAlt') }))));
+  bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sKesfet') }), h('p', { text: S.kesfetSekme === 'secki' ? t('kesfetAlt') : t('kural1') })),
+    yzKurulu() ? h('button', { class: 'g-ekle', 'aria-label': t('yeniPaylasim'), on: { click: yeniPaylasim } }, ikon('arti', 'k'), t('paylas')) : null));
   bol.appendChild(seg);
-  var kayitli = LS.al('kesfetFav', []); if (!Array.isArray(kayitli)) kayitli = [];
-  /* Editör seçkisi: editörlerimiz seçki yayınladığında burada görünecek */
-  bol.appendChild(h('div', { class: 'g-bos-not secki-bos' }, h('span', { class: 'g-analiz-ikon' }, ikon('isilti')), h('b', { text: t('seckiBosBaslik') }), h('span', { text: t('seckiBosMetin') })));
-  bol.appendChild(h('div', { class: 'g-dolap-bas', style: { 'margin-top': '22px' } },
-    h('div', null, h('h2', { text: t('ilhamBaslik') }), h('p', { text: t('ilhamKisa') })),
-    h('button', { class: 'g-ekle', on: { click: ilhamPanosu } }, ikon('galeri', 'k'), t('ac'))));
+  if (S.kesfetSekme === 'secki') {
+    bol.appendChild(h('div', { class: 'g-dolap-bas ilham-kart' },
+      h('div', null, h('h2', { text: t('ilhamBaslik') }), h('p', { text: t('ilhamKisa') })),
+      h('button', { class: 'g-ekle', on: { click: ilhamPanosu } }, ikon('galeri', 'k'), t('ac'))));
+  }
+  bol.appendChild(toplulukBolumu(S.kesfetSekme));
   return bol;
 }
 function seckidenKur(x) {

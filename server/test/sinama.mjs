@@ -935,6 +935,28 @@ ok((await iste('/v1/ben', {}, E)).durum === 401, 'silinen hesabın oturumu kapan
   ok((await iste('/v1/hataliste', {}, cihazB)).durum === 403, 'hataları yalnız @admin görür');
 }
 
+// yorumda @kişi etiketleme ve editör seçkisi
+{
+  yzYanit = () => ({ uygun: true, neden: 'uygun' });
+  const eceP = (await iste('/v1/paylas', { resim: jpeg, takma: 'Ece', aciklama: 'etiket denemesi' }, ECE)).veri.id;
+  ok(/^[a-z0-9]{20}$/.test(eceP || ''), 'Ece paylaştı');
+  const once = (await iste('/v1/bildirim', {}, cihazB)).veri.liste.filter(b => b.tur === 'bahsetme').length;
+  r = await iste('/v1/yorum', { id: eceP, metin: '@User bak buna, çok yakışmış' }, cihazC);
+  ok(r.veri.ok, 'etiketli yorum yazıldı ' + JSON.stringify(r));
+  ok((await iste('/v1/yorum', { id: eceP, metin: 'instagramdan yaz @yokboyle_hesap' }, cihazC)).veri.hata === 'baglanti', 'uygulamada olmayan @adres yine engellendi');
+  const bb = (await iste('/v1/bildirim', {}, cihazB)).veri.liste.filter(b => b.tur === 'bahsetme');
+  ok(bb.length === once + 1 && bb[0].paylasim === eceP && bb[0].sahip.length === 12, 'etiketlenen kişiye bahsetme bildirimi (sahip bilgisiyle)');
+  const eb = (await iste('/v1/bildirim', {}, ECE)).veri.liste;
+  ok(eb.some(b => b.tur === 'yorum') && !eb.some(b => b.tur === 'bahsetme'), 'paylaşım sahibine yalnız yorum bildirimi');
+  ok((await iste('/v1/yonetim', { islem: 'secki', id: eceP, secki: true }, cihazB)).durum === 403, 'yönetici olmayan seçkiye ekleyemez');
+  ok((await iste('/v1/akis', { sira: 'secki' }, cihazD)).veri.liste.every(x => x.id !== eceP), 'seçki başta boş');
+  ok((await iste('/v1/yonetim', { islem: 'secki', id: eceP, secki: true }, cihazC)).veri.secki === true, 'yönetici seçkiye ekledi');
+  r = await iste('/v1/akis', { sira: 'secki' }, cihazD);
+  ok(r.veri.liste.length >= 1 && r.veri.liste[0].id === eceP && r.veri.liste[0].secki === 1, 'seçki akışında görünüyor');
+  await iste('/v1/yonetim', { islem: 'secki', id: eceP, secki: false }, cihazC);
+  ok((await iste('/v1/akis', { sira: 'secki' }, cihazD)).veri.liste.every(x => x.id !== eceP), 'seçkiden çıkarıldı');
+}
+
 // cron
 await isci.scheduled({}, env, { waitUntil: p => p });
 console.log(`\n${gecti} geçti, ${kaldi} kaldı`);

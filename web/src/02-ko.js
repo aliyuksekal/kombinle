@@ -129,7 +129,7 @@ DIL.ko = {
   takipEt: '+ 팔로우', takiptesin: '팔로잉', takipEdildi: '팔로우했어요 ✅', takiptenCikildi: '팔로우를 취소했어요', kisiAra: '사람 검색(닉네임)…', kisileriKesfet: '사람 찾기',
   takipEdilenSay: function (n) { return n + ' 팔로잉'; }, kisiYok: '그 이름으로 찾은 사람이 없어요.', kisiYokHenuz: '아직 게시한 사람이 없어요. 첫 번째가 되어 보세요!',
   takipciSay: function (n) { return '팔로워 ' + n; }, paylasimSay: function (n) { return '게시물 ' + n; }, tpHerkes: '전체', tpTakip: '팔로잉',
-  tpTakipBos: '팔로우한 사람의 게시물이 여기에 나타나요. 위에서 몇 명을 팔로우해 보세요!', goruntuIpucu: '눌러서 확대',
+  tpTakipBos: '팔로우한 사람의 게시물이 여기에 나타나요. 커뮤니티 피드에서 마음에 드는 사람을 팔로우해 보세요!', sTakipEttiklerim: '팔로잉', bnBahsetme: function (m) { return '님이 댓글에서 회원님을 언급했어요: ' + m; }, seckiEkle: '에디터 추천에 추가', seckiCikar: '에디터 추천에서 제거', seckiEklendi: '에디터 추천에 추가했어요', seckiCikarildi: '추천에서 제거했어요', takipGiris: '팔로우한 사람의 게시물을 보려면 로그인하세요.', girisYap2: '로그인', bahsetYok: '이 사용자 이름을 가진 사람이 없어요', goruntuIpucu: '눌러서 확대',
   yorumYaz: '댓글 쓰기…', yorumYok: '첫 댓글을 남겨 보세요.', yorumSil: '댓글 삭제', yorumSilSor: '이 댓글을 삭제할까요?', yorumRed: '이 댓글은 커뮤니티 규칙에 맞지 않아요.', yorumlar: '댓글',
   buyut: '크게 보기', gorunurlukBaslik: '공개 범위', gorHerkes: '전체 공개', gorTakip: '내 팔로워', gorGizli: '나만 보기',
   proGunlukDoldu: function (n) { return '오늘의 AI 작업 ' + n + '회를 모두 썼어요(공정 사용). 내일 초기화돼요.'; }, ayBasi: '/월', aboneligiYonet: '구독 관리 / 해지', enAvantajli: '가장 알뜰해요',

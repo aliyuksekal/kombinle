@@ -117,7 +117,7 @@ DIL.ru = {
   takipEt: '+ Подписаться', takiptesin: 'Подписка', takipEdildi: 'Ты подписалась ✅', takiptenCikildi: 'Подписка отменена', kisiAra: 'Поиск людей (ник)…', kisileriKesfet: 'Люди',
   takipEdilenSay: function (n) { return 'подписок: ' + n; }, kisiYok: 'Никого с таким ником.', kisiYokHenuz: 'Пока никто не публиковал. Будь первой!',
   takipciSay: function (n) { return n + ' подп.'; }, paylasimSay: function (n) { return n + ' публ.'; },
-  tpHerkes: 'Все', tpTakip: 'Подписки', tpTakipBos: 'Здесь будут публикации тех, на кого ты подписана. Подпишись на кого-нибудь выше!',
+  tpHerkes: 'Все', tpTakip: 'Подписки', tpTakipBos: 'Здесь появятся публикации тех, на кого ты подписана. Подписывайся на понравившихся людей в ленте сообщества!', sTakipEttiklerim: 'Подписки', bnBahsetme: function (m) { return 'упомянул(а) вас в комментарии: ' + m; }, seckiEkle: 'Добавить в выбор редакции', seckiCikar: 'Убрать из выбора редакции', seckiEklendi: 'Добавлено в выбор редакции', seckiCikarildi: 'Убрано из выбора', takipGiris: 'Войди, чтобы видеть публикации тех, на кого ты подписана.', girisYap2: 'Войти', bahsetYok: 'Пользователя с таким именем нет',
   goruntuIpucu: 'Нажми, чтобы приблизить', yorumYaz: 'Написать комментарий…', yorumYok: 'Оставь первый комментарий.', yorumSil: 'Удалить комментарий', yorumSilSor: 'Удалить этот комментарий?',
   yorumRed: 'Комментарий не соответствует правилам сообщества.', yorumlar: 'Комментарии', buyut: 'Увеличить',
   gorunurlukBaslik: 'Кто видит', gorHerkes: 'Все', gorTakip: 'Мои подписчики', gorGizli: 'Только я',

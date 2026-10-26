@@ -602,3 +602,19 @@ i.ol-yeni{background:var(--dolgu)}
 .gb-ust{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 .gb-ust b{color:#F5A524;letter-spacing:.05em}
 .hy-mesaj{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-word}
+/* Klavye açıkken alt menü gizlenir; yazı alanı görünür kalır */
+html.klavye-acik nav.alt-menu{display:none}
+.g-yorum-form{scroll-margin-bottom:24px}
+/* Yorumlarda @kişi etiketleme */
+.bahset-link{background:none;padding:0;font:inherit;font-weight:700;color:var(--vurgu);display:inline}
+.g-yorum-metin{white-space:pre-wrap;word-break:break-word}
+.g-bahset{display:flex;flex-direction:column;gap:2px;background:var(--yuzey);border:1px solid var(--cizgi);border-radius:16px;padding:6px;box-shadow:var(--golge-p);max-height:240px;overflow-y:auto}
+.g-bahset[hidden]{display:none}
+.g-bahset-kisi{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:12px;text-align:left;color:var(--murekkep);background:none}
+.g-bahset-kisi:active,.g-bahset-kisi:focus-visible{background:var(--vurgu-acik)}
+.g-bahset-kisi .uav{width:32px;height:32px;flex:none}
+.g-bahset-kisi span{display:flex;flex-direction:column;min-width:0}
+.g-bahset-kisi b{font-size:13px}
+.g-bahset-kisi small{font-size:12px;color:var(--soluk)}
+.ilham-kart{margin-top:4px}
+.g-kesfet-seg button{white-space:nowrap}

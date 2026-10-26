@@ -595,7 +595,7 @@ function anketOlustur(kA, kB, bilgi) {
         setTimeout(function () { onayla(t('akWpBaslik'), t('akWpMetin'), t('akWpPaylas')).then(function (e) { if (e) anketPaylas({ id: v.id, soru: m, gorunurluk: 'herkes' }); }); }, 900);
       }
       ANKET.yuklendi = false; ANKET.sira = 'benim';
-      S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; ciz(); window.scrollTo(0, 0);
+      S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; TOPLULUK.toplulukSira = 'anket'; ciz(); window.scrollTo(0, 0);
     }).catch(function (e) {
       var v = e && e.veri;
       if (e && e.message === 'denetim') {

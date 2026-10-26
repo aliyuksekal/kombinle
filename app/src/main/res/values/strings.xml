@@ -9,6 +9,7 @@
     <string name="bn_takip">%1$s seni takip etmeye başladı</string>
     <string name="bn_begeni">%1$s paylaşımını beğendi</string>
     <string name="bn_yorum">%1$s paylaşımına yorum yaptı</string>
+    <string name="bn_bahsetme">%1$s bir yorumda senden bahsetti</string>
     <string name="bn_anket">%1$s anketine oy verdi</string>
     <string name="bn_istek">%1$s seni takip etmek istiyor</string>
     <string name="bn_paylasim">%1$s yeni bir kombin paylaştı</string>

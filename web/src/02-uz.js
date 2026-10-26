@@ -117,7 +117,7 @@ DIL.uz = {
   takipEt: "+ Kuzatish", takiptesin: 'Kuzatilmoqda', takipEdildi: 'Kuzatishni boshlading ✅', takiptenCikildi: "Kuzatish to'xtatildi", kisiAra: 'Odamlarni qidirish (taxallus)…', kisileriKesfet: 'Odamlar',
   takipEdilenSay: function (n) { return n + ' kuzatilmoqda'; }, kisiYok: 'Bunday taxallusli odam topilmadi.', kisiYokHenuz: "Hali hech kim ulashmagan. Birinchi bo'l!",
   takipciSay: function (n) { return n + ' kuzatuvchi'; }, paylasimSay: function (n) { return n + ' ulashish'; },
-  tpHerkes: 'Hamma', tpTakip: 'Kuzatilayotganlar', tpTakipBos: "Kuzatayotgan odamlaring ulashishlari shu yerda chiqadi. Yuqoridan bir nechta odamni kuzat!",
+  tpHerkes: 'Hamma', tpTakip: 'Kuzatilayotganlar', tpTakipBos: 'Kuzatayotgan odamlaring ulashishlari shu yerda chiqadi. Hamjamiyat lentasida yoqqan odamlarni kuzat!', sTakipEttiklerim: 'Kuzatayotganlarim', bnBahsetme: function (m) { return "izohda sizni eslatdi: " + m; }, seckiEkle: 'Muharrir tanloviga qo\'shish', seckiCikar: 'Muharrir tanlovidan olib tashlash', seckiEklendi: 'Muharrir tanloviga qo\'shildi', seckiCikarildi: 'Tanlovdan olib tashlandi', takipGiris: 'Kuzatayotganlaring ulashishlarini ko\'rish uchun kir.', girisYap2: 'Kirish', bahsetYok: 'Bu nomli foydalanuvchi yo\'q',
   goruntuIpucu: 'Kattalashtirish uchun bos', yorumYaz: 'Izoh yozish…', yorumYok: 'Birinchi izohni sen yoz.', yorumSil: "Izohni o'chirish", yorumSilSor: "Bu izoh o'chirilsinmi?",
   yorumRed: 'Bu izoh hamjamiyat qoidalariga mos emas.', yorumlar: 'Izohlar', buyut: 'Kattalashtirish',
   gorunurlukBaslik: "Kim ko'radi", gorHerkes: 'Hamma', gorTakip: 'Kuzatuvchilarim', gorGizli: 'Faqat men',

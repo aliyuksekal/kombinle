@@ -8,6 +8,7 @@
     <string name="bn_takip">%1$s started following you</string>
     <string name="bn_begeni">%1$s liked your post</string>
     <string name="bn_yorum">%1$s commented on your post</string>
+    <string name="bn_bahsetme">%1$s mentioned you in a comment</string>
     <string name="bn_anket">%1$s voted on your poll</string>
     <string name="bn_istek">%1$s wants to follow you</string>
     <string name="bn_paylasim">%1$s shared a new outfit</string>

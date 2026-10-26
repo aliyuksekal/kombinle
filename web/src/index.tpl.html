@@ -718,9 +718,7 @@ nav.alt-menu button.ai-orta::after{content:'';position:absolute;inset:-4px;borde
 .karosel-nokta i.acik{background:var(--vurgu);height:14px;border-radius:4px}
 .karosel-sayi{font-size:10px;font-weight:800;color:var(--soluk)}
 /* Keşfet akışı: dikey karosel */
-html.akis-karosel{scroll-snap-type:y mandatory;scroll-padding-top:calc(72px + env(safe-area-inset-top))}
-html.akis-karosel .g-akis,html.akis-karosel .g-kisiler,html.akis-karosel .g-bolum > .g-dolap-bas{scroll-snap-align:start}
-html.akis-karosel .g-akis{min-height:calc(100dvh - 190px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+/* serbest kaydırma: kart ortasında durulabilir (yorum okumak/yazmak için) */
 html.akis-karosel .g-akis-resim{height:min(52vh,420px)}
 .secki-bos{border:1.5px dashed var(--cizgi);border-radius:22px;background:var(--grad-soft);padding:30px 18px}
 .secki-bos b{color:var(--murekkep);font-size:15px}

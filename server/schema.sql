@@ -14,10 +14,12 @@ CREATE TABLE IF NOT EXISTS paylasim (
   zaman INTEGER NOT NULL,
   gorunurluk TEXT NOT NULL DEFAULT 'herkes',
   yorum_sayisi INTEGER NOT NULL DEFAULT 0,
-  one_cikan INTEGER NOT NULL DEFAULT 0
+  one_cikan INTEGER NOT NULL DEFAULT 0,
+  secki INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS p_yeni ON paylasim(gizli, zaman DESC);
 CREATE INDEX IF NOT EXISTS p_one ON paylasim(one_cikan);
+CREATE INDEX IF NOT EXISTS p_secki ON paylasim(secki);
 CREATE INDEX IF NOT EXISTS p_yazar ON paylasim(yazar, zaman DESC);
 CREATE TABLE IF NOT EXISTS oy (
   paylasim TEXT NOT NULL,

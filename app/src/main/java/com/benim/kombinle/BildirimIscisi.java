@@ -62,7 +62,7 @@ public final class BildirimIscisi extends Worker {
                 String ad = kisa(son.optString("takma"));
                 String tur = son.optString("tur");
                 int metin = "takip".equals(tur) ? R.string.bn_takip : "begeni".equals(tur) ? R.string.bn_begeni
-                        : "yorum".equals(tur) ? R.string.bn_yorum : "anket".equals(tur) ? R.string.bn_anket
+                        : "yorum".equals(tur) ? R.string.bn_yorum : "bahsetme".equals(tur) ? R.string.bn_bahsetme : "anket".equals(tur) ? R.string.bn_anket
                         : "istek".equals(tur) ? R.string.bn_istek : "kabul".equals(tur) ? R.string.bn_kabul
                         : "paylasim".equals(tur) ? R.string.bn_paylasim : R.string.bn_genel;
                 int n = v.optInt("okunmamis");

@@ -8,6 +8,7 @@
     <string name="bn_takip">%1$s님이 팔로우하기 시작했어요</string>
     <string name="bn_begeni">%1$s님이 게시물을 좋아해요</string>
     <string name="bn_yorum">%1$s님이 게시물에 댓글을 남겼어요</string>
+    <string name="bn_bahsetme">%1$s님이 댓글에서 회원님을 언급했어요</string>
     <string name="bn_anket">%1$s님이 투표에 참여했어요</string>
     <string name="bn_istek">%1$s님이 팔로우를 요청했어요</string>
     <string name="bn_paylasim">%1$s님이 새 코디를 공유했어요</string>

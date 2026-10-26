@@ -83,10 +83,8 @@ with sync_playwright() as pw:
     while p.locator('.sayfa.acik').count():
         son(p).locator('.bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(400)
 
-    print('— Keşfet: takip ettiklerin, kişi kartları, çekip yenile')
-    ok(p.locator('.kt .kt-kisi').count() == 2 and p.locator('.kt .kt-kisi.yeni').count() == 1, 'takip ettiklerin sırası; son 24 saatte paylaşan halkalı')
-    kk = p.locator('.g-kisi.kk').first
-    ok(kk.locator('.kk-resimler img').count() == 2 and 'Minimal ve rahat' in kk.inner_text(), 'kişi kartı: son paylaşım resimleri ve tanıtım')
+    print('— Keşfet: üst düğmeler, çekip yenile')
+    ok(p.locator('.kt').count() == 0 and p.locator('.g-kisi.kk').count() == 0 and p.locator('.g-kesfet-seg button').count() == 3, 'keşfette kişi bölümleri yok, üstte üç düğme')
     o.ekran('g4_kesfet')
     once = p.evaluate('window.__akis || 0')
     p.evaluate("""(() => { window.scrollTo(0, 0);

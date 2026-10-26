@@ -189,7 +189,7 @@ function kesfetYenile() {
   if (TOPLULUK.yukleniyor) return;
   REKLAM.plan = {}; REKLAM.ilk = 0;
   KISI_ONBELLEK.zaman = 0;
-  if (S.kesfetSekme === 'topluluk') { if (TOPLULUK.sira === 'anket') anketYukle(true); else { TOPLULUK.yuklendi = false; toplulukYukle(true); } }
+  if (['topluluk', 'secki', 'takip'].indexOf(S.kesfetSekme) >= 0) { if (TOPLULUK.sira === 'anket') anketYukle(true); else { TOPLULUK.yuklendi = false; toplulukYukle(true); } }
   bildirimSayi(true);
   ciz();
 }

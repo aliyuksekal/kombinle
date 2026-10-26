@@ -955,13 +955,13 @@ function profilYaz(env, cihaz, takma, kadi, bio) {
   return env.DB.prepare('INSERT INTO profil (kod, takma, zaman, kadi, bio, hesapli) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(kod) DO UPDATE SET takma = excluded.takma, zaman = excluded.zaman, kadi = excluded.kadi, bio = excluded.bio, hesapli = 1')
     .bind(yazarKodu(cihaz), takma, Date.now(), kadi || '', bio || '');
 }
-const ALANLAR = 'id, yazar, takma, aciklama, etiket, begeni, begenmeme, zaman, gizli, gorunurluk, yorum_sayisi, one_cikan';
+const ALANLAR = 'id, yazar, takma, aciklama, etiket, begeni, begenmeme, zaman, gizli, gorunurluk, yorum_sayisi, one_cikan, secki';
 const KADI_ALAN = ", EXISTS (SELECT 1 FROM kayitli k2 WHERE k2.kisi = ?2 AND k2.paylasim = p.id) AS kayitli_mi, (SELECT pr.kadi FROM profil pr WHERE pr.kod = substr(p.yazar, 1, 12)) AS kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = substr(p.yazar, 1, 12)) AS av";
 // görünürlük: herkes / yalnız takipçiler / yalnız sahibi
 const GORUNUR = "(p.yazar = ?1 OR p.gorunurluk = 'herkes' OR (p.gorunurluk = 'takip' AND EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?2 AND t.takip = substr(p.yazar, 1, 12))))";
 
 async function akis(env, g, cihaz) {
-  const sira = ['populer', 'benim', 'takip', 'kisi', 'kayitli', 'etiket'].indexOf(g.sira) >= 0 ? g.sira : 'yeni';
+  const sira = ['populer', 'benim', 'takip', 'kisi', 'kayitli', 'etiket', 'secki'].indexOf(g.sira) >= 0 ? g.sira : 'yeni';
   const sayfa = Math.floor(sayi(g.sayfa, 0, 25, 0));
   const engelli = liste(g.engelli, 200).filter(x => typeof x === 'string' && /^[a-f0-9]{12}$/.test(x));
   const kod = yazarKodu(cihaz);
@@ -976,6 +976,9 @@ async function akis(env, g, cihaz) {
   } else if (sira === 'takip') {
     sorgu = env.DB.prepare('SELECT ' + alan + ' FROM paylasim p WHERE p.gizli = 0 AND substr(p.yazar, 1, 12) IN (SELECT takip FROM takip WHERE takipci = ?2) AND ' + GORUNUR + ' ORDER BY p.zaman DESC LIMIT ?3 OFFSET ?4')
       .bind(cihaz, kod, sinir, atla);
+  } else if (sira === 'secki') {
+    // editör seçkisi: yöneticinin seçtiği herkese açık paylaşımlar, en son seçilen en üstte
+    sorgu = env.DB.prepare("SELECT " + alan + " FROM paylasim p WHERE p.gizli = 0 AND p.secki > 0 AND p.gorunurluk = 'herkes' ORDER BY p.secki DESC LIMIT ?3 OFFSET ?4").bind(cihaz, kod, sinir, atla);
   } else if (sira === 'kisi') {
     const kisi = typeof g.kisi === 'string' && /^[a-f0-9]{12}$/.test(g.kisi) ? g.kisi : '';
     if (!kisi) throw new Hata('girdi');
@@ -1034,7 +1037,8 @@ async function akis(env, g, cihaz) {
       takipte: takipte[yazarKodu(r.yazar)] ? 1 : 0, istekte: istekte[yazarKodu(r.yazar)] ? 1 : 0,
       oy: oylar[r.id] || 0,
       oneCikan: r.one_cikan > Date.now() ? 1 : 0,
-      oneCikanBitis: r.one_cikan > Date.now() ? r.one_cikan : 0
+      oneCikanBitis: r.one_cikan > Date.now() ? r.one_cikan : 0,
+      secki: r.secki ? 1 : 0
     }))
   };
 }
@@ -1130,7 +1134,7 @@ async function sil(env, g, cihaz) {
 /* --- görünür bir paylaşımı getir (yorum ve oy için yetki denetimi) --- */
 async function gorunurPaylasim(env, id, cihaz) {
   if (typeof id !== 'string' || !/^[a-z0-9]{20}$/.test(id)) throw new Hata('girdi');
-  const p = await env.DB.prepare('SELECT p.id, p.yazar, p.gizli FROM paylasim p WHERE p.id = ?3 AND ' + GORUNUR).bind(cihaz, yazarKodu(cihaz), id).first();
+  const p = await env.DB.prepare('SELECT p.id, p.yazar, p.gizli, p.gorunurluk FROM paylasim p WHERE p.id = ?3 AND ' + GORUNUR).bind(cihaz, yazarKodu(cihaz), id).first();
   if (!p || (p.gizli && p.yazar !== cihaz)) throw new Hata('yok', 404);
   return p;
 }
@@ -1154,7 +1158,11 @@ async function yorumYaz(env, g, cihaz) {
   const yazi = metin(g.metin, 300);
   if (takma.length < 2) throw new Hata('takma');
   if (yazi.length < 1) throw new Hata('bos');
-  if (LINK.test(yazi) || LINK.test(takma)) throw new Hata('baglanti');
+  // @kullanıcıadı etiketi yalnız uygulamada gerçekten olan kişiler için serbest; başka @adresler (sosyal medya) yine engellenir
+  const etiketli = await mevcutKadiler(env, bahsedilenler(yazi));
+  let denetlenecek = yazi;
+  etiketli.forEach(k => { denetlenecek = denetlenecek.replace(new RegExp('@' + k.replace(/\./g, '\\.') + '(?![a-z0-9._])', 'gi'), ' '); });
+  if (LINK.test(denetlenecek) || LINK.test(takma)) throw new Hata('baglanti');
   const sema = {
     type: 'object',
     properties: { uygun: { type: 'boolean' }, neden: { type: 'string', enum: ['uygun', 'cinsel', 'nefret', 'kisisel_bilgi', 'spam', 'taciz'] } },
@@ -1172,7 +1180,33 @@ async function yorumYaz(env, g, cihaz) {
     profilYaz(env, cihaz, takma)
   ]);
   if (p.yazar && p.yazar !== cihaz) await bildir(env, yazarKodu(p.yazar), 'yorum', yazarKodu(cihaz), p.id, yazi.slice(0, 80));
+  await bahsedilenlereBildir(env, yazi, cihaz, p);
   return { ok: true, id };
+}
+/* yorumdaki @kullanıcıadı etiketleri: etiketlenen kişiye bildirim (en fazla 5 kişi; paylaşımı göremeyen ve engelli olan atlanır) */
+function bahsedilenler(yazi) {
+  const l = [];
+  String(yazi || '').replace(/(^|[^a-z0-9._@])@([a-z][a-z0-9._]{2,19})/gi, (m, o, k) => { k = k.toLowerCase().replace(/\.+$/, ''); if (kadiGecerli(k) && l.indexOf(k) < 0) l.push(k); return m; });
+  return l.slice(0, 5);
+}
+async function mevcutKadiler(env, kadiler) {
+  if (!kadiler.length) return [];
+  const { results } = await env.DB.prepare('SELECT kadi FROM profil WHERE kadi IN (' + kadiler.map(() => '?').join(',') + ')').bind(...kadiler).all();
+  return (results || []).map(r => r.kadi);
+}
+async function bahsedilenlereBildir(env, yazi, cihaz, p) {
+  const kadiler = bahsedilenler(yazi);
+  if (!kadiler.length) return;
+  const ben = yazarKodu(cihaz), sahip = p.yazar ? yazarKodu(p.yazar) : '';
+  const { results } = await env.DB.prepare('SELECT kod FROM profil WHERE kadi IN (' + kadiler.map(() => '?').join(',') + ')').bind(...kadiler).all();
+  for (const r of results || []) {
+    if (r.kod === ben || r.kod === sahip) continue;   // paylaşım sahibine zaten "yorum" bildirimi gider
+    if (await env.DB.prepare('SELECT 1 FROM dm_engel WHERE engelleyen = ? AND engellenen = ?').bind(r.kod, ben).first()) continue;
+    const gor = p.gorunurluk || 'herkes';
+    if (gor === 'gizli') continue;
+    if (gor === 'takip' && !(await env.DB.prepare('SELECT 1 FROM takip WHERE takipci = ? AND takip = ?').bind(r.kod, sahip).first())) continue;
+    await bildir(env, r.kod, 'bahsetme', ben, p.id, yazi.slice(0, 80));
+  }
 }
 
 async function yorumSil(env, g, cihaz) {
@@ -1711,7 +1745,7 @@ async function cikis(env, g) {
 async function bildir(env, alici, tur, kimden, paylasim, metin_) {
   if (!alici || alici === kimden) return;
   try {
-    if (tur === 'yorum') {
+    if (tur === 'yorum' || tur === 'bahsetme') {
       await env.DB.prepare('INSERT INTO bildirim (alici, tur, kimden, paylasim, metin, zaman) VALUES (?, ?, ?, ?, ?, ?)').bind(alici, tur, kimden, paylasim || '', metin_ || '', Date.now()).run();
     } else {
       // beğeni ve takip tekrar tekrar bildirim üretmez
@@ -1739,13 +1773,13 @@ async function bildirimler(env, g, cihaz) {
       sonMesaj: d0 && d0.n && d0.takma ? { zaman: d0.zaman, takma: d0.takma } : null };
   }
   const engelli = liste(g.engelli, 200).filter(x => typeof x === 'string' && /^[a-f0-9]{12}$/.test(x));
-  const { results } = await env.DB.prepare('SELECT b.id, b.tur, b.kimden, b.paylasim, b.metin, b.zaman, b.okundu, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = b.kimden) AS av, ' +
+  const { results } = await env.DB.prepare('SELECT b.id, b.tur, b.kimden, b.paylasim, b.metin, b.zaman, b.okundu, pr.takma, pr.kadi, (SELECT a.zaman FROM avatar a WHERE a.kod = b.kimden) AS av, (SELECT substr(p.yazar, 1, 12) FROM paylasim p WHERE p.id = b.paylasim) AS sahip, ' +
     'EXISTS (SELECT 1 FROM takip t WHERE t.takipci = ?1 AND t.takip = b.kimden) AS takipte, EXISTS (SELECT 1 FROM takip_istek ti WHERE ti.isteyen = ?1 AND ti.hedef = b.kimden) AS istekte FROM bildirim b LEFT JOIN profil pr ON pr.kod = b.kimden WHERE b.alici = ?1 ORDER BY b.zaman DESC LIMIT 60').bind(kod).all();
   if (g.oku === true) await env.DB.prepare('UPDATE bildirim SET okundu = 1 WHERE alici = ? AND okundu = 0').bind(kod).run();
   return {
     ok: true, okunmamis: say ? say.n : 0,
     liste: (results || []).filter(r => r.takma && engelli.indexOf(r.kimden) < 0).map(r => ({
-      id: r.id, tur: r.tur, kod: r.kimden, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, paylasim: r.paylasim || '', metin: r.metin || '', zaman: r.zaman, yeni: r.okundu ? 0 : 1, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0
+      id: r.id, tur: r.tur, kod: r.kimden, takma: r.takma, kadi: r.kadi || '', av: r.av || 0, paylasim: r.paylasim || '', sahip: r.sahip || '', metin: r.metin || '', zaman: r.zaman, yeni: r.okundu ? 0 : 1, takipte: r.takipte ? 1 : 0, istekte: r.istekte ? 1 : 0
     }))
   };
 }
@@ -2515,6 +2549,12 @@ async function yonetim(env, g, hesap) {
   const id = typeof g.id === 'string' && /^[a-z0-9]{20}$/.test(g.id) ? g.id : '';
   const kod = typeof g.kod === 'string' && DM_KOD.test(g.kod) ? g.kod : '';
   switch (g.islem) {
+    case 'secki': {
+      if (!id) throw new Hata('girdi');
+      const r = await env.DB.prepare("UPDATE paylasim SET secki = ? WHERE id = ? AND gizli = 0 AND gorunurluk = 'herkes'").bind(g.secki === true ? Date.now() : 0, id).run();
+      if (!r.meta || !r.meta.changes) throw new Hata('yok', 404);
+      return { ok: true, secki: g.secki === true };
+    }
     case 'liste': {
       const [p, a, y, e, d] = await env.DB.batch([
         env.DB.prepare('SELECT id, takma, aciklama, sikayet, zaman, (SELECT group_concat(neden) FROM sikayet s WHERE s.paylasim = p.id) AS nedenler FROM paylasim p WHERE gizli = 1 ORDER BY zaman DESC LIMIT 100'),
