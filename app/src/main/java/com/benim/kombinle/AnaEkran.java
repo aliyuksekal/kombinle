@@ -85,6 +85,7 @@ public class AnaEkran extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        geriKaydet();
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         koyuCubuk = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
 
@@ -610,9 +611,31 @@ public class AnaEkran extends Activity {
         }
     }
 
+    // Android 16 (API 36) hedeflenince onBackPressed çağrılmaz; 13+ cihazlarda geri tuşu bu geri çağırmayla gelir
+    private Object geriCagri;
+
+    private void geriKaydet() {
+        if (Build.VERSION.SDK_INT < 33 || geriCagri != null) return;
+        android.window.OnBackInvokedCallback c = this::geriIsle;
+        getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, c);
+        geriCagri = c;
+    }
+
+    private void uygulamadanCik() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (isTaskRoot()) moveTaskToBack(true); else finish();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
+        geriIsle();
+    }
+
+    private void geriIsle() {
         if (web != null && web.canGoBack()) {
             web.goBack();
             return;
@@ -623,7 +646,7 @@ public class AnaEkran extends Activity {
             if (kopru == null || !kopru.guvenli) {
                 if (simdi - sonGeri >= 2000) { sonGeri = simdi; Toast.makeText(this, R.string.cikis, Toast.LENGTH_SHORT).show(); return; }
             }
-            super.onBackPressed();
+            uygulamadanCik();
             return;
         }
         sonGeri = simdi;

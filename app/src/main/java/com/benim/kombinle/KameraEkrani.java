@@ -131,6 +131,9 @@ public class KameraEkrani extends ComponentActivity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { kapatIste(); }
+        });
         try {
             JSONObject o = new JSONObject(getIntent().getStringExtra(SECENEK) == null ? "{}" : getIntent().getStringExtra(SECENEK));
             etiket = o.optJSONObject("etiket") != null ? o.optJSONObject("etiket") : new JSONObject();
@@ -824,10 +827,6 @@ public class KameraEkrani extends ComponentActivity {
                 .show();
     }
 
-    @Override
-    public void onBackPressed() {
-        kapatIste();
-    }
 
     @Override
     public boolean onKeyDown(int kod, KeyEvent e) {

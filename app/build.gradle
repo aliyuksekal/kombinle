@@ -21,12 +21,12 @@ def yuklemeAlias = (project.findProperty('yuklemeAlias') ?: 'kombinle').toString
 
 android {
     namespace 'com.benim.kombinle'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId 'com.benim.kombinle'
         minSdk 24
-        targetSdk 35
+        targetSdk 36
         versionCode surumKodu
         versionName '1.0.' + surumKodu
         // Gerçek telefon işlemcileri; emülatör kütüphaneleri APK'yı gereksiz büyütüyor
