@@ -340,7 +340,9 @@ function yoneticiPaneli() {
     h('button', { class: 'satir', on: { click: proHediyePaneli } }, ikon('tac'), h('span', { text: t('proHediyeAc') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('rkYonetim') }),
     h('button', { class: 'satir', on: { click: reklamYonetimi } }, ikon('grafik'), h('span', { text: t('rkYonetimAc') })),
-    h('button', { class: 'satir', on: { click: reklamTalepYonetimi } }, ikon('gonder'), h('span', { text: t('rtYonetimAc') }))) });
+    h('button', { class: 'satir', on: { click: reklamTalepYonetimi } }, ikon('gonder'), h('span', { text: t('rtYonetimAc') })),
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('olBaslik') }),
+    h('button', { class: 'satir', on: { click: olcumSayfasi } }, ikon('grafik'), h('span', { text: t('olAc') }))) });
   var calis = function (govde, btn) {
     btn.disabled = true;
     yzIste('/v1/ata', govde, 20000).then(function (v) {

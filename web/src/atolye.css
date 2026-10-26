@@ -552,3 +552,31 @@ html[data-tema="koyu"] .durum-reddedildi .rv-durum{background:#3A1616;color:#F2A
 .rv-paket del{margin-right:6px;font-size:12px;font-weight:500;color:var(--soluk)}
 .rv-paket.ilk{grid-column:1/-1}
 .rv-paket.ilk b::before{content:"★ ";color:var(--vurgu)}
+/* ---- 2 dakikada dolabını doldur / Keşfet davet ---- */
+.hd-kart{display:flex;flex-direction:column;gap:10px;margin:12px 0;padding:16px;border-radius:20px;background:var(--yuzey);border:1px solid var(--cizgi)}
+.hd-bas{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hd-bas b{font-size:16px}
+.hd-sayac{font-size:12px;font-weight:700;color:var(--vurgu);background:var(--vurgu-acik);padding:2px 10px;border-radius:99px}
+.hd-cubuk{height:6px;border-radius:99px;background:var(--yuzey2);overflow:hidden}
+.hd-cubuk i{display:block;height:100%;background:var(--dolgu);border-radius:99px;transition:width .4s}
+.hd-adim{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:0;background:var(--yuzey2);color:var(--murekkep);text-align:left;font:inherit}
+.hd-adim>span:last-child{display:flex;flex-direction:column;min-width:0}
+.hd-adim small{color:var(--soluk);font-size:12px}
+.hd-ikon{flex:0 0 40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--dolgu);color:var(--dolgu-ust)}
+.hd-ikon svg{width:20px;height:20px}
+.kf-davet .alt-yazi{margin:0}
+.ak-wp{align-self:flex-start;margin-top:8px}
+/* ---- kullanım istatistikleri ---- */
+.ol-kutular{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ol-kutu{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:16px;background:var(--yuzey);border:1px solid var(--cizgi)}
+.ol-kutu small{color:var(--soluk);font-size:11.5px}
+.ol-kutu b{font-size:22px;font-weight:800}
+.ol-kutu i{font-style:normal;font-size:11px;color:var(--soluk)}
+.ol-kutu.iyi b{color:var(--iyi)}.ol-kutu.orta b{color:#B7791F}.ol-kutu.zayif b{color:#C53030}
+.ol-grafik{display:flex;align-items:flex-end;gap:2px;height:120px;padding:8px;border-radius:16px;background:var(--yuzey);border:1px solid var(--cizgi)}
+.ol-sutun{position:relative;flex:1;height:100%;display:flex;align-items:flex-end}
+.ol-sutun i{position:absolute;left:0;right:0;bottom:0;border-radius:3px 3px 0 0}
+i.ol-aktif{background:color-mix(in srgb,var(--dolgu) 45%,transparent)}
+i.ol-yeni{background:var(--dolgu)}
+.ol-lejant{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--soluk);margin:6px 0 0}
+.ol-lejant i{display:inline-block;width:10px;height:10px;border-radius:3px}

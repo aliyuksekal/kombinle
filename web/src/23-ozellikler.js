@@ -77,6 +77,7 @@ function renkAnaliziSayfasi() {
     }).then(function (v) {
       var sn = v && v.sonuc;
       if (!sn || sn.yuz === false) { tost(t('renkYuzYok')); ciz2(); return; }
+      olay('renk');
       var r = renkAnaliziTemizle(Object.assign({}, sn, { tarih: Date.now() }));
       if (!r || !r.iyi.length) { tost(t('renkHata')); ciz2(); return; }
       ozKullan('renk');
@@ -334,7 +335,7 @@ function alsamMiSayfasi() {
     if (!f) return;
     temizle(gov);
     gov.appendChild(h('div', { class: 'g-yukleniyor', style: { padding: '40px 0' } }, h('span', { class: 'yukleniyor' }), h('p', { class: 'alt-yazi', text: t('taniniyor') })));
-    fotografIsle(f).then(function (sn) { alsamSonuc(gov, sn, f, bas, s); }).catch(function () { tost(t('fotoHata')); bas(); });
+    fotografIsle(f).then(function (sn) { olay('alsam'); alsamSonuc(gov, sn, f, bas, s); }).catch(function () { tost(t('fotoHata')); bas(); });
   }
   galeri.addEventListener('change', function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ''; isle(f); });
   bas();
@@ -501,7 +502,8 @@ function anketKarti(x, adres) {
     x.gizli ? h('p', { class: 'g-gizli-not', text: t('tpGizli') }) : null,
     h('p', { class: 'ak-soru', text: kirp(x.soru, 140) || t('akVarsayilan') }),
     h('div', { class: 'ak-ikili' }, A_.el, B_.el),
-    toplam);
+    toplam,
+    x.benim && x.gorunurluk !== 'takip' && !x.gizli ? h('button', { class: 'g-btn-cizgi kucuk ak-wp', on: { click: function () { anketPaylas(x); } } }, ikon('gonder', 'k'), t('akWpPaylas')) : null);
   guncelle();
   return kart;
 }
@@ -509,6 +511,7 @@ function anketMenusu(x, kart) {
   var gov = h('div', { class: 'ayar-grup' });
   var s = sayfaAc({ baslik: t('secenekler'), icerik: gov });
   if (x.benim) {
+    if (x.gorunurluk !== 'takip' && !x.gizli) gov.appendChild(menuSatir('gonder', t('akWpPaylas'), t('akWpMetin'), function () { s.kapat(); anketPaylas(x); }));
     gov.appendChild(menuSatir('cop', t('akSil'), '', function () {
       onayla(t('akSil'), t('akSilSor'), t('sil'), true).then(function (evet) {
         if (!evet) return;
@@ -586,8 +589,11 @@ function anketOlustur(kA, kB, bilgi) {
     var a = tuvaldenB64(tuvaller.a, 440 * 1024), b = tuvaldenB64(tuvaller.b, 440 * 1024);
     if (!a || !b) { tost(t('fotoHata')); return; }
     gidiyor = true; btn.disabled = true;
-    yzIste('/v1/anket', { resimA: a, resimB: b, soru: m, gorunurluk: gor, takma: (hesapBilgi() || {}).ad || '' }, 60000).then(function () {
-      s.kapat(); tost(t('akPaylasildi'));
+    yzIste('/v1/anket', { resimA: a, resimB: b, soru: m, gorunurluk: gor, takma: (hesapBilgi() || {}).ad || '' }, 60000).then(function (v) {
+      s.kapat(); tost(t('akPaylasildi')); olay('anket_ac');
+      if (gor === 'herkes' && v && /^[a-z0-9]{20}$/.test(v.id || '')) {
+        setTimeout(function () { onayla(t('akWpBaslik'), t('akWpMetin'), t('akWpPaylas')).then(function (e) { if (e) anketPaylas({ id: v.id, soru: m, gorunurluk: 'herkes' }); }); }, 900);
+      }
       ANKET.yuklendi = false; ANKET.sira = 'benim';
       S.sekme = 'kesfet'; S.kesfetSekme = 'topluluk'; TOPLULUK.sira = 'anket'; ciz(); window.scrollTo(0, 0);
     }).catch(function (e) {

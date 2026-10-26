@@ -84,6 +84,7 @@ var KAMERA_EN_FAZLA = 10;
 function kameraAc(sec) {
   sec = sec || {};
   if (typeof sec !== 'object' || sec instanceof Event) sec = {};
+  if (!sec.web) olay('kamera');
   if (!sec.web && yerelKameraVar()) { yerelKamera(sec); return; }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { tost(t('kameraYok')); if (sec.tek) { if (sec.galeri) sec.galeri(); } else $('#dosyaSec').click(); return; }
   var ayar = LS.al('kamera', null) || {};

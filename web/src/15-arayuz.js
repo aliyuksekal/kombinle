@@ -93,7 +93,7 @@ function ustBar() {
         ikon('zap', 'k dolu'), h('span', { text: jetonEtiket() }))));
 }
 var SEKMELER = ['bugun', 'dolap', 'kesfet', 'ayarlar'];
-function sekmeyeGec(ad) { if (S.sekme !== ad) { S.sekme = ad; ciz(); window.scrollTo(0, 0); } }
+function sekmeyeGec(ad) { if (S.sekme !== ad) { S.sekme = ad; if (ad === 'kesfet') olay('kesfet'); ciz(); window.scrollTo(0, 0); } }
 function altMenuCiz() {
   var ic = temizle($('#altMenu .ic'));
   [['bugun', 'ev', 'sBugun'], ['dolap', 'gardirop', 'sDolap'], ['ai'], ['kesfet', 'pusula', 'sKesfet'], ['ayarlar', 'ayar', 'ayarlar']].forEach(function (x) {
@@ -406,6 +406,8 @@ function dolapEkrani() {
   var kayitliSay = gecmisAl().filter(function (g) { return g.fav; }).length;
   bol.appendChild(h('button', { class: 'g-kombin-sira', on: { click: function () { S.gecmisFiltre = 'fav'; S.sekme = 'kombin'; ciz(); window.scrollTo(0, 0); } } },
     h('span', { class: 'g-arac-ikon' }, ikon('kalp')), h('div', null, h('b', { text: t('kayitliKombinler') }), h('small', { text: t('kayitliKombinSay', kayitliSay) })), ikon('sag', 'k')));
+  var gercekSay = S.parcalar.filter(function (p) { return !p.ornek; }).length;
+  if (gercekSay < 15) bol.appendChild(hizliDoldurKarti(gercekSay));
   if (!S.parcalar.length) { bol.appendChild(bosDolapKarti()); return bol; }
   var hap = h('div', { class: 'g-haplar' });
   var say = {}; S.parcalar.forEach(function (p) { var g = TUR[p.tur] ? TUR[p.tur].g : ''; say[g] = (say[g] || 0) + 1; });
@@ -461,6 +463,8 @@ function ekleMenusu() {
           h('span', { class: 'sol' }, ikon('kamera'), h('div', null, t('fotoCek'), h('small', { text: t('fotoCekAlt') }))), ikon('sag', 'k')),
         h('button', { class: 'satir', on: { click: function () { s.kapat(); setTimeout(function () { $('#dosyaSec').click(); }, 300); } } },
           h('span', { class: 'sol' }, ikon('galeri'), h('div', null, t('galeridenSec'), h('small', { text: t('galeridenSecAlt') }))), ikon('sag', 'k')),
+        h('button', { class: 'satir', on: { click: function () { s.kapat(); setTimeout(siparisSec, 300); } } },
+          h('span', { class: 'sol' }, ikon('marka'), h('div', null, t('urlSiparis'), h('small', { text: t('urlSiparisAlt') }))), ikon('sag', 'k')),
         h('button', { class: 'satir', on: { click: function () { s.kapat(); setTimeout(baglantiylaEkle, 300); } } },
           h('span', { class: 'sol' }, ikon('dil'), h('div', null, t('urlEkle'), h('small', { text: t('urlEkleAlt') }))), ikon('sag', 'k'))))
   });

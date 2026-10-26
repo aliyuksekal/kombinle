@@ -41,11 +41,11 @@ function parcaSecici(sonuc, liste, i) {
   var ekleBtn = h('button', { class: 'btn ana', on: { click: seciliEkle } });
   var tamamBtn = h('button', { class: 'btn ikincil', on: { click: tamaminiEkle } }, t('psTamami'));
   var gov = h('div', null,
-    h('p', { class: 'alt-yazi ps-not', text: an.kisi ? t('psAciklamaKisi') : t('psAciklama') }),
+    h('p', { class: 'alt-yazi ps-not', text: an.siparis ? t('psAciklamaSiparis') : an.kisi ? t('psAciklamaKisi') : t('psAciklama') }),
     izgara,
     h('button', { class: 'ps-diger-btn', on: { click: function () { digerAlan.hidden = !digerAlan.hidden; } } }, ikon('ara', 'k'), t('psListedeYok')),
     digerAlan);
-  var s = sayfaAc({ baslik: t('psBaslik'), icerik: gov, altBar: [tamamBtn, ekleBtn], kapaninca: function () { if (!bitti) setTimeout(function () { sirayaIsle(liste, i + 1); }, 320); } });
+  var s = sayfaAc({ baslik: t('psBaslik'), icerik: gov, altBar: an.siparis ? [ekleBtn] : [tamamBtn, ekleBtn], kapaninca: function () { if (!bitti) setTimeout(function () { sirayaIsle(liste, i + 1); }, 320); } });
 
   function ciz() {
     temizle(izgara);

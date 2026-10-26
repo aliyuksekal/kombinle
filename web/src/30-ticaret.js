@@ -102,7 +102,7 @@ function oneCikarIste(x) {
   onayla(t('oneCikar'), t('oneCikarSor') + ' ' + t('ocKalanSor', oneCikarKalan()), t('oneCikarEvet')).then(function (evet) {
     if (!evet) return;
     yzIste('/v1/onecikar', { id: x.id }, 15000).then(function (v) {
-      if (!x.oneCikan) oneCikarHarca();
+      if (!x.oneCikan) { oneCikarHarca(); olay('onecikar'); }
       x.oneCikan = 1; x.oneCikanBitis = sayiMi(v.bitis) ? v.bitis : Date.now() + 86400000;
       tost(t('oneCikarildi'));
       TOPLULUK.yuklendi = false; toplulukCizYenile();
@@ -314,7 +314,7 @@ function reklamVerSayfasi() {
     yzIste('/v1/rtalep', { resim: b64, boyut: boyut, paket: secPaket, marka: kirp(marka.el.value, 30), baslik: kirp(baslik.el.value, 60), metin: kirp(metin.el.value, 200), link: l,
       dugme: kirp(dugme.el.value, 20), firma: kirp(firma.el.value, 80), yetkili: kirp(yetkili.el.value, 60), eposta: (eposta.el.value || '').trim().slice(0, 254),
       telefon: kirp(telefon.el.value, 24), vergi: kirp(vergi.el.value, 60) }, 40000).then(function (v) {
-      s.kapat();
+      s.kapat(); olay('reklam_basvuru');
       setTimeout(function () { reklamBasvurularim(v && v.kod); }, 300);
     }).catch(function (e) {
       var m = e && e.message;

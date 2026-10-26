@@ -345,6 +345,10 @@ function toplulukDoldur(alan) {
     if (plan[i + 1]) alan.appendChild(reklamKarti(plan[i + 1]));
   });
   if (reklamAcik()) reklamYukle();
+  if (TOPLULUK.yuklendi && !TOPLULUK.yukleniyor && liste.length < 6 && TOPLULUK.sira !== 'benim') {
+    alan.appendChild(h('div', { class: 'hd-kart kf-davet' }, h('div', { class: 'hd-bas' }, h('b', { text: t('kfBosBaslik') })), h('p', { class: 'alt-yazi', text: t('kfBosMetin') }),
+      h('button', { class: 'btn ana', style: { width: '100%' }, on: { click: davetEt } }, ikon('gonder', 'k'), t('davetBaslik'))));
+  }
   if (TOPLULUK.yukleniyor) alan.appendChild(h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   else if (TOPLULUK.hata) alan.appendChild(h('div', { class: 'g-bos-not' }, h('span', { text: t('tpHata') }), h('button', { class: 'g-btn-cizgi kucuk', text: t('tekrarDene'), on: { click: function () { toplulukYukle(!TOPLULUK.liste.length); } } })));
   else if (!liste.length && TOPLULUK.yuklendi) alan.appendChild(h('div', { class: 'g-bos-not' }, ikon('isilti', 'k'), h('span', { text: TOPLULUK.sira === 'benim' ? t('tpBenimBos') : TOPLULUK.sira === 'takip' ? t('tpTakipBos') : t('tpBos') })));
@@ -733,6 +737,7 @@ function paylasSayfasi(k, baglam, hazir) {
     gidiyor = true; gonderBtn.disabled = true;
     temizle(gonderBtn); gonderBtn.appendChild(h('span', { class: 'yukleniyor' })); gonderBtn.appendChild(document.createTextNode(t('paylasiliyor')));
     yzIste('/v1/paylas', { resim: b64, takma: ad, aciklama: not, etiketler: etiketler, gorunurluk: gorunurluk }, 50000).then(function () {
+      olay('paylas');
       s.kapat(); tost(t('paylasildi'));
       TOPLULUK.sira = 'yeni'; TOPLULUK.yuklendi = false; S.kesfetSekme = 'topluluk';
     }).catch(function (e) {

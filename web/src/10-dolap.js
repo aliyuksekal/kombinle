@@ -8,6 +8,7 @@ function dosyalarSecildi(dosyalar) {
 }
 function sirayaIsle(liste, i) {
   if (i >= liste.length) return;
+  if (liste[i] && liste[i]._siparis) { siparisIsle(liste, i); return; }
   var bekleme = sayfaAc({
     baslik: t('hazirlaniyor'), kilitli: true,
     icerik: h('div', { style: { padding: '24px 0', display: 'flex', 'align-items': 'center', gap: '12px' } }, h('span', { class: 'yukleniyor' }), h('span', { text: liste.length > 1 ? t('fotoSira', i + 1, liste.length) : t('fotoInceleniyor') }))
@@ -235,7 +236,7 @@ function parcaDuzenle(p, yeni) {
     if (yeni && yeniResim.kesik) kayit.kesik = 1;
     var is = yeni ? Depo.resimYaz(kayit.id, { buyuk: yeniResim.buyuk, kucuk: yeniResim.kucuk }).then(function () { return Depo.parcaYaz(kayit); }) : Depo.parcaYaz(kayit);
     is.then(function () {
-      if (!p) S.parcalar.push(kayit);
+      if (!p) { S.parcalar.push(kayit); olay('parca_ekle'); }
       S.sonuc = null;
       s.kapat();
       tost(yeni ? t('eklendi') : t('kaydedildi'));

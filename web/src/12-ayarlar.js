@@ -63,7 +63,8 @@ function ayarIcerik(gov) {
         (yzKurulu() ? anahtarSatir(t('yzAc'), t('yzAcAlt'), A.yz, function (v) { A.yz = v; ayarKaydet(); S.sonuc = null; }, 'isilti') : null),
         anahtarSatir(t('kendiMod'), t('kendiModAlt'), A.kendiMod, function (v) { A.kendiMod = v; ayarKaydet(); S.sonuc = null; }, 'kalp'),
         satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi),
-        YEREL ? bildirimAyarSatiri() : null)));
+        YEREL ? bildirimAyarSatiri() : null,
+        sabahAyarSatirlari(satir))));
     /* pro ve destek */
     gov.appendChild(kart('pro', 'zap', t('proBaslik'), S.pro ? t('proAcik') : t('jetonVar', jeton()),
       h('div', { class: 'ayar-grup' },
@@ -73,6 +74,7 @@ function ayarIcerik(gov) {
         satir('isilti', t('sosyalBaslik'), sosyalAcik() ? (S.pro ? t('sosyalProDahil') : t('sosyalSahip')) : t('sosyalAlt'), function () { sosyalSayfasi(); }),
         yzKurulu() ? satir('zap', t('ocBaslik'), oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('oneCikarAlt'), function () { oneCikarPaketSayfasi(); }) : null,
         yzKurulu() ? satir('grafik', t('rvBaslik'), t('rvAlt'), reklamVerSayfasi) : null,
+        satir('kisi', t('davetBaslik'), t('davetAlt'), davetEt),
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
     gov.appendChild(kart('veri', 'kalkan', t('verilerim'), t('verilerimAlt'),
@@ -299,7 +301,7 @@ function hepsiniSil() {
 function gizlilikSayfasi() {
   var b = function (baslik, metin) { return [h('h3', { text: baslik }), h('p', { text: metin })]; };
   var icerik = h('div', { class: 'yazi-blok' },
-    b(t('gz1b'), t('gz1')), b(t('gz2b'), t('gz2')), b(t('gz3b'), t('gz3')), b(t('gz4b'), t('gz4')), b(t('gz6b'), t('gz6')), b(t('gz5b'), t('gz5')),
+    b(t('gz1b'), t('gz1')), b(t('gz2b'), t('gz2')), b(t('gz3b'), t('gz3')), b(t('gz4b'), t('gz4')), b(t('gz6b'), t('gz6')), b(t('gz7b'), t('gz7')), b(t('gz5b'), t('gz5')),
     h('p', null, h('a', { href: GIZLILIK_ADRES, target: '_blank', rel: 'noopener noreferrer', style: { color: 'var(--vurgu)' }, text: t('gzTam') })));
   sayfaAc({ baslik: t('gizlilik'), icerik: icerik });
 }

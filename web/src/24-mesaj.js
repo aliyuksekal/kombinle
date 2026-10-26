@@ -313,6 +313,7 @@ function bildirimIzniIste() {
 function acilacakSayfa(ne) {
   if (ne === 'mesaj') setTimeout(dmKutusu, 400);
   else if (ne === 'bildirim') setTimeout(bildirimSayfasi, 400);
+  else if (ne === 'sabah') setTimeout(sabahAc, 400);
 }
 window.addEventListener('kbac', function (e) { var d = e && e.detail; if (d && typeof d.ne === 'string') acilacakSayfa(d.ne); });
 

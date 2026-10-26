@@ -143,7 +143,7 @@ function kombinIste() {
       return;
     }
     var ornekMi = sonuc.kombinler[0] && kombinParcalari(sonuc.kombinler[0]).every(function (p) { return p.ornek; });
-    if (!ornekMi) ozKullan('kombin');
+    if (!ornekMi) { ozKullan('kombin'); olay('kombin'); sabahIpucu(); }
     S.sonuc = { liste: sonuc.kombinler, cumle: cumle, c: c, hv: hv, zaman: Date.now(), havaNotu: havaNotu || '', tekrar: tekrar };
     S.sonucNo = 0; S.kayitli = {};
     ciz();

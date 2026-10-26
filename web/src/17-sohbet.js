@@ -224,6 +224,7 @@ function sohbetAc() {
       return;
     }
     var hv = null; try { hv = aktifHava(); } catch (e) { hv = null; }
+    olay('sohbet');
     yzIste('/v1/sohbet', {
       mesaj: m, dil: A.dil, tesettur: !!A.tesettur, kimin: A.kimin || 'kadin', ilk: ilk, saat: new Date().getHours(),
       gecmis: gecmis.slice(-11, -1).map(function (x) { return { r: x.r, m: kirp(x.m, 600) }; }),
