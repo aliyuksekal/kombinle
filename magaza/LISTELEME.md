@@ -16,46 +16,51 @@ Not: Ekran görüntülerindeki kıyafetler uygulamanın örnek çizimleri. Kendi
 
 **Uygulama adı (30):** Kombinle: Kombin ve Gardırop
 
-**Kısa açıklama (80):** Dolabındakilerle her sabah havaya uygun kombin, AI stilist ve renk analizi
+**Kısa açıklama (80):** Ne giysem? Dolabındakilerle havaya uygun kombin önerisi ve AI stil asistanı
 
 **Tam açıklama:**
 
-Sabahları "Bugün ne giysem?" diye dolabın önünde dakikalarca durmaya son. Kombinle, senin kendi kıyafetlerinden hava durumuna ve gününe uygun kombinler hazırlar.
+Sabahları dolabın önünde "Bugün ne giysem?" diye dakikalarca durmaya son! Kombinle, kendi kıyafetlerinden hava durumuna, gününe ve tarzına uygun kombin önerisi hazırlayan akıllı gardırop ve kombin uygulamasıdır.
 
-👗 DOLABINDAKİLERLE KOMBİN
-Kıyafetlerinin fotoğrafını çek; Kombinle türünü ve rengini kendisi tanır. "Öğleden sonra toplantım var", "akşam düğün" ya da "rahat bir pazar" de yeter: havaya, ortama ve tarzına uygun kombini hazırlar.
+👗 DOLABINDAKİLERLE KOMBİN ÖNERİSİ
+Kıyafetlerinin fotoğrafını çek; Kombinle türünü ve rengini kendisi tanır, arka planı temizler. "Öğleden sonra toplantım var", "akşam düğün var" ya da "rahat bir pazar" demen yeter: havaya, ortama ve tarzına uygun kombini saniyeler içinde hazırlar. Beğendiğin kombinleri favorilere kaydet, giydiklerini işaretle.
 
-☀️ HER SABAH HAZIR
-Her sabah seçtiğin saatte günün havasıyla birlikte kombin önerin bildirim olarak gelir. Ana ekran widget'ı ile günün kombinini telefonu açar açmaz görürsün.
+☀️ HER SABAH HAZIR KOMBİN
+Seçtiğin saatte günün hava durumu ve kombin önerin bildirim olarak gelir. Ana ekran widget'ı ile günün kombinini telefonunu açar açmaz görürsün. Yağmur, soğuk ya da sıcak; hava durumuna göre kıyafet seçmek artık çok kolay.
 
-✨ KOMBİNLE AI İLE KONUŞ
-Stil asistanına yaz ya da sesli sor: "Bu etekle hangi ayakkabı olur?", "Yarın yağmur var, ne giyeyim?" Cevaplarını sesli de dinleyebilirsin.
+✨ KOMBİNLE AI STİL ASİSTANI
+Kişisel stil asistanına yaz ya da sesli sor: "Bu etekle hangi ayakkabı olur?", "Yarın yağmur var, ne giyeyim?", "İş görüşmesi için ne önerirsin?" Cevaplarını sesli de dinleyebilirsin.
 
-🎨 SANA YAKIŞAN RENKLER
-Bir selfie ile renk analizi: sana en çok yakışan renkler, yüzünden uzak tutman gerekenler, ruj tonları ve altın mı gümüş mü takı yakıştığı. Öneriler de buna göre şekillenir.
+🎨 RENK ANALİZİ: SANA YAKIŞAN RENKLER
+Bir selfie ile renk analizi yap: sana en çok yakışan renkler, yüzünden uzak tutman gerekenler, ruj tonları ve altın mı gümüş mü takı yakıştığı. Kombin önerileri de buna göre şekillenir.
 
 ⚡ 2 DAKİKADA DOLABINI DOLDUR
-Aynada çektiğin tek bir fotoğraftan üzerindeki her parçayı ayrı ayrı ekle. Trendyol, Zara, H&M gibi uygulamaların sipariş ekran görüntüsünden ürünleri dolabına aktar.
+Aynada çektiğin tek bir fotoğraftan üzerindeki her parçayı ayrı ayrı ekle. Online alışveriş siparişlerinin ekran görüntüsünden ürünleri dolabına aktar. Galeriden toplu fotoğraf seç, hepsi otomatik tanınsın.
 
 🤔 A MI B MI?
-İki kombin arasında kaldın mı? Topluluğa ya da WhatsApp'tan arkadaşlarına sor; uygulamayı yüklemeden oy verebilirler.
+İki kombin arasında kaldın mı? Topluluğa sor ya da WhatsApp'tan arkadaşlarına gönder; uygulamayı yüklemeden oy verebilirler.
 
 🛍️ ALSAM MI?
-Mağazada beğendiğin bir parçanın fotoğrafını çek: dolabındakilerle kaç kombin olur, benzerinden var mı, giyim başına maliyeti ne olur, hemen gör.
+Mağazada beğendiğin bir parçanın fotoğrafını çek: dolabındakilerle kaç kombin çıkar, benzerinden var mı, giyim başına maliyeti ne olur hemen gör. Gereksiz alışverişi azalt, dolabını akıllıca kullan.
 
-📅 PLANLA, BAVULUNU HAZIRLA
-Haftanın kombinlerini takvimde planla. Seyahate çıkarken gideceğin yerin havasına göre en az kıyafetle her güne kombin ve bavul listesi al.
+📅 KOMBİN PLANLAYICI VE BAVUL LİSTESİ
+Haftanın kombinlerini takvimde planla. Tatile ya da iş seyahatine çıkarken gideceğin yerin havasına göre en az kıyafetle her güne kombin ve bavul listesi al.
 
-🌙 KOYU MOD VE TEMALAR
+👥 STİL TOPLULUĞU
+Kombinlerini paylaş, başkalarının stilinden ilham al, beğen, yorum yap ve takip et.
+
+🌙 KOYU MOD VE RENK TEMALARI
 Koyu mod, AMOLED siyah ve Pudra, Lavanta, Turkuaz, Nane gibi 10 renk teması.
 
 🧕 HERKES İÇİN
-Kapalı giyim (tesettür) seçeneği, kadın ve erkek tür listeleri; Türkçe, İngilizce, Rusça, Özbekçe ve Korece.
+Kadın ve erkek kıyafet türleri, kapalı giyim ve tesettür kombin seçeneği. Türkçe, İngilizce, Rusça, Özbekçe ve Korece.
 
 🔒 GİZLİLİĞİN SENDE
-Kıyafet fotoğrafların telefonunda saklanır. Tanıma çoğu zaman tamamen telefonun içinde çalışır; yapay zekâya gönderilen görüntüler kaydedilmez. Paylaşmadığın hiçbir şey kimseye görünmez.
+Kıyafet fotoğrafların ve dolabın yalnızca telefonunda saklanır. Kıyafet tanıma çoğu zaman tamamen telefonun içinde çalışır; Kombinle AI'ye gönderilen görüntüler kaydedilmez. Hesap açmak zorunlu değildir.
 
-Kombinle ücretsizdir. Daha fazla yapay zekâ kullanımı için jeton paketleri ve reklamsız PRO üyelik vardır.
+Kombinle ücretsizdir. Daha fazla Kombinle AI kullanımı için jeton paketleri, reklamsız kullanım ve ek özellikler için PRO üyelik vardır.
+
+Kombin önerisi, dijital gardırop, dolap düzenleme, stil asistanı ve renk analizi tek uygulamada. Kombinle'yi indir, yarın sabah ne giyeceğini düşünme!
 
 ---
 
@@ -63,43 +68,51 @@ Kombinle ücretsizdir. Daha fazla yapay zekâ kullanımı için jeton paketleri 
 
 **App name (30):** Kombinle: Outfit Planner
 
-**Short description (80):** Daily outfit ideas from your own wardrobe, matched to the weather. AI stylist.
+**Short description (80):** What to wear? Outfit ideas from your own wardrobe, matched to the weather
 
 **Full description:**
 
-Stop standing in front of your wardrobe every morning wondering what to wear. Kombinle builds outfits from the clothes you already own, matched to the weather and your day.
+Stop standing in front of your closet every morning wondering what to wear! Kombinle is a smart wardrobe and outfit planner that builds outfit ideas from the clothes you already own, matched to the weather, your day and your style.
 
-👗 OUTFITS FROM YOUR OWN CLOTHES
-Snap your clothes; Kombinle recognises the type and colour. Say "meeting this afternoon", "wedding tonight" or "lazy Sunday" and get an outfit that fits the weather, the occasion and your style.
+👗 OUTFIT IDEAS FROM YOUR OWN CLOTHES
+Snap your clothes; Kombinle recognises the type and colour and removes the background. Say "meeting this afternoon", "wedding tonight" or "lazy Sunday" and get an outfit that fits the weather, the occasion and your style in seconds. Save your favourite looks and track what you wear.
 
-☀️ READY EVERY MORNING
-Get your outfit idea with the day's weather as a notification at the time you choose, and see it on your home screen with the widget.
+☀️ YOUR OUTFIT, READY EVERY MORNING
+Get the day's weather and your outfit idea as a notification at the time you choose, and see it on your home screen with the widget. Rain, cold or heat: dressing for the weather has never been easier.
 
-✨ TALK TO KOMBINLE AI
-Ask your style assistant by text or voice: "Which shoes go with this skirt?", "It's raining tomorrow, what should I wear?" Listen to the answers aloud.
+✨ KOMBINLE AI STYLE ASSISTANT
+Ask your personal stylist by text or voice: "Which shoes go with this skirt?", "It's raining tomorrow, what should I wear?", "What should I wear to a job interview?" Listen to the answers aloud.
 
-🎨 YOUR BEST COLOURS
-A selfie-based colour analysis: the colours that flatter you most, the ones to keep away from your face, lipstick shades and gold or silver jewellery.
+🎨 COLOUR ANALYSIS: YOUR BEST COLOURS
+A selfie-based colour analysis: the colours that flatter you most, the ones to keep away from your face, lipstick shades and whether gold or silver jewellery suits you. Outfit ideas follow your palette.
 
 ⚡ FILL YOUR WARDROBE IN 2 MINUTES
-Add every piece from a single mirror photo, or import items from an online-shop order screenshot.
+Add every piece from a single mirror photo, import items from an online order screenshot, or pick photos in bulk from your gallery and let them be recognised automatically.
 
 🤔 A OR B?
-Can't decide between two outfits? Ask the community or your friends on WhatsApp — they can vote without installing the app.
+Can't decide between two outfits? Ask the community or send it to friends on WhatsApp; they can vote without installing the app.
 
 🛍️ SHOULD I BUY IT?
-Take a photo of an item in the shop: see how many outfits it makes with your wardrobe, whether you already own something similar, and its cost per wear.
+Take a photo of an item in the shop: see how many outfits it makes with your closet, whether you already own something similar, and its cost per wear. Shop smarter and wear more of what you own.
 
-📅 PLAN AND PACK
-Plan the week's outfits in a calendar and get a minimal packing list with an outfit for each day of your trip, based on the destination's weather.
+📅 OUTFIT PLANNER AND PACKING LIST
+Plan the week's outfits in a calendar. Travelling? Get a minimal packing list with an outfit for every day, based on your destination's weather.
+
+👥 STYLE COMMUNITY
+Share your looks, get inspired by others, like, comment and follow.
 
 🌙 DARK MODE AND THEMES
 Dark mode, AMOLED black and 10 colour themes.
 
-🔒 YOUR PRIVACY
-Your clothing photos are stored on your phone and recognition usually runs entirely on the device; images sent to the AI are not kept. Nothing you don't share is visible to anyone.
+🧕 FOR EVERYONE
+Women's and men's clothing types and a modest fashion option. Available in English, Turkish, Russian, Uzbek and Korean.
 
-Kombinle is free. Credit packs and an ad-free PRO membership are available for more AI use.
+🔒 YOUR PRIVACY
+Your clothing photos and wardrobe are stored only on your phone. Recognition usually runs entirely on the device; images sent to Kombinle AI are not kept. No account required.
+
+Kombinle is free. Credit packs are available for more Kombinle AI use, and PRO membership removes ads and adds extra features.
+
+Outfit ideas, digital closet, wardrobe organizer, style assistant and colour analysis in one app. Download Kombinle and never wonder what to wear again!
 
 ---
 
