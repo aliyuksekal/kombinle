@@ -160,6 +160,53 @@ function hataYonetimi() {
   yukle();
 }
 
+/* ---------- @admin: kayıtlı kullanıcılar (liste + arama) ---------- */
+function kullaniciYonetimi() {
+  var hb = hesapBilgi(); if (!hb || !hb.yonetici) return;
+  var sayfa = 0, ara = '', zamanlayici = 0, istekNo = 0;
+  var arama = h('input', { class: 'metin', type: 'search', maxlength: '80', autocapitalize: 'none', autocomplete: 'off', spellcheck: 'false', placeholder: t('kuAraYer'), 'aria-label': t('kuAra') });
+  var ozet = h('p', { class: 'alt-yazi', 'aria-live': 'polite' });
+  var liste = h('div', { class: 'ayar-grup' });
+  var daha = h('button', { class: 'g-btn-cizgi', style: { width: '100%', display: 'none' }, text: t('kuDaha') });
+  var proYazi = function (pro) { return pro === -1 ? t('proSuresiz') : pro > 0 ? t('proBitis', tarihYaz(pro)) : ''; };
+  function yukle(ekle) {
+    var no = ++istekNo;
+    if (!ekle) { temizle(liste); liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' } }, h('span', { class: 'yukleniyor' }))); }
+    daha.disabled = true;
+    yzIste('/v1/kisiler', { ara: ara, sayfa: sayfa }, 20000).then(function (v) {
+      if (no !== istekNo) return;
+      if (!ekle) temizle(liste);
+      var l = Array.isArray(v.liste) ? v.liste : [];
+      ozet.textContent = t('kuToplam', sayiYaz(v.toplam | 0));
+      if (!l.length && !ekle) liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: t('kuYok') }));
+      l.forEach(function (x) {
+        if (!x || typeof x.ad !== 'string') return;
+        var pro = proYazi(sayiMi(x.pro) ? x.pro : 0);
+        liste.appendChild(h('div', { class: 'satir', style: { cursor: 'default' } },
+          h('span', { class: 'sol' }, ikon('kisi'), h('div', null, kirp(x.ad, 40) + (x.kadi ? ' · @' + kirp(x.kadi, 20) : ''),
+            h('small', { text: kirp(x.eposta || '', 80) + ' · ' + t('kuKayit', new Date(x.zaman).toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : undefined)) + (pro ? ' · ' + pro : '') })))));
+      });
+      daha.style.display = v.son ? 'none' : '';
+      daha.disabled = false;
+    }).catch(function (e) {
+      if (no !== istekNo) return;
+      if (!ekle) temizle(liste);
+      liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) }));
+      daha.disabled = false;
+    });
+  }
+  arama.addEventListener('input', function () {
+    clearTimeout(zamanlayici);
+    zamanlayici = setTimeout(function () { ara = kirp(arama.value.trim(), 80); sayfa = 0; yukle(false); }, 350);
+  });
+  daha.addEventListener('click', function () { sayfa++; yukle(true); });
+  sayfaAc({ tam: true, baslik: t('kuBaslik'), icerik: h('div', { class: 'profil-duzen' },
+    h('p', { class: 'alt-yazi', text: t('kuMetin') }),
+    h('label', { class: 'hesap-alan' }, h('span', { text: t('kuAra') }), arama),
+    ozet, liste, daha) });
+  yukle(false);
+}
+
 Object.assign(DIL.tr, {
   bgBaslik: 'Kombinle\'yi tanı', bgAlt: function (n) { return 'Hepsini bitirince ' + n + ' jeton hediye'; }, bgGizle: 'Gizle',
   bgParca: function (n) { return 'Dolabına 3 kıyafet ekle (' + n + '/3)'; }, bgKombin: 'İlk kombin önerini al', bgFavori: 'Beğendiğin bir kombini kaydet',
@@ -220,4 +267,35 @@ Object.assign(DIL.ko, {
   gbYildiz: function (n) { return '별 ' + n + '개'; }, gbMetin: '메시지', gbYer: '예: 아침 알림이 늦게 와요…',
   gbEposta: '이메일(선택, 답장용)', gbEpostaYer: 'you@example.com', gbGonder: '보내기', gbBos: '별점을 고르거나 몇 마디 적어 주세요.',
   gbNot: '메시지와 함께 앱 버전과 언어만 전송돼요.', gbTesekkur: '고마워요, 메시지가 전달됐어요 💜'
+});
+
+Object.assign(DIL.tr, {
+  kuBaslik: 'Kayıtlı kullanıcılar', kuAc: 'Tüm kullanıcıları gör ve ara', kuBolum: 'Kullanıcılar',
+  kuMetin: 'Uygulamaya kayıt olan tüm hesaplar, en yeni üstte. Ad, kullanıcı adı ya da e-postayla arayabilirsin.',
+  kuAra: 'Kişi ara', kuAraYer: 'Ad, @kullanıcı adı veya e-posta', kuToplam: function (n) { return 'Toplam ' + n + ' hesap'; },
+  kuYok: 'Eşleşen kullanıcı yok.', kuKayit: function (d) { return 'Kayıt: ' + d; }, kuDaha: 'Daha fazla göster'
+});
+Object.assign(DIL.en, {
+  kuBaslik: 'Registered users', kuAc: 'See and search all users', kuBolum: 'Users',
+  kuMetin: 'Every account registered in the app, newest first. Search by name, username or email.',
+  kuAra: 'Search people', kuAraYer: 'Name, @username or email', kuToplam: function (n) { return n + ' accounts in total'; },
+  kuYok: 'No matching users.', kuKayit: function (d) { return 'Joined: ' + d; }, kuDaha: 'Show more'
+});
+Object.assign(DIL.ru, {
+  kuBaslik: 'Зарегистрированные пользователи', kuAc: 'Все пользователи и поиск', kuBolum: 'Пользователи',
+  kuMetin: 'Все аккаунты в приложении, новые сверху. Ищи по имени, нику или e-mail.',
+  kuAra: 'Поиск людей', kuAraYer: 'Имя, @ник или e-mail', kuToplam: function (n) { return 'Всего аккаунтов: ' + n; },
+  kuYok: 'Ничего не найдено.', kuKayit: function (d) { return 'Регистрация: ' + d; }, kuDaha: 'Показать ещё'
+});
+Object.assign(DIL.uz, {
+  kuBaslik: "Ro'yxatdan o'tgan foydalanuvchilar", kuAc: "Barcha foydalanuvchilar va qidiruv", kuBolum: 'Foydalanuvchilar',
+  kuMetin: "Ilovadagi barcha hisoblar, yangilari tepada. Ism, nom yoki e-pochta bilan qidiring.",
+  kuAra: 'Odam qidirish', kuAraYer: 'Ism, @nom yoki e-pochta', kuToplam: function (n) { return 'Jami hisoblar: ' + n; },
+  kuYok: 'Mos foydalanuvchi topilmadi.', kuKayit: function (d) { return "Ro'yxatdan o'tgan: " + d; }, kuDaha: "Yana ko'rsatish"
+});
+Object.assign(DIL.ko, {
+  kuBaslik: '가입한 사용자', kuAc: '모든 사용자 보기와 검색', kuBolum: '사용자',
+  kuMetin: '앱에 가입한 모든 계정이 최신순으로 표시돼요. 이름, 사용자 이름 또는 이메일로 검색하세요.',
+  kuAra: '사람 검색', kuAraYer: '이름, @사용자 이름 또는 이메일', kuToplam: function (n) { return '총 ' + n + '개 계정'; },
+  kuYok: '일치하는 사용자가 없어요.', kuKayit: function (d) { return '가입일: ' + d; }, kuDaha: '더 보기'
 });

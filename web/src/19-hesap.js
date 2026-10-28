@@ -336,6 +336,8 @@ function yoneticiPaneli() {
     h('div', { class: 'sarili', style: { gap: '10px' } }, ata, geri), sonuc,
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('ykBaslik') }),
     h('button', { class: 'satir', on: { click: sikayetPaneli } }, ikon('bayrak'), h('span', { text: t('ykAc2') })),
+    h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('kuBolum') }),
+    h('button', { class: 'satir', on: { click: kullaniciYonetimi } }, ikon('kisi'), h('span', { text: t('kuAc') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('proHediye') }),
     h('button', { class: 'satir', on: { click: proHediyePaneli } }, ikon('tac'), h('span', { text: t('proHediyeAc') })),
     h('span', { class: 'g-bolum-etk', style: { 'margin-top': '8px' }, text: t('rkYonetim') }),
