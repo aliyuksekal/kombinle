@@ -155,6 +155,7 @@ async function yonlendir(istek, env, ctx) {
     case 'ata': hesapGerek(); await kotaDus(env, ['ata_cihaz:' + cihaz]); return json(await adAta(env, govde, hesap));
     case 'proata': hesapGerek(); await kotaDus(env, ['pro_cihaz:' + cihaz]); return json(await proAta(env, govde, hesap));
     case 'prolar': hesapGerek(); return json(await proListe(env, hesap));
+    case 'kisiler': hesapGerek(); return json(await kullaniciListe(env, govde, hesap));
     case 'hesapsil': hesapGerek(); await kotaDus(env, ['giris_ip:' + ip]); return json(await hesapSil(env, govde, hesap));
     case 'tani': await kotaDus(env, ['tani_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await tani(env, govde));
     case 'kombin': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await kombin(env, govde));
@@ -2002,6 +2003,30 @@ async function proListe(env, hesap) {
   if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
   const { results } = await env.DB.prepare('SELECT h.ad, h.eposta, h.kadi, p.bitis, p.zaman FROM pro_hediye p JOIN hesap h ON h.id = p.hesap ORDER BY p.zaman DESC LIMIT 200').all();
   return { ok: true, liste: (results || []).map(r => ({ ad: r.ad, kadi: r.kadi || '', eposta: epostaMaske(r.eposta), hedef: r.kadi || r.eposta, pro: proDurum(r.bitis), zaman: r.zaman })).filter(r => r.pro !== 0) };
+}
+
+/* --- Kayıtlı kullanıcılar (@admin) ---------------------------------------
+   Uygulama sahibi tüm kayıtlı hesapları görür; ad, kullanıcı adı ya da e-postayla arar. Sayfa sayfa (30'ar) gelir. */
+async function kullaniciListe(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  const ara = metin(g.ara, 80).toLowerCase();
+  const kacis = ara.replace(/[\\%_]/g, c => '\\' + c);
+  const desen = '%' + kacis + '%';
+  const sayfa = Math.round(sayi(g.sayfa, 0, 100000, 0));
+  const kosul = ara ? "WHERE lower(h.ad) LIKE ?1 ESCAPE '\\' OR lower(COALESCE(h.kadi, '')) LIKE ?1 ESCAPE '\\' OR lower(h.eposta) LIKE ?1 ESCAPE '\\'" : '';
+  const bagla = (q, ...d) => ara ? q.bind(desen, ...d) : q.bind(...d);
+  const ilk = ara ? 2 : 1;
+  const [say, sonuc] = await env.DB.batch([
+    bagla(env.DB.prepare('SELECT COUNT(*) AS n FROM hesap h ' + kosul)),
+    bagla(env.DB.prepare('SELECT h.id, h.ad, h.eposta, h.kadi, h.zaman, (SELECT bitis FROM pro_hediye WHERE hesap = h.id) AS pro_bitis FROM hesap h ' + kosul +
+      ' ORDER BY h.zaman DESC LIMIT ?' + ilk + ' OFFSET ?' + (ilk + 1)), 30, sayfa * 30)
+  ]);
+  const toplam = say.results && say.results[0] ? say.results[0].n : 0;
+  const liste_ = (sonuc.results || []).map(r => ({
+    ad: r.ad, kadi: r.kadi || '', eposta: r.eposta, zaman: r.zaman,
+    pro: r.pro_bitis === null || r.pro_bitis === undefined ? 0 : proDurum(r.pro_bitis)
+  }));
+  return { ok: true, toplam, sayfa, liste: liste_, son: (sayfa + 1) * 30 >= toplam };
 }
 
 /* --- Profil resmi ------------------------------------------------------- */
