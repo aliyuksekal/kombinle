@@ -709,11 +709,19 @@ async function olcumRaporu(env, hesap) {
   if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
   const simdi = Date.now(), gunler = [];
   for (let i = 29; i >= 0; i--) gunler.push(gunAnahtari(simdi - i * 86400000));
-  const [aktif, yeni, olay, toplam] = await env.DB.batch([
+  const [aktif, yeni, olay, toplam, haftalik, aylik, hesapSay, icerik] = await env.DB.batch([
     env.DB.prepare('SELECT gun, COUNT(*) AS n FROM kullanim_gun WHERE gun >= ? GROUP BY gun').bind(gunler[0]),
     env.DB.prepare('SELECT gun, COUNT(*) AS n FROM kullanim_ilk WHERE gun >= ? GROUP BY gun').bind(gunler[0]),
     env.DB.prepare('SELECT ad, SUM(sayi) AS n FROM olay_sayac WHERE gun >= ? GROUP BY ad ORDER BY n DESC').bind(gunAnahtari(simdi - 6 * 86400000)),
-    env.DB.prepare('SELECT COUNT(*) AS n FROM kullanim_ilk')
+    env.DB.prepare('SELECT COUNT(*) AS n FROM kullanim_ilk'),
+    env.DB.prepare('SELECT COUNT(DISTINCT kimlik) AS n FROM kullanim_gun WHERE gun >= ?').bind(gunler[23]),
+    env.DB.prepare('SELECT COUNT(DISTINCT kimlik) AS n FROM kullanim_gun WHERE gun >= ?').bind(gunler[0]),
+    env.DB.prepare('SELECT COUNT(*) AS n, COALESCE(SUM(zaman >= ?1), 0) AS g1, COALESCE(SUM(zaman >= ?2), 0) AS g7, COALESCE(SUM(zaman >= ?3), 0) AS g30 FROM hesap')
+      .bind(simdi - 86400000, simdi - 7 * 86400000, simdi - 30 * 86400000),
+    env.DB.prepare('SELECT (SELECT COUNT(*) FROM paylasim) AS p, (SELECT COUNT(*) FROM paylasim WHERE zaman >= ?1) AS p7, (SELECT COUNT(*) FROM yorum) AS y, ' +
+      '(SELECT COUNT(*) FROM takip) AS tk, (SELECT COUNT(*) FROM anket) AS a, (SELECT COUNT(*) FROM mesaj) AS m, ' +
+      '(SELECT COUNT(*) FROM pro_hediye WHERE bitis = 0 OR bitis > ?2) AS pro, (SELECT COUNT(*) FROM geri_bildirim) AS gb, ' +
+      '(SELECT AVG(CASE WHEN puan > 0 THEN puan END) FROM geri_bildirim) AS gp').bind(simdi - 7 * 86400000, simdi)
   ]);
   const harita = l => { const m = {}; (l.results || []).forEach(r => { m[r.gun] = r.n; }); return m; };
   const a = harita(aktif), y = harita(yeni);
@@ -728,7 +736,10 @@ async function olcumRaporu(env, hesap) {
   const hafta = gunler.slice(-7).reduce((t, g) => t + (a[g] || 0), 0);
   return { ok: true, gunler: gunler.map(g => ({ gun: g, aktif: a[g] || 0, yeni: y[g] || 0 })), d1, d7, d30,
     toplam: toplam.results && toplam.results[0] ? toplam.results[0].n : 0, haftaOrtalama: Math.round(hafta / 7),
-    olaylar: (olay.results || []).map(r => ({ ad: r.ad, n: r.n })) };
+    olaylar: (olay.results || []).map(r => ({ ad: r.ad, n: r.n })),
+    haftalik: haftalik.results && haftalik.results[0] ? haftalik.results[0].n : 0, aylik: aylik.results && aylik.results[0] ? aylik.results[0].n : 0,
+    hesap: hesapSay.results && hesapSay.results[0] ? { toplam: hesapSay.results[0].n, g1: hesapSay.results[0].g1, g7: hesapSay.results[0].g7, g30: hesapSay.results[0].g30 } : { toplam: 0, g1: 0, g7: 0, g30: 0 },
+    icerik: icerik.results && icerik.results[0] ? (r => ({ paylasim: r.p, paylasim7: r.p7, yorum: r.y, takip: r.tk, anket: r.a, mesaj: r.m, pro: r.pro, geriBildirim: r.gb, puan: r.gp ? Math.round(r.gp * 10) / 10 : null }))(icerik.results[0]) : null };
 }
 
 /* --- Geri bildirim ve hata raporları --------------------------------------
