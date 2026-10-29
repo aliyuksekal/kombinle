@@ -155,7 +155,8 @@ async function yonlendir(istek, env, ctx) {
     case 'ata': hesapGerek(); await kotaDus(env, ['ata_cihaz:' + cihaz]); return json(await adAta(env, govde, hesap));
     case 'proata': hesapGerek(); await kotaDus(env, ['pro_cihaz:' + cihaz]); return json(await proAta(env, govde, hesap));
     case 'prolar': hesapGerek(); return json(await proListe(env, hesap));
-    case 'kisiler': hesapGerek(); return json(await kullaniciListe(env, govde, hesap));
+    case 'hesaplar': hesapGerek(); return json(await kullaniciListe(env, govde, hesap));
+    case 'yonsil': hesapGerek(); return json(await hesapSilYonetici(env, govde, hesap));
     case 'hesapsil': hesapGerek(); await kotaDus(env, ['giris_ip:' + ip]); return json(await hesapSil(env, govde, hesap));
     case 'tani': await kotaDus(env, ['tani_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await tani(env, govde));
     case 'kombin': await kotaDus(env, ['yz_cihaz:' + cihaz, 'yz_ip:' + ip, 'yz_genel:hepsi'], kat); return json(await kombin(env, govde));
@@ -2005,6 +2006,30 @@ async function proListe(env, hesap) {
   return { ok: true, liste: (results || []).map(r => ({ ad: r.ad, kadi: r.kadi || '', eposta: epostaMaske(r.eposta), hedef: r.kadi || r.eposta, pro: proDurum(r.bitis), zaman: r.zaman })).filter(r => r.pro !== 0) };
 }
 
+/* @admin: tek hesabı (id) ya da belirli tarihten önce kayıt olanları (oncesi, ms) siler; say:true yalnız sayar. En çok 15 hesap/istek. */
+async function hesapSilYonetici(env, g, hesap) {
+  if (hesap.kadi !== 'admin') throw new Hata('yetki', 403);
+  if (g.id !== undefined) {
+    const id = metin(g.id, 40);
+    if (!/^[a-f0-9]{32}$/.test(id)) throw new Hata('yok', 404);
+    const hedef = await env.DB.prepare('SELECT id, kadi FROM hesap WHERE id = ?').bind(id).first();
+    if (!hedef) throw new Hata('yok', 404);
+    if (hedef.id === hesap.id || hedef.kadi === 'admin') throw new Hata('yetki', 403);
+    await hesapTemizle(env, hedef.id, await hesapKimlik(env, hedef.id));
+    return { ok: true, silinen: 1, kalan: 0 };
+  }
+  const oncesi = Math.round(sayi(g.oncesi, 0, Date.now(), 0));
+  if (!oncesi) throw new Hata('yok', 404);
+  const kosul = "zaman < ?1 AND id <> ?2 AND COALESCE(kadi, '') <> 'admin'";
+  const say = await env.DB.prepare('SELECT COUNT(*) AS n FROM hesap WHERE ' + kosul).bind(oncesi, hesap.id).first();
+  const n = say ? say.n : 0;
+  if (g.say) return { ok: true, sayi: n };
+  const { results } = await env.DB.prepare('SELECT id FROM hesap WHERE ' + kosul + ' ORDER BY zaman LIMIT 15').bind(oncesi, hesap.id).all();
+  for (const r of results || []) await hesapTemizle(env, r.id, await hesapKimlik(env, r.id));
+  const silinen = (results || []).length;
+  return { ok: true, silinen, kalan: Math.max(0, n - silinen) };
+}
+
 /* --- Kayıtlı kullanıcılar (@admin) ---------------------------------------
    Uygulama sahibi tüm kayıtlı hesapları görür; ad, kullanıcı adı ya da e-postayla arar. Sayfa sayfa (30'ar) gelir. */
 async function kullaniciListe(env, g, hesap) {
@@ -2023,7 +2048,7 @@ async function kullaniciListe(env, g, hesap) {
   ]);
   const toplam = say.results && say.results[0] ? say.results[0].n : 0;
   const liste_ = (sonuc.results || []).map(r => ({
-    ad: r.ad, kadi: r.kadi || '', eposta: r.eposta, zaman: r.zaman,
+    id: r.id, ad: r.ad, kadi: r.kadi || '', eposta: r.eposta, zaman: r.zaman,
     pro: r.pro_bitis === null || r.pro_bitis === undefined ? 0 : proDurum(r.pro_bitis)
   }));
   return { ok: true, toplam, sayfa, liste: liste_, son: (sayfa + 1) * 30 >= toplam };
@@ -2706,10 +2731,9 @@ async function kodSifirla(env, g) {
 }
 
 /* Hesap ve ona bağlı tüm topluluk verileri silinir (Play Store hesap silme şartı) */
-async function hesapSil(env, g, hesap) {
-  const h = await env.DB.prepare('SELECT tuz, ozet FROM hesap WHERE id = ?').bind(hesap.id).first();
-  if (!h || !sifreGecerli(g.sifre) || !esit(await sifreOzeti(env, g.sifre, h.tuz), h.ozet)) throw new Hata('yanlis', 401);
-  const k = hesap.kimlik, kod = k.slice(0, 12);
+/* bir hesabın bütün verisini siler (kendi hesabını silme ve yönetici silmesi ortak kullanır) */
+async function hesapTemizle(env, id, k) {
+  const kod = k.slice(0, 12);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM oy WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?)').bind(k),
     env.DB.prepare('DELETE FROM sikayet WHERE paylasim IN (SELECT id FROM paylasim WHERE yazar = ?)').bind(k),
@@ -2727,13 +2751,20 @@ async function hesapSil(env, g, hesap) {
     env.DB.prepare('DELETE FROM bildirim WHERE alici = ?1 OR kimden = ?1').bind(kod),
     env.DB.prepare('DELETE FROM kayitli WHERE kisi = ?').bind(kod),
     env.DB.prepare('DELETE FROM kisi_sikayet WHERE kod = ?').bind(kod),
-    env.DB.prepare('DELETE FROM oturum WHERE hesap = ?').bind(hesap.id),
-    env.DB.prepare('DELETE FROM pro_hediye WHERE hesap = ?').bind(hesap.id),
+    env.DB.prepare('DELETE FROM oturum WHERE hesap = ?').bind(id),
+    env.DB.prepare('DELETE FROM pro_hediye WHERE hesap = ?').bind(id),
     env.DB.prepare('DELETE FROM reklam_talep WHERE hesap = ?').bind(k),
     env.DB.prepare('DELETE FROM mesaj WHERE gonderen = ?1 OR alici = ?1').bind(kod),
     env.DB.prepare('DELETE FROM konusma WHERE a = ?1 OR b = ?1').bind(kod),
     env.DB.prepare('DELETE FROM dm_engel WHERE engelleyen = ?1 OR engellenen = ?1').bind(kod),
-    env.DB.prepare('DELETE FROM hesap WHERE id = ?').bind(hesap.id)
+    env.DB.prepare('DELETE FROM hesap WHERE id = ?').bind(id)
   ]);
+  return { ok: true };
+}
+
+async function hesapSil(env, g, hesap) {
+  const h = await env.DB.prepare('SELECT tuz, ozet FROM hesap WHERE id = ?').bind(hesap.id).first();
+  if (!h || !sifreGecerli(g.sifre) || !esit(await sifreOzeti(env, g.sifre, h.tuz), h.ozet)) throw new Hata('yanlis', 401);
+  await hesapTemizle(env, hesap.id, hesap.kimlik);
   return { ok: true };
 }
