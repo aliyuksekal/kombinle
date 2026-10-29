@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AHdHa3ljxT84pm+BBPXBBEL2N1ybEq3gzN6g5B1DRsU=' 'sha256-xW8UvXK76C+pDzdWM75cHL838v9nOzy6ONiCCgo1ecA='; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AHdHa3ljxT84pm+BBPXBBEL2N1ybEq3gzN6g5B1DRsU=' 'sha256-9wGXEJy6Ns3OBzvvJH/PFyecLQhcXeUUwBxotTLsKAo='; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F5F4F7">
@@ -13103,7 +13103,7 @@ function hataYonetimi() {
 
 /* @admin: seçilen tarihten ÖNCE kayıt olan hesapları toplu siler (@admin ve kendi hesabın hariç) */
 function topluSilKutusu() {
-  var tarih = h('input', { class: 'metin', type: 'date', 'aria-label': t('kuTopluTarih') });
+  var tarih = h('input', { class: 'metin', type: 'number', inputmode: 'numeric', min: '1', max: '3650', value: '1', 'aria-label': t('kuTopluTarih') });
   var sonuc = h('p', { class: 'alt-yazi', 'aria-live': 'polite' });
   var dugme = h('button', { class: 'g-btn-cizgi', style: { width: '100%' }, text: t('kuTopluSil') });
   function dongu(oncesi, toplam) {
@@ -13115,15 +13115,15 @@ function topluSilKutusu() {
     }).catch(function (e) { dugme.disabled = false; sonuc.textContent = hesapHataMetni(e); });
   }
   dugme.addEventListener('click', function () {
-    if (!tarih.value) { tost(t('kuTopluTarihYok')); tarih.focus(); return; }
-    var oncesi = new Date(tarih.value + 'T00:00:00').getTime();
-    if (!oncesi || oncesi > Date.now()) { tost(t('kuTopluTarihYok')); return; }
+    var gun = parseInt(tarih.value, 10);
+    if (!(gun >= 1 && gun <= 3650)) { tost(t('kuTopluTarihYok')); tarih.focus(); return; }
+    var oncesi = Date.now() - gun * 86400000;
     dugme.disabled = true; sonuc.textContent = '';
     yzIste('/v1/yonsil', { oncesi: oncesi, say: true }, 30000).then(function (v) {
       var n = v.sayi | 0;
       if (!n) { dugme.disabled = false; sonuc.textContent = t('kuTopluYok'); return; }
       dugme.disabled = false;
-      onayIste(t('kuTopluSor', n, tarih.value), function () { dugme.disabled = true; dongu(oncesi, 0); });
+      onayIste(t('kuTopluSor', n, gun), function () { dugme.disabled = true; dongu(oncesi, 0); });
     }).catch(function (e) { dugme.disabled = false; sonuc.textContent = hesapHataMetni(e); });
   });
   return h('div', { class: 'profil-duzen', style: { 'margin-top': '18px' } },
@@ -13166,7 +13166,7 @@ function kullaniciYonetimi() {
     }).catch(function (e) {
       if (no !== istekNo) return;
       if (!ekle) temizle(liste);
-      liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) }));
+      liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) + ' [' + kirp(String(e && e.message || '?'), 40) + ']' }));
       daha.disabled = false;
     });
   }
@@ -13278,6 +13278,32 @@ Object.assign(DIL.ko, {
   kuMetin: '앱에 가입한 모든 계정이 최신순으로 표시돼요. 이름, 사용자 이름 또는 이메일로 검색하세요.',
   kuAra: '사람 검색', kuAraYer: '이름, @사용자 이름 또는 이메일', kuToplam: function (n) { return '총 ' + n + '개 계정'; },
   kuYok: '일치하는 사용자가 없어요.', kuKayit: function (d) { return '가입일: ' + d; }, kuDaha: '더 보기'
+});
+
+Object.assign(DIL.tr, {
+  kuTopluMetin: 'Kaç günden eski hesaplar silinsin? Son bu kadar gün içinde kayıt olanlar kalır. @admin ve kendi hesabın silinmez.',
+  kuTopluTarih: 'Kaç günden eski hesaplar (gün sayısı)', kuTopluTarihYok: 'Gün sayısını 1 ile 3650 arasında yaz.',
+  kuTopluYok: 'Silinecek eski hesap yok.', kuTopluSor: function (n, d) { return 'Son ' + d + ' gün içinde kayıt olanlar hariç ' + n + ' hesap ve tüm verileri kalıcı olarak silinecek. Bu geri alınamaz.'; }
+});
+Object.assign(DIL.en, {
+  kuTopluMetin: 'Delete accounts older than how many days? Accounts registered within that many days are kept. @admin and your own account are kept.',
+  kuTopluTarih: 'Older than (number of days)', kuTopluTarihYok: 'Enter a number of days from 1 to 3650.',
+  kuTopluYok: 'No old accounts to delete.', kuTopluSor: function (n, d) { return n + ' accounts (except those registered in the last ' + d + ' days) and all their data will be permanently deleted. This cannot be undone.'; }
+});
+Object.assign(DIL.ru, {
+  kuTopluMetin: 'Аккаунты старше скольких дней удалить? Зарегистрированные за это время остаются. @admin и твой аккаунт остаются.',
+  kuTopluTarih: 'Старше (число дней)', kuTopluTarihYok: 'Введи число дней от 1 до 3650.',
+  kuTopluYok: 'Старых аккаунтов для удаления нет.', kuTopluSor: function (n, d) { return 'Аккаунты (' + n + '), кроме созданных за последние ' + d + ' дн., и все их данные будут удалены навсегда. Это нельзя отменить.'; }
+});
+Object.assign(DIL.uz, {
+  kuTopluMetin: "Necha kundan eski hisoblar o'chirilsin? Shu kun ichida ro'yxatdan o'tganlar qoladi. @admin va o'z hisobingiz qoladi.",
+  kuTopluTarih: 'Kundan eski (kunlar soni)', kuTopluTarihYok: "Kunlar sonini 1 dan 3650 gacha yozing.",
+  kuTopluYok: "O'chiriladigan eski hisob yo'q.", kuTopluSor: function (n, d) { return "So'nggi " + d + " kun ichida ro'yxatdan o'tganlardan tashqari " + n + " hisob va barcha ma'lumotlari butunlay o'chiriladi. Buni qaytarib bo'lmaydi."; }
+});
+Object.assign(DIL.ko, {
+  kuTopluMetin: '며칠 이전 계정을 삭제할까요? 그 기간 안에 가입한 계정은 유지돼요. @admin과 내 계정은 유지돼요.',
+  kuTopluTarih: '기준 일수(일 이전)', kuTopluTarihYok: '1에서 3650 사이의 일수를 입력하세요.',
+  kuTopluYok: '삭제할 이전 계정이 없어요.', kuTopluSor: function (n, d) { return '최근 ' + d + '일 이내 가입자를 제외한 계정 ' + n + '개와 모든 데이터가 영구 삭제돼요. 되돌릴 수 없어요.'; }
 });
 
 /* ---------- Klavye açıkken yazılan alan görünür kalsın ----------
