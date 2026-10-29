@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AHdHa3ljxT84pm+BBPXBBEL2N1ybEq3gzN6g5B1DRsU=' 'sha256-pPn/CrrPDGwbfgvi2Rj9k6Oq53mvOmupZrn+2RJ5dZc='; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AHdHa3ljxT84pm+BBPXBBEL2N1ybEq3gzN6g5B1DRsU=' 'sha256-6JbgE1EfVSgCoCTJMVK2k+ZvcQnxCOuDaVygH58BGEI='; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; connect-src https://api.met.no blob: data:; media-src blob: mediastream:; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'none'; manifest-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#F5F4F7">
@@ -7106,6 +7106,13 @@ var ILHAM_SECKI = [
 ];
 function kesfetEkrani() {
   var bol = h('section', { class: 'g-bolum' });
+  /* üye olmadan Keşfet kullanılmaz: kilitli ekran + giriş düğmesi */
+  if (!girisli()) {
+    bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sKesfet') }), h('p', { text: t('kesfetKilitAlt') }))));
+    bol.appendChild(h('div', { class: 'g-bos-not' }, ikon('kisi', 'k'), h('span', { text: t('kesfetKilit') }),
+      h('button', { class: 'btn ana', on: { click: function () { girisIste(); } } }, t('girisYap2'))));
+    return bol;
+  }
   if (['topluluk', 'secki', 'takip'].indexOf(S.kesfetSekme) < 0) S.kesfetSekme = yzKurulu() ? 'topluluk' : 'secki';
   /* üstte üç düğme: Topluluk / Editör seçkisi / Takip ettiklerim */
   var seg = h('div', { class: 'seg g-kesfet-seg' });
@@ -8183,6 +8190,7 @@ function yerelPrenses(metin) {
 
 function sohbetAc() {
   if (SOHBET.acik) return;
+  if (!girisIste()) return;   // yapay zekâ asistanı yalnız üyelere açık
   SOHBET.acik = true;
   var gecmis = sohbetGecmisi();
   var govde = h('div', { class: 'sh-govde', role: 'log', 'aria-live': 'polite' });
@@ -13040,6 +13048,12 @@ Object.assign(DIL.en, {
   olPaylasim: 'Posts shared', olSon7Art: function (n) { return '+' + n + ' in 7 days'; }, olYorum: 'Comments', olTakip: 'Follow links', olAnket: 'Polls', olMesaj: 'Direct messages', olGeriBildirim: 'Feedback',
   olOlaylar: 'Which features get used?', olOlayNot: 'Last 7 days. The number is how many times a feature was used (one person can count several times). The percentage is its share of all use.',
   olSonNot: 'Only the @admin account sees this page. Data is anonymous: no name, account, location or photos.'
+});
+Object.assign(DIL.tr, {
+  kesfetKilitAlt: 'Üyelere özel', kesfetKilit: 'Keşfet\'i kullanmak için üye olmalısın. Giriş yap ya da hesap oluştur; sonra arkadaşlarını bul, paylaşımları gör ve yorum yap.'
+});
+Object.assign(DIL.en, {
+  kesfetKilitAlt: 'Members only', kesfetKilit: 'You need an account to use Discover. Sign in or create one, then find friends, see posts and comment.'
 });
 
 /* ---------- Tutunma: başlangıç görevleri, geri bildirim, Play puanı, hata raporları ----------
