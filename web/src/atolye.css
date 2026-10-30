@@ -618,3 +618,10 @@ html.klavye-acik nav.alt-menu{display:none}
 .g-bahset-kisi small{font-size:12px;color:var(--soluk)}
 .ilham-kart{margin-top:4px}
 .g-kesfet-seg button{white-space:nowrap}
+/* Keşfet: kişi arama düğmesi ve sayfası */
+.ka-cubuk{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 4px;padding:11px 16px;border-radius:99px;border:1px solid var(--cizgi);background:var(--girdi-zemin);color:var(--soluk);font:inherit;font-size:14px;text-align:left}
+.ka-cubuk svg{flex:none}
+.ka-sayfa{display:flex;flex-direction:column;gap:10px}
+.ka-girdi{width:100%;border-radius:99px;padding:12px 16px;font-size:15px}
+.ka-durum{text-align:center;margin:18px 0}
+.ka-durum[hidden]{display:none}

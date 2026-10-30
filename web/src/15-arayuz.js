@@ -531,6 +531,9 @@ function kesfetEkrani() {
   bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sKesfet') }), h('p', { text: S.kesfetSekme === 'secki' ? t('kesfetAlt') : t('kural1') })),
     yzKurulu() ? h('button', { class: 'g-ekle', 'aria-label': t('yeniPaylasim'), on: { click: yeniPaylasim } }, ikon('arti', 'k'), t('paylas')) : null));
   bol.appendChild(seg);
+  /* kişi arama: dokununca arama sayfası açılır */
+  var araC = kisiAraCubugu();
+  if (araC) bol.appendChild(araC);
   if (S.kesfetSekme === 'secki') {
     bol.appendChild(h('div', { class: 'g-dolap-bas ilham-kart' },
       h('div', null, h('h2', { text: t('ilhamBaslik') }), h('p', { text: t('ilhamKisa') })),

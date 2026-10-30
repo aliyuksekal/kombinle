@@ -1,0 +1,50 @@
+name: Model sınaması
+
+# Telefon modeli (app/src/main/assets/kombinle_model.tflite + .json) değişince:
+# model açılıyor mu, girdi boyutu ve çıkış sayıları .json ile uyuşuyor mu, örnek bir görselle çalışıyor mu?
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['app/src/main/assets/kombinle_model.*', '.github/workflows/model-sinama.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sina:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet 'tensorflow-cpu==2.19.*' numpy pillow
+      - name: Modeli denetle
+        run: |
+          python - <<'P'
+          import json, numpy as np, tensorflow as tf
+          from PIL import Image
+          b = json.load(open('app/src/main/assets/kombinle_model.json'))
+          it = tf.lite.Interpreter(model_path='app/src/main/assets/kombinle_model.tflite'); it.allocate_tensors()
+          gi = it.get_input_details()[0]
+          print('::notice title=Girdi::%s %s' % (gi['shape'].tolist(), gi['dtype'].__name__))
+          n = b.get('girdi', 224)
+          assert gi['shape'].tolist() == [1, n, n, 3], 'girdi boyutu .json ile uyuşmuyor'
+          beklenen = {'tur': len(b['siniflar']), 'desen': len(b['desenler'])}
+          if b.get('kollar'): beklenen['kol'] = len(b['kollar'])
+          if b.get('boylar'): beklenen['boy'] = len(b['boylar'])
+          boyutlar = sorted(int(d['shape'][-1]) for d in it.get_output_details())
+          print('::notice title=Çıkışlar::%s (beklenen %s)' % (boyutlar, beklenen))
+          assert sorted(beklenen.values()) == boyutlar, 'çıkış sayıları .json ile uyuşmuyor'
+          assert len(set(boyutlar)) == len(boyutlar), 'iki çıkış aynı boyutta: uygulama ayırt edemez'
+          for ad, x in [('beyaz', np.full((1, n, n, 3), 255, np.float32)), ('rastgele', np.random.RandomState(1).randint(0, 256, (1, n, n, 3)).astype(np.float32))]:
+              it.set_tensor(gi['index'], x if gi['dtype'] == np.float32 else x.astype(gi['dtype'])); it.invoke()
+              for d in it.get_output_details():
+                  o = it.get_tensor(d['index'])[0]
+                  assert np.isfinite(o).all() and abs(float(o.sum()) - 1) < 0.02, 'çıkış olasılık değil'
+              tur = [d for d in it.get_output_details() if int(d['shape'][-1]) == beklenen['tur']][0]
+              o = it.get_tensor(tur['index'])[0]; i = int(o.argmax())
+              print('::notice title=%s görsel::%s (%.2f)' % (ad, b['siniflar'][i]['id'], o[i]))
+          print('::notice title=Sonuç::Model uygulamayla uyumlu')
+          P

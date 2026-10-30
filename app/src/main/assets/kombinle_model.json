@@ -1,6 +1,8 @@
 {
- "surum": 1792774685,
- "girdi": 224,
+ "surum": 1793201069,
+ "bicim": 2,
+ "taban": "EfficientNetV2B2",
+ "girdi": 260,
  "olcek": "0-255",
  "zemin": "#ffffff",
  "siniflar": [
@@ -34,6 +36,14 @@
     "bluz",
     "gomlek",
     "tunik"
+   ],
+   "grup": "ust"
+  },
+  {
+   "id": "tunik",
+   "turlar": [
+    "tunik",
+    "bluz"
    ],
    "grup": "ust"
   },
@@ -171,6 +181,28 @@
    "grup": "ayk"
   },
   {
+   "id": "bot",
+   "turlar": [
+    "bot"
+   ],
+   "grup": "ayk"
+  },
+  {
+   "id": "sandalet",
+   "turlar": [
+    "sandalet",
+    "terlik"
+   ],
+   "grup": "ayk"
+  },
+  {
+   "id": "topuklu",
+   "turlar": [
+    "topuklu"
+   ],
+   "grup": "ayk"
+  },
+  {
    "id": "canta",
    "turlar": [
     "canta"
@@ -221,6 +253,20 @@
    "grup": "aks"
   },
   {
+   "id": "kupe",
+   "turlar": [
+    "kupe"
+   ],
+   "grup": "aks"
+  },
+  {
+   "id": "kolye",
+   "turlar": [
+    "kolye"
+   ],
+   "grup": "aks"
+  },
+  {
    "id": "kulotlu",
    "turlar": [
     "kulotlu"
@@ -233,6 +279,18 @@
     "corap"
    ],
    "grup": "ic"
+  },
+  {
+   "id": "sutyen",
+   "turlar": [
+    "sutyen"
+   ],
+   "grup": "ic"
+  },
+  {
+   "id": "yok",
+   "turlar": [],
+   "grup": ""
   }
  ],
  "desenler": [
@@ -244,12 +302,37 @@
   "hayvan",
   "diger"
  ],
- "dogruluk": {
-  "tur": 0.766,
-  "desen": 0.846,
-  "duz_desenli": 0.882,
-  "emin75": 0.934,
-  "ornek": 1011
+ "cikislar": {
+  "tur": 38,
+  "desen": 7,
+  "kol": 4,
+  "boy": 5
  },
- "kaynak": "Fashionpedia (etiketler CC BY 4.0)"
+ "yok_esik": 0.9,
+ "dogruluk": {
+  "tur": 0.854,
+  "emin75": 0.951,
+  "emin75_oran": 0.754,
+  "ornek": 3759,
+  "desen": 0.856,
+  "kol": 0.859,
+  "boy": 0.755,
+  "duz_desenli": 0.899,
+  "yok_kesin": 0.999,
+  "kiyafet_kacirma": 0.0004
+ },
+ "kaynak": "Fashionpedia (CC BY 4.0) + Open Images (CC BY 4.0 / CC BY 2.0)",
+ "kollar": [
+  "kolsuz",
+  "kisa",
+  "orta",
+  "uzun"
+ ],
+ "boylar": [
+  "mini",
+  "dizustu",
+  "diz",
+  "midi",
+  "maksi"
+ ]
 }

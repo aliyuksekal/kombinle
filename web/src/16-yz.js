@@ -316,7 +316,6 @@ function toplulukBolumu(mod) {
   var kap = h('div', { style: { display: 'flex', 'flex-direction': 'column', gap: '14px' } });
   var istenen = mod === 'secki' ? 'secki' : mod === 'takip' ? 'takip' : (['yeni', 'populer', 'anket', 'benim'].indexOf(TOPLULUK.toplulukSira) >= 0 ? TOPLULUK.toplulukSira : 'yeni');
   if (TOPLULUK.sira !== istenen) { TOPLULUK.sira = istenen; TOPLULUK.yuklendi = false; TOPLULUK.liste = []; TOPLULUK.hata = false; }
-  if (mod === 'topluluk') kap.appendChild(kisilerKarti());   // arkadaşını bul: ad ya da @kullanıcı adıyla ara
   if (mod === 'topluluk') {
     var seg = h('div', { class: 'g-haplar' });
     [['yeni', 'tpHerkes'], ['populer', 'tpPopuler'], ['anket', 'tpAnket'], ['benim', 'tpBenim']].forEach(function (x) {
