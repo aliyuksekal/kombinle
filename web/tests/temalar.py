@@ -2,7 +2,8 @@ import sys, os, json; sys.path.insert(0, os.path.dirname(os.path.abspath(__file_
 from ortak import *
 # Renkli temalar belirgin, Nane teması; sohbette her cevabın yanında sesli oku düğmesi
 with sync_playwright() as pw:
-    o = Oturum(pw); p = o.ac()
+    o = Oturum(pw)
+    p = o.ac()
     p.click('text=Örnek dolapla dene'); p.wait_for_timeout(1200)
     renkler = {}
     for tema in ['acik', 'pembe', 'lavanta', 'altin', 'nane', 'turkuaz', 'rosegold', 'koyu']:
@@ -26,6 +27,7 @@ with sync_playwright() as pw:
     ok(p.locator('text=Turkuaz').count() >= 1, 'tema listesinde Turkuaz')
     # sohbet: sesli oku düğmesi
     p.evaluate("""localStorage.setItem('kb_sohbet', JSON.stringify([{r:'k', m:'Ne giysem?', p:[], z:Date.now()-5000},{r:'a', m:'Krem kazak ve kot çok yakışır.', p:[], z:Date.now()-4000},{r:'a', m:'Bir de taba bot ekle.', p:[], z:Date.now()-3000}]))""")
+    p.evaluate("""localStorage.setItem('kb_hesap', JSON.stringify({ad: 'Elif', eposta: 'elif@ornek.com', kod: '0123456789ab', kadi: 'elif', yonetici: false, av: 0, pro: 0}))""")  # asistan yalnız üyelere açık
     p.click('.ai-orta'); p.wait_for_timeout(800)
     ok(p.locator('.sohbet .sh-mesaj.bot .sh-oku').count() == 2 and p.locator('.sohbet .sh-mesaj.kul .sh-oku').count() == 0, 'her AI cevabında 🔉 düğmesi, kullanıcı mesajında yok')
     p.evaluate("() => { window.__okunan = []; if (window.speechSynthesis) speechSynthesis.speak = u => window.__okunan.push(u.text); }")

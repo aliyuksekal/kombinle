@@ -20,7 +20,9 @@ def kur(p, ad):
     return True
 
 with sync_playwright() as pw:
-    o = Oturum(pw, hava=met_yanit(taban=13)); p = o.ac()
+    o = Oturum(pw, hava=met_yanit(taban=13))
+    o.ctx.add_init_script("""localStorage.setItem('kb_hesap', JSON.stringify({ad: 'Elif', eposta: 'elif@ornek.com', kod: '0123456789ab', kadi: 'elif', yonetici: false, av: 0, pro: 0}));""")  # Keşfet ve asistan yalnız üyelere açık
+    p = o.ac()
     p.click('text=Örnek dolapla dene'); p.wait_for_selector('#istek'); p.wait_for_timeout(1500)
     ok(p.locator('.g-araclar .g-arac').count() == (6 if p.evaluate('!!(window.KombinleNative && window.KombinleNative.yzVar && window.KombinleNative.yzVar())') else 5), 'Bugün ekranında araçlar (Alsam mı dahil)')
     o.ekran('70_araclar', tam=True)
