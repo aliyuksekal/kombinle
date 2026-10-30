@@ -113,6 +113,7 @@ function yerelPrenses(metin) {
 
 function sohbetAc() {
   if (SOHBET.acik) return;
+  if (!girisIste()) return;   // yapay zekâ asistanı yalnız üyelere açık
   SOHBET.acik = true;
   var gecmis = sohbetGecmisi();
   var govde = h('div', { class: 'sh-govde', role: 'log', 'aria-live': 'polite' });

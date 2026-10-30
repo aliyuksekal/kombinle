@@ -160,6 +160,35 @@ function hataYonetimi() {
   yukle();
 }
 
+/* @admin: seçilen tarihten ÖNCE kayıt olan hesapları toplu siler (@admin ve kendi hesabın hariç) */
+function topluSilKutusu() {
+  var tarih = h('input', { class: 'metin', type: 'number', inputmode: 'numeric', min: '1', max: '3650', value: '1', 'aria-label': t('kuTopluTarih') });
+  var sonuc = h('p', { class: 'alt-yazi', 'aria-live': 'polite' });
+  var dugme = h('button', { class: 'g-btn-cizgi', style: { width: '100%' }, text: t('kuTopluSil') });
+  function dongu(oncesi, toplam) {
+    yzIste('/v1/yonsil', { oncesi: oncesi }, 60000).then(function (v) {
+      toplam += v.silinen | 0;
+      sonuc.textContent = t('kuTopluIlerle', toplam);
+      if ((v.kalan | 0) > 0 && (v.silinen | 0) > 0) { dongu(oncesi, toplam); return; }
+      dugme.disabled = false; tost(t('kuTopluBitti', toplam));
+    }).catch(function (e) { dugme.disabled = false; sonuc.textContent = hesapHataMetni(e); });
+  }
+  dugme.addEventListener('click', function () {
+    var gun = parseInt(tarih.value, 10);
+    if (!(gun >= 1 && gun <= 3650)) { tost(t('kuTopluTarihYok')); tarih.focus(); return; }
+    var oncesi = Date.now() - gun * 86400000;
+    dugme.disabled = true; sonuc.textContent = '';
+    yzIste('/v1/yonsil', { oncesi: oncesi, say: true }, 30000).then(function (v) {
+      var n = v.sayi | 0;
+      if (!n) { dugme.disabled = false; sonuc.textContent = t('kuTopluYok'); return; }
+      dugme.disabled = false;
+      onayIste(t('kuTopluSor', n, gun), function () { dugme.disabled = true; dongu(oncesi, 0); });
+    }).catch(function (e) { dugme.disabled = false; sonuc.textContent = hesapHataMetni(e); });
+  });
+  return h('div', { class: 'profil-duzen', style: { 'margin-top': '18px' } },
+    h('b', { text: t('kuTopluBaslik') }), h('p', { class: 'alt-yazi', text: t('kuTopluMetin') }), tarih, dugme, sonuc);
+}
+
 /* ---------- @admin: kayıtlı kullanıcılar (liste + arama) ---------- */
 function kullaniciYonetimi() {
   var hb = hesapBilgi(); if (!hb || !hb.yonetici) return;
@@ -173,7 +202,7 @@ function kullaniciYonetimi() {
     var no = ++istekNo;
     if (!ekle) { temizle(liste); liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' } }, h('span', { class: 'yukleniyor' }))); }
     daha.disabled = true;
-    yzIste('/v1/kisiler', { ara: ara, sayfa: sayfa }, 20000).then(function (v) {
+    yzIste('/v1/hesaplar', { ara: ara, sayfa: sayfa }, 20000).then(function (v) {
       if (no !== istekNo) return;
       if (!ekle) temizle(liste);
       var l = Array.isArray(v.liste) ? v.liste : [];
@@ -182,16 +211,21 @@ function kullaniciYonetimi() {
       l.forEach(function (x) {
         if (!x || typeof x.ad !== 'string') return;
         var pro = proYazi(sayiMi(x.pro) ? x.pro : 0);
+        var sil = x.kadi === 'admin' || !/^[a-f0-9]{32}$/.test(x.id || '') ? null : h('button', { class: 'g-btn-cizgi kucuk', text: t('kuSil'), on: { click: function () {
+          onayIste(t('kuSilSor', kirp(x.ad, 40)), function () {
+            yzIste('/v1/yonsil', { id: x.id }, 30000).then(function () { tost(t('kuSilindi')); sayfa = 0; yukle(false); }).catch(function (e) { tost(hesapHataMetni(e)); });
+          });
+        } } });
         liste.appendChild(h('div', { class: 'satir', style: { cursor: 'default' } },
           h('span', { class: 'sol' }, ikon('kisi'), h('div', null, kirp(x.ad, 40) + (x.kadi ? ' · @' + kirp(x.kadi, 20) : ''),
-            h('small', { text: kirp(x.eposta || '', 80) + ' · ' + t('kuKayit', new Date(x.zaman).toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : undefined)) + (pro ? ' · ' + pro : '') })))));
+            h('small', { text: kirp(x.eposta || '', 80) + ' · ' + t('kuKayit', new Date(x.zaman).toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : undefined)) + (pro ? ' · ' + pro : '') }))), sil));
       });
       daha.style.display = v.son ? 'none' : '';
       daha.disabled = false;
     }).catch(function (e) {
       if (no !== istekNo) return;
       if (!ekle) temizle(liste);
-      liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) }));
+      liste.appendChild(h('p', { class: 'alt-yazi', style: { padding: '12px' }, text: hesapHataMetni(e) + ' [' + kirp(String(e && e.message || '?'), 40) + ']' }));
       daha.disabled = false;
     });
   }
@@ -203,7 +237,7 @@ function kullaniciYonetimi() {
   sayfaAc({ tam: true, baslik: t('kuBaslik'), icerik: h('div', { class: 'profil-duzen' },
     h('p', { class: 'alt-yazi', text: t('kuMetin') }),
     h('label', { class: 'hesap-alan' }, h('span', { text: t('kuAra') }), arama),
-    ozet, liste, daha) });
+    ozet, liste, daha, topluSilKutusu()) });
   yukle(false);
 }
 
@@ -270,32 +304,63 @@ Object.assign(DIL.ko, {
 });
 
 Object.assign(DIL.tr, {
+  kuSil: 'Sil', kuSilSor: function (a) { return a + ' hesabı ve tüm verileri kalıcı olarak silinecek. Bu geri alınamaz.'; }, kuSilindi: 'Hesap silindi', kuTopluBaslik: 'Eski hesapları toplu sil', kuTopluMetin: 'Seçtiğin tarihten önce kayıt olan tüm hesaplar ve verileri silinir. @admin ve kendi hesabın silinmez.', kuTopluTarih: 'Bu tarihten önce', kuTopluSil: 'Önceki hesapları sil', kuTopluTarihYok: 'Geçerli bir tarih seç.', kuTopluYok: 'Bu tarihten önce kayıtlı hesap yok.', kuTopluSor: function (n, d) { return d + ' tarihinden önce kayıt olan ' + n + ' hesap ve tüm verileri kalıcı olarak silinecek. Bu geri alınamaz.'; }, kuTopluIlerle: function (n) { return n + ' hesap silindi…'; }, kuTopluBitti: function (n) { return 'Bitti: ' + n + ' hesap silindi'; },
   kuBaslik: 'Kayıtlı kullanıcılar', kuAc: 'Tüm kullanıcıları gör ve ara', kuBolum: 'Kullanıcılar',
   kuMetin: 'Uygulamaya kayıt olan tüm hesaplar, en yeni üstte. Ad, kullanıcı adı ya da e-postayla arayabilirsin.',
   kuAra: 'Kişi ara', kuAraYer: 'Ad, @kullanıcı adı veya e-posta', kuToplam: function (n) { return 'Toplam ' + n + ' hesap'; },
   kuYok: 'Eşleşen kullanıcı yok.', kuKayit: function (d) { return 'Kayıt: ' + d; }, kuDaha: 'Daha fazla göster'
 });
 Object.assign(DIL.en, {
+  kuSil: 'Delete', kuSilSor: function (a) { return a + ' and all their data will be permanently deleted. This cannot be undone.'; }, kuSilindi: 'Account deleted', kuTopluBaslik: 'Delete old accounts in bulk', kuTopluMetin: 'Every account registered before the chosen date, with its data, is deleted. @admin and your own account are kept.', kuTopluTarih: 'Before this date', kuTopluSil: 'Delete earlier accounts', kuTopluTarihYok: 'Pick a valid date.', kuTopluYok: 'No accounts before this date.', kuTopluSor: function (n, d) { return n + ' accounts registered before ' + d + ' and all their data will be permanently deleted. This cannot be undone.'; }, kuTopluIlerle: function (n) { return n + ' accounts deleted…'; }, kuTopluBitti: function (n) { return 'Done: ' + n + ' accounts deleted'; },
   kuBaslik: 'Registered users', kuAc: 'See and search all users', kuBolum: 'Users',
   kuMetin: 'Every account registered in the app, newest first. Search by name, username or email.',
   kuAra: 'Search people', kuAraYer: 'Name, @username or email', kuToplam: function (n) { return n + ' accounts in total'; },
   kuYok: 'No matching users.', kuKayit: function (d) { return 'Joined: ' + d; }, kuDaha: 'Show more'
 });
 Object.assign(DIL.ru, {
+  kuSil: 'Удалить', kuSilSor: function (a) { return 'Аккаунт ' + a + ' и все его данные будут удалены навсегда. Это нельзя отменить.'; }, kuSilindi: 'Аккаунт удалён', kuTopluBaslik: 'Массовое удаление старых аккаунтов', kuTopluMetin: 'Все аккаунты, созданные до выбранной даты, и их данные удаляются. @admin и твой аккаунт остаются.', kuTopluTarih: 'До этой даты', kuTopluSil: 'Удалить прежние аккаунты', kuTopluTarihYok: 'Выбери корректную дату.', kuTopluYok: 'До этой даты аккаунтов нет.', kuTopluSor: function (n, d) { return 'Аккаунты до ' + d + ' (' + n + ') и все их данные будут удалены навсегда. Это нельзя отменить.'; }, kuTopluIlerle: function (n) { return 'Удалено аккаунтов: ' + n + '…'; }, kuTopluBitti: function (n) { return 'Готово: удалено аккаунтов — ' + n; },
   kuBaslik: 'Зарегистрированные пользователи', kuAc: 'Все пользователи и поиск', kuBolum: 'Пользователи',
   kuMetin: 'Все аккаунты в приложении, новые сверху. Ищи по имени, нику или e-mail.',
   kuAra: 'Поиск людей', kuAraYer: 'Имя, @ник или e-mail', kuToplam: function (n) { return 'Всего аккаунтов: ' + n; },
   kuYok: 'Ничего не найдено.', kuKayit: function (d) { return 'Регистрация: ' + d; }, kuDaha: 'Показать ещё'
 });
 Object.assign(DIL.uz, {
+  kuSil: "O'chirish", kuSilSor: function (a) { return a + ' hisobi va barcha ma\'lumotlari butunlay o\'chiriladi. Buni qaytarib bo\'lmaydi.'; }, kuSilindi: "Hisob o'chirildi", kuTopluBaslik: "Eski hisoblarni birdan o'chirish", kuTopluMetin: "Tanlangan sanadan oldin ro'yxatdan o'tgan barcha hisoblar va ma'lumotlari o'chiriladi. @admin va o'z hisobingiz qoladi.", kuTopluTarih: 'Shu sanadan oldin', kuTopluSil: "Oldingi hisoblarni o'chirish", kuTopluTarihYok: 'To\'g\'ri sana tanlang.', kuTopluYok: 'Bu sanadan oldin hisob yo\'q.', kuTopluSor: function (n, d) { return d + ' sanasidan oldingi ' + n + ' hisob va barcha ma\'lumotlari butunlay o\'chiriladi. Buni qaytarib bo\'lmaydi.'; }, kuTopluIlerle: function (n) { return n + ' hisob o\'chirildi…'; }, kuTopluBitti: function (n) { return 'Tayyor: ' + n + ' hisob o\'chirildi'; },
   kuBaslik: "Ro'yxatdan o'tgan foydalanuvchilar", kuAc: "Barcha foydalanuvchilar va qidiruv", kuBolum: 'Foydalanuvchilar',
   kuMetin: "Ilovadagi barcha hisoblar, yangilari tepada. Ism, nom yoki e-pochta bilan qidiring.",
   kuAra: 'Odam qidirish', kuAraYer: 'Ism, @nom yoki e-pochta', kuToplam: function (n) { return 'Jami hisoblar: ' + n; },
   kuYok: 'Mos foydalanuvchi topilmadi.', kuKayit: function (d) { return "Ro'yxatdan o'tgan: " + d; }, kuDaha: "Yana ko'rsatish"
 });
 Object.assign(DIL.ko, {
+  kuSil: '삭제', kuSilSor: function (a) { return a + ' 계정과 모든 데이터가 영구 삭제돼요. 되돌릴 수 없어요.'; }, kuSilindi: '계정을 삭제했어요', kuTopluBaslik: '이전 계정 일괄 삭제', kuTopluMetin: '선택한 날짜 이전에 가입한 모든 계정과 데이터가 삭제돼요. @admin과 내 계정은 유지돼요.', kuTopluTarih: '이 날짜 이전', kuTopluSil: '이전 계정 삭제', kuTopluTarihYok: '올바른 날짜를 선택하세요.', kuTopluYok: '이 날짜 이전 계정이 없어요.', kuTopluSor: function (n, d) { return d + ' 이전에 가입한 계정 ' + n + '개와 모든 데이터가 영구 삭제돼요. 되돌릴 수 없어요.'; }, kuTopluIlerle: function (n) { return n + '개 계정 삭제됨…'; }, kuTopluBitti: function (n) { return '완료: 계정 ' + n + '개 삭제됨'; },
   kuBaslik: '가입한 사용자', kuAc: '모든 사용자 보기와 검색', kuBolum: '사용자',
   kuMetin: '앱에 가입한 모든 계정이 최신순으로 표시돼요. 이름, 사용자 이름 또는 이메일로 검색하세요.',
   kuAra: '사람 검색', kuAraYer: '이름, @사용자 이름 또는 이메일', kuToplam: function (n) { return '총 ' + n + '개 계정'; },
   kuYok: '일치하는 사용자가 없어요.', kuKayit: function (d) { return '가입일: ' + d; }, kuDaha: '더 보기'
+});
+
+Object.assign(DIL.tr, {
+  kuTopluMetin: 'Kaç günden eski hesaplar silinsin? Son bu kadar gün içinde kayıt olanlar kalır. @admin ve kendi hesabın silinmez.',
+  kuTopluTarih: 'Kaç günden eski hesaplar (gün sayısı)', kuTopluTarihYok: 'Gün sayısını 1 ile 3650 arasında yaz.',
+  kuTopluYok: 'Silinecek eski hesap yok.', kuTopluSor: function (n, d) { return 'Son ' + d + ' gün içinde kayıt olanlar hariç ' + n + ' hesap ve tüm verileri kalıcı olarak silinecek. Bu geri alınamaz.'; }
+});
+Object.assign(DIL.en, {
+  kuTopluMetin: 'Delete accounts older than how many days? Accounts registered within that many days are kept. @admin and your own account are kept.',
+  kuTopluTarih: 'Older than (number of days)', kuTopluTarihYok: 'Enter a number of days from 1 to 3650.',
+  kuTopluYok: 'No old accounts to delete.', kuTopluSor: function (n, d) { return n + ' accounts (except those registered in the last ' + d + ' days) and all their data will be permanently deleted. This cannot be undone.'; }
+});
+Object.assign(DIL.ru, {
+  kuTopluMetin: 'Аккаунты старше скольких дней удалить? Зарегистрированные за это время остаются. @admin и твой аккаунт остаются.',
+  kuTopluTarih: 'Старше (число дней)', kuTopluTarihYok: 'Введи число дней от 1 до 3650.',
+  kuTopluYok: 'Старых аккаунтов для удаления нет.', kuTopluSor: function (n, d) { return 'Аккаунты (' + n + '), кроме созданных за последние ' + d + ' дн., и все их данные будут удалены навсегда. Это нельзя отменить.'; }
+});
+Object.assign(DIL.uz, {
+  kuTopluMetin: "Necha kundan eski hisoblar o'chirilsin? Shu kun ichida ro'yxatdan o'tganlar qoladi. @admin va o'z hisobingiz qoladi.",
+  kuTopluTarih: 'Kundan eski (kunlar soni)', kuTopluTarihYok: "Kunlar sonini 1 dan 3650 gacha yozing.",
+  kuTopluYok: "O'chiriladigan eski hisob yo'q.", kuTopluSor: function (n, d) { return "So'nggi " + d + " kun ichida ro'yxatdan o'tganlardan tashqari " + n + " hisob va barcha ma'lumotlari butunlay o'chiriladi. Buni qaytarib bo'lmaydi."; }
+});
+Object.assign(DIL.ko, {
+  kuTopluMetin: '며칠 이전 계정을 삭제할까요? 그 기간 안에 가입한 계정은 유지돼요. @admin과 내 계정은 유지돼요.',
+  kuTopluTarih: '기준 일수(일 이전)', kuTopluTarihYok: '1에서 3650 사이의 일수를 입력하세요.',
+  kuTopluYok: '삭제할 이전 계정이 없어요.', kuTopluSor: function (n, d) { return '최근 ' + d + '일 이내 가입자를 제외한 계정 ' + n + '개와 모든 데이터가 영구 삭제돼요. 되돌릴 수 없어요.'; }
 });

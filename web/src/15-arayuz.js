@@ -512,6 +512,13 @@ var ILHAM_SECKI = [
 ];
 function kesfetEkrani() {
   var bol = h('section', { class: 'g-bolum' });
+  /* üye olmadan Keşfet kullanılmaz: kilitli ekran + giriş düğmesi */
+  if (!girisli()) {
+    bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sKesfet') }), h('p', { text: t('kesfetKilitAlt') }))));
+    bol.appendChild(h('div', { class: 'g-bos-not' }, ikon('kisi', 'k'), h('span', { text: t('kesfetKilit') }),
+      h('button', { class: 'btn ana', on: { click: function () { girisIste(); } } }, t('girisYap2'))));
+    return bol;
+  }
   if (['topluluk', 'secki', 'takip'].indexOf(S.kesfetSekme) < 0) S.kesfetSekme = yzKurulu() ? 'topluluk' : 'secki';
   /* üstte üç düğme: Topluluk / Editör seçkisi / Takip ettiklerim */
   var seg = h('div', { class: 'seg g-kesfet-seg' });
@@ -524,9 +531,6 @@ function kesfetEkrani() {
   bol.appendChild(h('div', { class: 'g-dolap-bas' }, h('div', null, h('h2', { text: t('sKesfet') }), h('p', { text: S.kesfetSekme === 'secki' ? t('kesfetAlt') : t('kural1') })),
     yzKurulu() ? h('button', { class: 'g-ekle', 'aria-label': t('yeniPaylasim'), on: { click: yeniPaylasim } }, ikon('arti', 'k'), t('paylas')) : null));
   bol.appendChild(seg);
-  /* YENİ (34): Keşfet'te kişi arama çubuğu — akış düzenine dokunmaz */
-  var kisiAraC = kisiAraCubugu();
-  if (kisiAraC) bol.appendChild(h('div', { style: { padding: '0 0 10px' } }, kisiAraC));
   if (S.kesfetSekme === 'secki') {
     bol.appendChild(h('div', { class: 'g-dolap-bas ilham-kart' },
       h('div', null, h('h2', { text: t('ilhamBaslik') }), h('p', { text: t('ilhamKisa') })),

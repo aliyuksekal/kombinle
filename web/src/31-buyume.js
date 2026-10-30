@@ -34,47 +34,107 @@ function olcumGonder(zorla) {
 /* arka plana geçince (sayfa kapanırken değil: zamanlayıcı kapanışta çalışmaz, yarım kayıt riski olmaz) */
 document.addEventListener('visibilitychange', function () { if (document.hidden) setTimeout(function () { olcumGonder(true); sabahHazirla(); }, 0); });
 
-/* @admin: kullanım istatistikleri */
+/* @admin: kullanım istatistikleri (sade panel: özet, yeni gelenler, 30 günlük grafik, geri dönüş, içerik, özellik kullanımı) */
 function olcumSayfasi() {
   var hb = hesapBilgi(); if (!hb || !hb.yonetici) return;
   var gov = h('div', { class: 'profil-duzen olcum' }, h('div', { class: 'g-yukleniyor' }, h('span', { class: 'yukleniyor' })));
   sayfaAc({ tam: true, baslik: t('olBaslik'), icerik: gov });
-  yzIste('/v1/olcum', {}, 20000).then(function (v) {
-    temizle(gov);
-    var gunler = Array.isArray(v.gunler) ? v.gunler : [];
-    var bugunA = gunler.length ? gunler[gunler.length - 1].aktif : 0;
-    gov.appendChild(h('div', { class: 'ol-kutular' },
-      h('div', { class: 'ol-kutu' }, h('small', { text: t('olToplam') }), h('b', { text: sayiYaz(v.toplam | 0) })),
-      h('div', { class: 'ol-kutu' }, h('small', { text: t('olBugun') }), h('b', { text: sayiYaz(bugunA) })),
-      h('div', { class: 'ol-kutu' }, h('small', { text: t('olHafta') }), h('b', { text: sayiYaz(v.haftaOrtalama | 0) }))));
-    gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('olDonus') }));
-    var donus = h('div', { class: 'ol-kutular' });
-    [['d1', 1, 40, 25], ['d7', 7, 20, 10], ['d30', 30, 12, 6]].forEach(function (x) {
-      var d = v[x[0]] || {};
-      var oran = sayiMi(d.oran) ? d.oran : null;
-      var sinif = oran === null ? '' : oran >= x[2] ? ' iyi' : oran >= x[3] ? ' orta' : ' zayif';
-      donus.appendChild(h('div', { class: 'ol-kutu' + sinif }, h('small', { text: t('olGun', x[1]) }), h('b', { text: oran === null ? '—' : '%' + oran }),
-        h('i', { text: oran === null ? t('olVeriYok') : t('olGrup', d.donen | 0, d.grup | 0) })));
+  yzIste('/v1/olcum', {}, 20000).then(function (v) { temizle(gov); olcumCiz(gov, v); })
+    .catch(function (e) { temizle(gov); gov.appendChild(h('p', { class: 'alt-yazi', text: hesapHataMetni(e) })); });
+}
+function olcumCiz(gov, v) {
+  var gunler = Array.isArray(v.gunler) ? v.gunler : [];
+  var topla = function (l, ad) { return l.reduce(function (a, g) { return a + (g[ad] | 0); }, 0); };
+  var bolum = function (baslik, not) {
+    gov.appendChild(h('span', { class: 'g-bolum-etk', style: { 'margin-top': '10px' }, text: baslik }));
+    if (not) gov.appendChild(h('p', { class: 'ayar-not', text: not }));
+  };
+  var kutu = function (etiket, deger, alt, sinif) {
+    return h('div', { class: 'ol-kutu' + (sinif || '') }, h('small', { text: etiket }), h('b', { text: deger }), alt ? h('i', { text: alt }) : null);
+  };
+  var kisaGun = function (g) {
+    try { return new Date(g + 'T12:00:00').toLocaleDateString(A.dil === 'tr' ? 'tr-TR' : undefined, { day: 'numeric', month: 'short' }); } catch (e) { return g; }
+  };
+  var bugun = gunler.length ? gunler[gunler.length - 1] : { aktif: 0, yeni: 0, gun: '' };
+  var dun = gunler.length > 1 ? gunler[gunler.length - 2] : { aktif: 0 };
+  var son7 = gunler.slice(-7), onceki7 = gunler.slice(-14, -7);
+  var ort = v.haftaOrtalama | 0, oncekiOrt = Math.round(topla(onceki7, 'aktif') / 7);
+
+  gov.appendChild(h('p', { class: 'ayar-not', text: t('olGiris') }));
+
+  /* 1) Kaç kişi kullanıyor */
+  bolum(t('olS1'), t('olS1Not'));
+  gov.appendChild(h('div', { class: 'ol-kutular' }, kutu(t('olBugun'), sayiYaz(bugun.aktif | 0), t('olAltCihaz')), kutu(t('olDun'), sayiYaz(dun.aktif | 0), t('olAltCihaz')), kutu(t('olHafta'), sayiYaz(ort), t('olAltGunluk'))));
+  gov.appendChild(h('div', { class: 'ol-kutular', style: { 'margin-top': '8px' } }, kutu(t('olHaftalik'), sayiYaz(v.haftalik | 0), t('olAlt7')), kutu(t('olAylik'), sayiYaz(v.aylik | 0), t('olAlt30')), kutu(t('olToplam'), sayiYaz(v.toplam | 0), t('olAltTum'))));
+  if (oncekiOrt > 0 || ort > 0) {
+    var fark = oncekiOrt > 0 ? Math.round(100 * (ort - oncekiOrt) / oncekiOrt) : null;
+    gov.appendChild(h('p', { class: 'alt-yazi', text: t('olTrend', ort, oncekiOrt, fark) }));
+  }
+  if ((v.aylik | 0) > 0 && ort > 0) gov.appendChild(h('p', { class: 'alt-yazi', text: t('olYapis', Math.min(100, Math.round(100 * ort / (v.aylik | 0)))) }));
+
+  /* 2) Yeni gelenler */
+  var hs = v.hesap || { toplam: 0, g1: 0, g7: 0, g30: 0 }, ic = v.icerik || null;
+  bolum(t('olS2'), t('olS2Not'));
+  gov.appendChild(h('div', { class: 'ol-kutular' }, kutu(t('olYeniBugun'), sayiYaz(bugun.yeni | 0), t('olAltCihaz')), kutu(t('olYeni7'), sayiYaz(topla(son7, 'yeni')), t('olAltCihaz')), kutu(t('olYeni30'), sayiYaz(topla(gunler, 'yeni')), t('olAltCihaz'))));
+  gov.appendChild(h('div', { class: 'ol-kutular', style: { 'margin-top': '8px' } }, kutu(t('olHesap'), sayiYaz(hs.toplam | 0), t('olAltHesap')), kutu(t('olHesap7'), sayiYaz(hs.g7 | 0), t('olAlt7')), kutu(t('olPro'), sayiYaz(ic ? ic.pro | 0 : 0), t('olAltPro'))));
+
+  /* 3) Son 30 gün grafiği */
+  bolum(t('olGrafik'), t('olGrafikNot'));
+  var enCok = Math.max(1, Math.max.apply(null, gunler.map(function (g) { return g.aktif | 0; }).concat([1])));
+  var enYogun = gunler.reduce(function (m, g) { return (g.aktif | 0) > (m.aktif | 0) ? g : m; }, gunler[0] || { aktif: 0, yeni: 0, gun: '' });
+  var detay = h('p', { class: 'alt-yazi', 'aria-live': 'polite', text: t('olEnYogun', kisaGun(enYogun.gun), enYogun.aktif | 0) });
+  var grafik = h('div', { class: 'ol-grafik', role: 'img', 'aria-label': t('olGrafik') });
+  gunler.forEach(function (g) {
+    var sut = h('span', { class: 'ol-sutun', style: { cursor: 'pointer' } },
+      h('i', { class: 'ol-aktif', style: { height: Math.max(2, Math.round(100 * (g.aktif | 0) / enCok)) + '%' } }),
+      h('i', { class: 'ol-yeni', style: { height: Math.round(100 * (g.yeni | 0) / enCok) + '%' } }));
+    sut.addEventListener('click', function () { detay.textContent = t('olGunDetay', kisaGun(g.gun), g.aktif | 0, g.yeni | 0); });
+    grafik.appendChild(sut);
+  });
+  gov.appendChild(h('div', { style: { display: 'flex', 'justify-content': 'space-between', 'font-size': '11px', color: 'var(--soluk)', margin: '0 4px 2px' } }, h('span', { text: t('olEnCok', enCok) }), h('span', { text: '0' })));
+  gov.appendChild(grafik);
+  if (gunler.length) gov.appendChild(h('div', { style: { display: 'flex', 'justify-content': 'space-between', 'font-size': '11px', color: 'var(--soluk)', margin: '2px 4px 0' } },
+    h('span', { text: kisaGun(gunler[0].gun) }), h('span', { text: kisaGun(gunler[Math.floor(gunler.length / 2)].gun) }), h('span', { text: kisaGun(gunler[gunler.length - 1].gun) })));
+  gov.appendChild(h('p', { class: 'ol-lejant' }, h('i', { class: 'ol-aktif' }), document.createTextNode(t('olAktif') + '   '), h('i', { class: 'ol-yeni' }), document.createTextNode(t('olYeni'))));
+  gov.appendChild(detay);
+
+  /* 4) Geri dönüş */
+  bolum(t('olDonus'), t('olDonusNot'));
+  var donus = h('div', { class: 'ol-kutular' });
+  [['d1', t('olErtesi'), 40, 25], ['d7', t('olGunSonra', 7), 20, 10], ['d30', t('olGunSonra', 30), 12, 6]].forEach(function (x) {
+    var d = v[x[0]] || {}, oran = sayiMi(d.oran) ? d.oran : null;
+    var sinif = oran === null ? '' : oran >= x[2] ? ' iyi' : oran >= x[3] ? ' orta' : ' zayif';
+    var durum = oran === null ? t('olVeriYok') : (oran >= x[2] ? t('olIyi') : oran >= x[3] ? t('olOrta') : t('olZayif'));
+    donus.appendChild(h('div', { class: 'ol-kutu' + sinif }, h('small', { text: x[1] }), h('b', { text: oran === null ? '—' : '%' + oran }),
+      h('i', { text: oran === null ? durum : durum + ' · ' + t('olGrup', d.donen | 0, d.grup | 0) })));
+  });
+  gov.appendChild(donus);
+  gov.appendChild(h('p', { class: 'alt-yazi', text: t('olDonusOlcut') }));
+
+  /* 5) İçerik */
+  if (ic) {
+    bolum(t('olS5'), t('olS5Not'));
+    var il = h('div', { class: 'ayar-grup' });
+    [[t('olPaylasim'), sayiYaz(ic.paylasim | 0) + '  (' + t('olSon7Art', ic.paylasim7 | 0) + ')'], [t('olYorum'), sayiYaz(ic.yorum | 0)], [t('olTakip'), sayiYaz(ic.takip | 0)], [t('olAnket'), sayiYaz(ic.anket | 0)],
+      [t('olMesaj'), sayiYaz(ic.mesaj | 0)], [t('olGeriBildirim'), sayiYaz(ic.geriBildirim | 0) + (sayiMi(ic.puan) ? '  (★ ' + ic.puan + ')' : '')]].forEach(function (r) {
+      il.appendChild(h('div', { class: 'satir', style: { cursor: 'default' } }, h('span', { text: r[0] }), h('b', { text: r[1] })));
     });
-    gov.appendChild(donus);
-    gov.appendChild(h('p', { class: 'ayar-not', text: t('olDonusNot') }));
-    gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('olGrafik') }));
-    var enCok = Math.max(1, Math.max.apply(null, gunler.map(function (g) { return g.aktif | 0; })));
-    var grafik = h('div', { class: 'ol-grafik', role: 'img', 'aria-label': t('olGrafik') });
-    gunler.forEach(function (g) {
-      grafik.appendChild(h('span', { class: 'ol-sutun', title: g.gun + ': ' + g.aktif + ' / +' + g.yeni },
-        h('i', { class: 'ol-aktif', style: { height: Math.round(100 * (g.aktif | 0) / enCok) + '%' } }),
-        h('i', { class: 'ol-yeni', style: { height: Math.round(100 * (g.yeni | 0) / enCok) + '%' } })));
-    });
-    gov.appendChild(grafik);
-    gov.appendChild(h('p', { class: 'ol-lejant' }, h('i', { class: 'ol-aktif' }), document.createTextNode(t('olAktif') + '  '), h('i', { class: 'ol-yeni' }), document.createTextNode(t('olYeni'))));
-    gov.appendChild(h('span', { class: 'g-bolum-etk', text: t('olOlaylar') }));
-    var l = Array.isArray(v.olaylar) ? v.olaylar : [];
-    if (!l.length) gov.appendChild(h('p', { class: 'alt-yazi', text: t('olVeriYok') }));
-    var ol = h('div', { class: 'ayar-grup' });
-    l.forEach(function (x) { ol.appendChild(h('div', { class: 'satir' }, h('span', { text: t('olay_' + x.ad) !== 'olay_' + x.ad ? t('olay_' + x.ad) : x.ad }), h('b', { text: sayiYaz(x.n | 0) }))); });
-    if (l.length) gov.appendChild(ol);
-  }).catch(function (e) { temizle(gov); gov.appendChild(h('p', { class: 'alt-yazi', text: hesapHataMetni(e) })); });
+    gov.appendChild(il);
+  }
+
+  /* 6) Özellik kullanımı */
+  bolum(t('olOlaylar'), t('olOlayNot'));
+  var l = Array.isArray(v.olaylar) ? v.olaylar : [];
+  if (!l.length) gov.appendChild(h('p', { class: 'alt-yazi', text: t('olVeriYok') }));
+  var tum = Math.max(1, l.reduce(function (a, x) { return a + (x.n | 0); }, 0)), enBuyuk = Math.max(1, l.length ? (l[0].n | 0) : 1);
+  var ol = h('div', { class: 'ayar-grup' });
+  l.forEach(function (x) {
+    var ad = t('olay_' + x.ad) !== 'olay_' + x.ad ? t('olay_' + x.ad) : x.ad, genis = Math.max(3, Math.round(100 * (x.n | 0) / enBuyuk));
+    ol.appendChild(h('div', { class: 'satir', style: { cursor: 'default', background: 'linear-gradient(90deg, color-mix(in srgb, var(--dolgu) 22%, transparent) ' + genis + '%, transparent ' + genis + '%)' } },
+      h('span', { text: ad }), h('b', { text: sayiYaz(x.n | 0) + '  · %' + Math.round(100 * (x.n | 0) / tum) })));
+  });
+  if (l.length) gov.appendChild(ol);
+  gov.appendChild(h('p', { class: 'ayar-not', style: { 'margin-top': '14px' }, text: t('olSonNot') }));
 }
 
 /* ---------- Paylaşım: WhatsApp'a ya da paylaşım menüsüne ---------- */
@@ -378,4 +438,53 @@ Object.assign(DIL.ko, {
   sbBugunKombin: '오늘의 코디', sbYarinKombin: '내일의 코디',
   sbIpucuBaslik: '매일 아침 준비해 둘게요', sbIpucuMetin: function (s) { return '매일 아침 ' + s + '에 날씨에 맞는 코디를 보내 드릴게요. 시간은 설정에서 바꿀 수 있어요.'; },
   sbIpucuWidget: '오늘의 코디를 홈 화면에도 띄울 수 있어요.'
+});
+
+Object.assign(DIL.tr, {
+  olGiris: 'Buradaki sayılar kişi değil, uygulamayı açan telefon (cihaz) sayısıdır. Ölçüm anonimdir ve yalnızca ölçümün başladığı günden beri olanı gösterir.',
+  olS1: 'Kaç kişi kullanıyor?', olS1Not: 'Aktif: o gün uygulamayı en az bir kez açan cihaz.',
+  olDun: 'Dün aktif', olHaftalik: 'Haftalık aktif', olAylik: 'Aylık aktif', olHafta: 'Günlük ortalama',
+  olAltCihaz: 'cihaz', olAltGunluk: 'son 7 gün', olAlt7: 'son 7 gün', olAlt30: 'son 30 gün', olAltTum: 'bugüne kadar', olAltHesap: 'kayıtlı hesap', olAltPro: 'şu an PRO',
+  olTrend: function (a, b, f) { return 'Bu hafta günlük ortalama ' + a + ' cihaz; geçen hafta ' + b + (f === null ? '.' : ' (' + (f >= 0 ? '↑ %' + f + ' arttı' : '↓ %' + (-f) + ' azaldı') + ').'); },
+  olYapis: function (n) { return 'Ayda en az bir kez açanların yaklaşık %' + n + '\'i her gün açıyor (yüksekse uygulama alışkanlık olmuş demektir).'; },
+  olS2: 'Yeni gelenler', olS2Not: 'Yeni: uygulamayı ilk kez açan cihaz. Hesap: kayıt olan kullanıcı.',
+  olYeniBugun: 'Bugün yeni', olYeni7: 'Son 7 gün yeni', olYeni30: 'Son 30 gün yeni', olHesap: 'Kayıtlı hesap', olHesap7: 'Yeni hesap', olPro: 'PRO üye',
+  olGrafik: 'Son 30 gün', olGrafikNot: 'Açık renk: o gün uygulamayı açanlar. Koyu renk: o gün ilk kez açanlar. Sayıları görmek için bir sütuna dokun.',
+  olEnCok: function (n) { return 'En yüksek: ' + n; }, olEnYogun: function (g, n) { return 'En yoğun gün: ' + g + ' · ' + n + ' cihaz'; },
+  olGunDetay: function (g, a, y) { return g + ': ' + a + ' cihaz açtı, ' + y + ' tanesi ilk kez.'; },
+  olDonus: 'Kullanıcılar geri geliyor mu?', olDonusNot: 'Uygulamayı ilk kez açanların sonradan tekrar açma oranı. Yüksekse insanlar uygulamadan memnun kalıyor demektir.',
+  olErtesi: 'Ertesi gün', olGunSonra: function (n) { return n + ' gün sonra'; }, olIyi: 'İyi', olOrta: 'Orta', olZayif: 'Zayıf',
+  olGrup: function (d, g) { return g + ' kişiden ' + d + '\'i'; }, olVeriYok: 'Henüz yeterli veri yok',
+  olDonusOlcut: 'İyi sayılan seviyeler: ertesi gün %40 üstü, 7. gün %20 üstü, 30. gün %12 üstü. Kırmızıysa yeni özellik eklemek yerine ilk açılış deneyimini iyileştir.',
+  olS5: 'Uygulamada neler oluyor?', olS5Not: 'Uygulama içindeki toplam içerik.',
+  olPaylasim: 'Paylaşılan gönderi', olSon7Art: function (n) { return 'son 7 günde +' + n; }, olYorum: 'Yorum', olTakip: 'Takip bağlantısı', olAnket: 'Anket', olMesaj: 'Özel mesaj', olGeriBildirim: 'Geri bildirim',
+  olOlaylar: 'Hangi özellik ne kadar kullanılıyor?', olOlayNot: 'Son 7 gün. Sayı, özelliğin kaç kez kullanıldığıdır (aynı kişi birkaç kez sayılır). Yüzde, toplam kullanım içindeki payıdır.',
+  olSonNot: 'Bu sayfa yalnızca @admin hesabında görünür. Veriler anonimdir: ad, hesap, konum ya da fotoğraf içermez.'
+});
+Object.assign(DIL.en, {
+  olGiris: 'These numbers count phones (devices) that opened the app, not people. Measurement is anonymous and only covers the time since it started.',
+  olS1: 'How many people use it?', olS1Not: 'Active: a device that opened the app at least once that day.',
+  olDun: 'Yesterday active', olHaftalik: 'Weekly active', olAylik: 'Monthly active', olHafta: 'Daily average',
+  olAltCihaz: 'devices', olAltGunluk: 'last 7 days', olAlt7: 'last 7 days', olAlt30: 'last 30 days', olAltTum: 'all time', olAltHesap: 'registered accounts', olAltPro: 'PRO now',
+  olTrend: function (a, b, f) { return 'This week: ' + a + ' devices a day on average; last week ' + b + (f === null ? '.' : ' (' + (f >= 0 ? 'up ' + f + '%' : 'down ' + (-f) + '%') + ').'); },
+  olYapis: function (n) { return 'About ' + n + '% of monthly users open the app every day (higher means it is a habit).'; },
+  olS2: 'New arrivals', olS2Note: '', olS2Not: 'New: a device opening the app for the first time. Account: a registered user.',
+  olYeniBugun: 'New today', olYeni7: 'New, 7 days', olYeni30: 'New, 30 days', olHesap: 'Registered accounts', olHesap7: 'New accounts', olPro: 'PRO members',
+  olGrafik: 'Last 30 days', olGrafikNot: 'Light bars: devices that opened the app that day. Dark bars: first-time openers. Tap a bar for numbers.',
+  olEnCok: function (n) { return 'Peak: ' + n; }, olEnYogun: function (g, n) { return 'Busiest day: ' + g + ' · ' + n + ' devices'; },
+  olGunDetay: function (g, a, y) { return g + ': ' + a + ' devices opened it, ' + y + ' for the first time.'; },
+  olDonus: 'Do users come back?', olDonusNot: 'Share of first-time openers who open the app again later. Higher means people like it.',
+  olErtesi: 'Next day', olGunSonra: function (n) { return 'After ' + n + ' days'; }, olIyi: 'Good', olOrta: 'Fair', olZayif: 'Weak',
+  olGrup: function (d, g) { return d + ' of ' + g; }, olVeriYok: 'Not enough data yet',
+  olDonusOlcut: 'Good levels: next day above 40%, day 7 above 20%, day 30 above 12%. If red, improve the first-run experience before adding features.',
+  olS5: 'What is happening in the app?', olS5Not: 'Total content inside the app.',
+  olPaylasim: 'Posts shared', olSon7Art: function (n) { return '+' + n + ' in 7 days'; }, olYorum: 'Comments', olTakip: 'Follow links', olAnket: 'Polls', olMesaj: 'Direct messages', olGeriBildirim: 'Feedback',
+  olOlaylar: 'Which features get used?', olOlayNot: 'Last 7 days. The number is how many times a feature was used (one person can count several times). The percentage is its share of all use.',
+  olSonNot: 'Only the @admin account sees this page. Data is anonymous: no name, account, location or photos.'
+});
+Object.assign(DIL.tr, {
+  kesfetKilitAlt: 'Üyelere özel', kesfetKilit: 'Keşfet\'i kullanmak için üye olmalısın. Giriş yap ya da hesap oluştur; sonra arkadaşlarını bul, paylaşımları gör ve yorum yap.'
+});
+Object.assign(DIL.en, {
+  kesfetKilitAlt: 'Members only', kesfetKilit: 'You need an account to use Discover. Sign in or create one, then find friends, see posts and comment.'
 });
