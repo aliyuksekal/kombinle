@@ -48,6 +48,25 @@ with sync_playwright() as pw:
     ok(p.evaluate('window.__akisG.slice(-1)[0]') == 'yeni', 'Topluluk akışına dönüldü')
     o.ekran('kf2_topluluk')
 
+    print('— Kişi arama')
+    ok(p.locator('.ka-cubuk').count() == 1, 'Keşfet\'te kişi arama düğmesi var')
+    p.click('.ka-cubuk'); p.wait_for_timeout(600)
+    ara = p.locator('.sayfa.acik .ka-girdi')
+    ok(ara.count() == 1 and 'Kişi ara' in p.locator('.sayfa.acik .baslik').last.inner_text(), 'dokununca arama sayfası açıldı')
+    p.wait_for_timeout(300)
+    ok(p.evaluate("document.activeElement && document.activeElement.classList.contains('ka-girdi')"), 'yazı alanına odaklandı')
+    ara.press_sequentially('ay'); p.wait_for_timeout(700)
+    ok(p.evaluate("window.__kisiG.slice(-1)[0].ara") == 'ay', 'harf yazdıkça aranıyor')
+    ok(p.locator('.sayfa.acik .ka-sonuc .tk-satir').count() == 2 and 'Ayşe' in p.locator('.sayfa.acik .ka-sonuc').inner_text(), 'uygun kişiler sıralandı')
+    o.ekran('kf5_arama')
+    ara.fill('@'); p.wait_for_timeout(500)
+    ok(p.locator('.sayfa.acik .ka-sonuc .tk-satir').count() == 0, 'yalnız @ yazınca liste temizlendi')
+    ara.press_sequentially('ay'); p.wait_for_timeout(700)
+    p.locator('.sayfa.acik .ka-sonuc .tk-ac').first.click(); p.wait_for_timeout(800)
+    ok('@' in p.locator('.sayfa.acik').last.inner_text(), 'kişiye dokununca profili açıldı')
+    while p.locator('.sayfa.acik').count():
+        p.locator('.sayfa.acik').last.locator('.bas :is([aria-label="Kapat"],[aria-label="Geri"])').last.click(); p.wait_for_timeout(400)
+
     print('— Yorumda @etiketleme')
     k = p.locator('#toplulukAlani .g-akis').first
     k.locator('.g-yorum-btn').click(); p.wait_for_timeout(600)
@@ -81,6 +100,13 @@ with sync_playwright() as pw:
     k.locator('.bahset-link').click(); p.wait_for_timeout(800)
     ok('@selin' in p.locator('.sayfa.acik').last.inner_text(), 'etiketlenen kişinin profili açıldı')
     ok(not [h for h in o.hatalar if 'pageerror' in h], 'sayfa hatası yok: ' + str(o.hatalar[:2]))
+    o.kapat()
+
+    print('— Üye olmayan')
+    o = Oturum(pw); o.ctx.add_init_script('window.__mod = {};' + SAHTE)
+    p = o.ac(); p.click('text=Başla'); p.wait_for_timeout(900)
+    p.click('nav.alt-menu button[data-sekme="kesfet"]'); p.wait_for_timeout(800)
+    ok(p.locator('.ka-cubuk').count() == 0 and 'üye' in p.locator('.g-bolum').first.inner_text().lower(), 'üye olmayana Keşfet kilitli, arama yok')
     o.kapat()
 
     print('— Yönetici: editör seçkisine ekle')
