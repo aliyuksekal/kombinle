@@ -65,6 +65,11 @@ function ayarIcerik(gov) {
         satir('aski', t('kategorilerim'), t('kategorilerimAlt', A.ozelTur.length), kategoriSayfasi),
         YEREL ? bildirimAyarSatiri() : null,
         sabahAyarSatirlari(satir))));
+    /* her zaman açık: paylaş, puanla, tur */
+    gov.appendChild(h('div', { class: 'ayar-grup ayar-acik-grup' },
+      satir('paylas', t('paylasBaslik'), t('paylasAlt'), davetEt),
+      satir('kalp', t('puanlaBaslik'), t('puanlaAlt'), uygulamayiPuanla),
+      satir('bilgi', t('turBaslat'), t('turBaslatAlt'), function () { sekmeyeGec('bugun'); setTimeout(function () { turBaslat(true); }, 400); })));
     /* pro ve destek */
     gov.appendChild(kart('pro', 'zap', t('proBaslik'), S.pro ? t('proAcik') : t('jetonVar', jeton()),
       h('div', { class: 'ayar-grup' },
@@ -74,7 +79,6 @@ function ayarIcerik(gov) {
         satir('isilti', t('sosyalBaslik'), sosyalAcik() ? (S.pro ? t('sosyalProDahil') : t('sosyalSahip')) : t('sosyalAlt'), function () { sosyalSayfasi(); }),
         yzKurulu() ? satir('zap', t('ocBaslik'), oneCikarKalan() ? t('ocHak', oneCikarKalan()) : t('oneCikarAlt'), function () { oneCikarPaketSayfasi(); }) : null,
         yzKurulu() ? satir('grafik', t('rvBaslik'), t('rvAlt'), reklamVerSayfasi) : null,
-        satir('kisi', t('davetBaslik'), t('davetAlt'), davetEt),
         yzKurulu() ? satir('yorum', t('gbAyar'), t('gbAyarAlt'), function () { geriBildirimSayfasi('ayarlar'); }) : null,
         satir('fincan', t('destekle'), t('destekleAlt'), destekSayfasi))));
     /* veriler */
